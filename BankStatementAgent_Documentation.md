@@ -90,6 +90,8 @@ graph TB
     C --> L
     E --> L
 ```
+    E --> L
+```
 
 ### Architecture Components
 
