@@ -122,6 +122,21 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Test files - exclude all testing scripts
+test_*.py
+*_test.py
+Test Docs/
+tests/
+testing/
+analyze_*.py
+debug_*.py
+verify_*.py
+validate_*.py
+check_*.py
+monitor_*.py
+trigger_test.py
+celebrate_success.py
+
 # Azure Functions artifacts
 bin
 obj
