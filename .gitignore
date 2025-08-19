@@ -161,6 +161,10 @@ test_fixed_*.bai
 test_comprehensive_*.bai
 final_test.py
 
+# BAI files - exclude all bank statement files
+*.bai
+*.bai2
+
 # Azure Functions artifacts
 bin
 obj
