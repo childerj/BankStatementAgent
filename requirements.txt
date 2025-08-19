@@ -1,0 +1,6 @@
+azure-functions==1.23.0
+azure-storage-blob>=12.19.0
+azure-ai-documentintelligence>=1.0.0
+azure-ai-formrecognizer>=3.3.0
+requests>=2.32.0
+openai>=1.0.0

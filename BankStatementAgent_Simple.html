@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Statement Processing Agent - Documentation</title>
+    <script src="https://unpkg.com/mermaid@8.14.0/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            margin: -30px -30px 40px -30px;
+            border-radius: 10px 10px 0 0;
+        }
+        h1, h2, h3 { color: #2c3e50; }
+        h1 { border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; }
+        .mermaid {
+            background-color: #fff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 20px;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+        .alert {
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+            background-color: #e7f3ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bank Statement Processing Agent</h1>
+            <p>Complete Technical Documentation</p>
+            <p>🤖 Autonomous • 🧠 AI-Powered • 🔒 Secure • 📊 Monitored</p>
+        </div>
+
+        <section id="overview">
+            <h1>🏢 Overview</h1>
+            <p>The <strong>BankStatementAgent</strong> is an autonomous AI-powered system deployed on Azure that automatically processes bank statement PDFs and converts them to BAI2 format for banking system integration.</p>
+            
+            <div class="alert">
+                <strong>Key Features:</strong> Autonomous Processing • AI-Powered Extraction • Format Conversion • Error Resilience • Complete Audit Trail • Real-time Monitoring
+            </div>
+        </section>
+
+        <section id="architecture">
+            <h1>🏗️ System Architecture</h1>
+            
+            <div class="mermaid">
+                graph TB
+                    A[PDF Upload] --> B[Blob Storage]
+                    B --> C[Azure Function]
+                    C --> D[Document Intelligence]
+                    C --> E[OpenAI GPT]
+                    C --> F[BAI2 Output]
+                    C --> G[Archive]
+                    C --> H[Logs]
+            </div>
+
+            <h3>Architecture Components</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Technology</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Azure Function App</td>
+                        <td>Python 3.10</td>
+                        <td>BankStatementAgent serverless processing</td>
+                    </tr>
+                    <tr>
+                        <td>Document Intelligence</td>
+                        <td>Azure Cognitive Services</td>
+                        <td>OCR and document structure analysis</td>
+                    </tr>
+                    <tr>
+                        <td>OpenAI Service</td>
+                        <td>GPT-4.1 Model</td>
+                        <td>Transaction parsing and interpretation</td>
+                    </tr>
+                    <tr>
+                        <td>Blob Storage</td>
+                        <td>Azure Storage Account</td>
+                        <td>File management and archival</td>
+                    </tr>
+                    <tr>
+                        <td>Application Insights</td>
+                        <td>Azure Monitor</td>
+                        <td>Logging and performance analytics</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="ai-agent">
+            <h1>🤖 AI Agent Components</h1>
+
+            <div class="mermaid">
+                graph LR
+                    A[Perceive] --> B[Analyze]
+                    B --> C[Reason]
+                    C --> D[Act]
+                    D --> E[Monitor]
+                    E --> A
+            </div>
+
+            <h3>Agent Capabilities</h3>
+            <ul>
+                <li><strong>Autonomous Operation:</strong> Self-managing processing without human intervention</li>
+                <li><strong>Adaptive Intelligence:</strong> Learns from different document formats</li>
+                <li><strong>Goal-Oriented Behavior:</strong> Focused on accurate BAI2 conversion</li>
+                <li><strong>Error Recovery:</strong> Handles failures gracefully</li>
+            </ul>
+        </section>
+
+        <section id="data-flow">
+            <h1>🔄 Data Flow</h1>
+            
+            <div class="mermaid">
+                sequenceDiagram
+                    participant U as User
+                    participant B as Blob Storage
+                    participant F as Azure Function
+                    participant D as Document AI
+                    participant O as OpenAI
+                    
+                    U->>B: Upload PDF
+                    B->>F: Trigger event
+                    F->>D: Extract text
+                    D->>F: Return data
+                    F->>O: Parse transactions
+                    O->>F: Return JSON
+                    F->>B: Save BAI2 file
+            </div>
+
+            <h3>Processing Steps</h3>
+            <ol>
+                <li><strong>File Detection:</strong> Blob trigger activates when PDF uploaded</li>
+                <li><strong>Document Analysis:</strong> Azure Document Intelligence extracts text and structure</li>
+                <li><strong>AI Processing:</strong> OpenAI parses transactions intelligently</li>
+                <li><strong>BAI2 Generation:</strong> Creates industry-standard banking format</li>
+                <li><strong>File Management:</strong> Archives original and saves output</li>
+            </ol>
+        </section>
+
+        <section id="monitoring">
+            <h1>📊 Monitoring & Logging</h1>
+
+            <div class="mermaid">
+                graph TB
+                    A[Function Logs] --> D[Azure Portal]
+                    B[Application Insights] --> D
+                    C[Storage Activity] --> E[PowerShell Scripts]
+                    D --> F[Alerts]
+                    E --> F
+            </div>
+
+            <h3>Key Metrics</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Typical Value</th>
+                        <th>Alert Threshold</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Files processed per hour</td>
+                        <td>10-50</td>
+                        <td>&lt; 5 for 2 hours</td>
+                    </tr>
+                    <tr>
+                        <td>Average processing time</td>
+                        <td>30-90 seconds</td>
+                        <td>&gt; 5 minutes</td>
+                    </tr>
+                    <tr>
+                        <td>Success rate</td>
+                        <td>95-99%</td>
+                        <td>&lt; 90%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="deployment">
+            <h1>🚀 Deployment Guide</h1>
+
+            <h3>Prerequisites</h3>
+            <ul>
+                <li>Azure Subscription</li>
+                <li>Azure CLI installed</li>
+                <li>Python 3.10+ environment</li>
+            </ul>
+
+            <h3>Quick Start Commands</h3>
+            <div class="code-block">
+                <pre># Login to Azure
+az login
+
+# Create resource group
+az group create --name Azure_AI_RG --location "East US"
+
+# Create Function App
+az functionapp create \
+  --resource-group Azure_AI_RG \
+  --consumption-plan-location "East US" \
+  --runtime python \
+  --runtime-version 3.10 \
+  --functions-version 4 \
+  --name BankStatementAgent \
+  --storage-account waazuse1aistorage</pre>
+            </div>
+        </section>
+
+        <section id="security">
+            <h1>🔐 Security</h1>
+
+            <div class="mermaid">
+                graph TB
+                    A[Identity Management] --> E[Azure AD]
+                    B[Data Encryption] --> F[Storage Encryption]
+                    C[API Security] --> G[Key Vault]
+                    D[Audit Logs] --> H[Activity Logs]
+            </div>
+
+            <h3>Security Features</h3>
+            <ul>
+                <li><strong>Encryption:</strong> AES-256 at rest, TLS 1.2+ in transit</li>
+                <li><strong>Access Control:</strong> Azure AD and RBAC</li>
+                <li><strong>Compliance:</strong> PCI DSS, SOX, GDPR ready</li>
+                <li><strong>Monitoring:</strong> Complete audit trail</li>
+            </ul>
+        </section>
+
+        <section id="api">
+            <h1>📡 API Reference</h1>
+
+            <h3>Function Endpoints</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Process New File</td>
+                        <td>Blob Trigger</td>
+                        <td>Automatic processing on upload</td>
+                    </tr>
+                    <tr>
+                        <td>/api/setup</td>
+                        <td>GET</td>
+                        <td>Initialize storage containers</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Upload Example</h3>
+            <div class="code-block">
+                <pre>az storage blob upload \
+  --account-name "waazuse1aistorage" \
+  --container-name "bank-reconciliation" \
+  --name "incoming-bank-statements/statement.pdf" \
+  --file "local-statement.pdf"</pre>
+            </div>
+        </section>
+
+        <div style="margin-top: 40px; padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 8px;">
+            <p><strong>Bank Statement Processing Agent Documentation</strong></p>
+            <p>Version 1.0 | August 7, 2025 | BankStatementAgent Development Team</p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({startOnLoad:true});
+    </script>
+</body>
+</html>
