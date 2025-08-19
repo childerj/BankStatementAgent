@@ -1,3 +1,0 @@
-This is a test file to trigger the Azure Function blob trigger.
-The function should detect this file and try to process it.
-This will help us verify if the blob trigger path is working correctly.
