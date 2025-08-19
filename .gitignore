@@ -165,6 +165,9 @@ final_test.py
 *.bai
 *.bai2
 
+# PowerShell scripts - exclude all monitoring and diagnostic scripts
+*.ps1
+
 # Azure Functions artifacts
 bin
 obj
