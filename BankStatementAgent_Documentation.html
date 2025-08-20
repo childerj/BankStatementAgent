@@ -200,37 +200,59 @@
 </ul>
 <hr />
 <h2 id="system-architecture"><a class="toclink" href="#system-architecture">System Architecture</a><a class="anchor-link" href="#system-architecture" title="Permanent link">&para;</a></h2>
-<div class="mermaid">graph TB
-    subgraph "User Interface"
+<div class="mermaid">
+graph TB
+
+    %% --- User Interface ---
+    subgraph User Interface
         A[PDF Upload to Blob Storage]
         B[Monitoring Scripts]
         C[Azure Portal Dashboard]
     end
+    style A fill:#cce5ff,stroke:#004085,stroke-width:2px
+    style B fill:#cce5ff,stroke:#004085,stroke-width:2px
+    style C fill:#cce5ff,stroke:#004085,stroke-width:2px
 
-    subgraph "Azure Cloud Environment"
-        subgraph "BankStatementAgent Function App"
+    %% --- Azure Cloud Environment ---
+    subgraph Azure Cloud Environment
+        %% Function App
+        subgraph BankStatementAgent Function App
             D[EventGrid Trigger Function]
             E[Setup HTTP Function]
         end
+        style D fill:#e0ffff,stroke:#006666,stroke-width:2px
+        style E fill:#e0ffff,stroke:#006666,stroke-width:2px
 
-        subgraph "AI Services"
-            F[Azure Document Intelligence<br/>prebuilt-bankStatement.us]
-            G[Azure Document Intelligence<br/>prebuilt-layout (fallback)]
+        %% AI Services
+        subgraph AI Services
+            F["Azure Document Intelligence\nprebuilt-bankStatement.us"]
+            G["Azure Document Intelligence\nprebuilt-layout (fallback)"]
         end
+        style F fill:#ffe5b4,stroke:#cc6600,stroke-width:2px
+        style G fill:#ffe5b4,stroke:#cc6600,stroke-width:2px
 
-        subgraph "Storage & Events"
+        %% Storage & Events
+        subgraph Storage & Events
             H[Incoming Statements Container]
             I[BAI2 Outputs Container]
             J[Archive Container]
             K[EventGrid Subscription]
         end
+        style H fill:#d4edda,stroke:#155724,stroke-width:2px
+        style I fill:#d4edda,stroke:#155724,stroke-width:2px
+        style J fill:#d4edda,stroke:#155724,stroke-width:2px
+        style K fill:#d4edda,stroke:#155724,stroke-width:2px
 
-        subgraph "Monitoring"
+        %% Monitoring
+        subgraph Monitoring
             L[Application Insights]
             M[Function Logs]
         end
+        style L fill:#e2d9f3,stroke:#4b0082,stroke-width:2px
+        style M fill:#e2d9f3,stroke:#4b0082,stroke-width:2px
     end
 
+    %% --- Connections ---
     A --> H
     H --> K
     K --> D
@@ -243,105 +265,106 @@
     B --> I
     B --> J
     C --> L
-    E --> L</div>
-<pre class="codehilite"><code>E --&gt; L
-</code></pre>
+    E --> L
+</div>
 
-<pre class="codehilite"><code>### Architecture Components
-
-#### **Compute Layer**
-- **Azure Function App**: `BankStatementAgent`
-  - Resource Group: `azure_ai_rg`
-  - Location: `East US`
-  - Runtime: `Python 3.12`
-  - Plan: `Flex Consumption (Serverless)`
-  - Trigger: `EventGrid` (blob-created events)
-
-#### **AI/ML Layer**
-- **Azure Document Intelligence**: 
-  - Primary: `prebuilt-bankStatement.us` model for bank statement processing
-  - Fallback: `prebuilt-layout` model for OCR and layout analysis
-  - SDK: `azure-ai-documentintelligence` (latest version)
-- **Intelligent Processing**: Adaptive document handling with error recovery
-
-#### **Storage Layer**
-- **Storage Account**: `waazuse1aistorage`
-- **Container**: `bank-reconciliation`
-  - `incoming-bank-statements/`: Input PDFs (EventGrid monitored)
-  - `bai2-outputs/`: Generated BAI2 files
-  - `archive/`: Processed original PDFs with &quot;Working Copy&quot; labels
-
-#### **Event Layer**
-- **EventGrid Subscription**: Monitors blob-created events in `incoming-bank-statements/`
-- **Trigger Delay**: 1-3 minutes for EventGrid processing (normal behavior)
-- **Event Filtering**: Only PDF files in the incoming folder trigger processing
-
-#### **Monitoring Layer**
-- **Application Insights**: `BankStatementAgent-AppInsights`
-- **Function Logs**: Real-time execution monitoring with ASCII-only output
-- **Custom Scripts**: PowerShell monitoring tools
-- **Azure Portal**: Function execution history and health metrics
-
----
-
-## AI Agent Components
-
-### Agent Characteristics
-
-&lt;div class=&quot;mermaid&quot;&gt;graph LR
-    subgraph &quot;AI Agent Loop&quot;
-        A[Perceive] --&gt; B[Analyze]
-        B --&gt; C[Reason]
-        C --&gt; D[Act]
-        D --&gt; E[Monitor]
-        E --&gt; A
+<h3 id="architecture-components"><a class="toclink" href="#architecture-components">Architecture Components</a><a class="anchor-link" href="#architecture-components" title="Permanent link">&para;</a></h3>
+<h4 id="compute-layer"><a class="toclink" href="#compute-layer"><strong>Compute Layer</strong></a><a class="anchor-link" href="#compute-layer" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Azure Function App</strong>: <code>BankStatementAgent</code></li>
+<li>Resource Group: <code>azure_ai_rg</code></li>
+<li>Location: <code>East US</code></li>
+<li>Runtime: <code>Python 3.10</code></li>
+<li>Plan: <code>Flex Consumption (Serverless)</code></li>
+<li>Trigger: <code>EventGrid</code> (blob-created events)</li>
+</ul>
+<h4 id="aiml-layer"><a class="toclink" href="#aiml-layer"><strong>AI/ML Layer</strong></a><a class="anchor-link" href="#aiml-layer" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Azure Document Intelligence</strong>: </li>
+<li>Primary: <code>prebuilt-bankStatement.us</code> model for bank statement processing</li>
+<li>Fallback: <code>prebuilt-layout</code> model for OCR and layout analysis</li>
+<li>SDK: <code>azure-ai-documentintelligence</code> (latest version)</li>
+<li><strong>Intelligent Processing</strong>: Adaptive document handling with error recovery</li>
+</ul>
+<h4 id="storage-layer"><a class="toclink" href="#storage-layer"><strong>Storage Layer</strong></a><a class="anchor-link" href="#storage-layer" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Storage Account</strong>: <code>waazuse1aistorage</code></li>
+<li><strong>Container</strong>: <code>bank-reconciliation</code></li>
+<li><code>incoming-bank-statements/</code>: Input PDFs (EventGrid monitored)</li>
+<li><code>bai2-outputs/</code>: Generated BAI2 files</li>
+<li><code>archive/</code>: Processed original PDFs with "Working Copy" labels</li>
+</ul>
+<h4 id="event-layer"><a class="toclink" href="#event-layer"><strong>Event Layer</strong></a><a class="anchor-link" href="#event-layer" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>EventGrid Subscription</strong>: Monitors blob-created events in <code>incoming-bank-statements/</code></li>
+<li><strong>Trigger Delay</strong>: 1-3 minutes for EventGrid processing (normal behavior)</li>
+<li><strong>Event Filtering</strong>: Only PDF files in the incoming folder trigger processing</li>
+</ul>
+<h4 id="monitoring-layer"><a class="toclink" href="#monitoring-layer"><strong>Monitoring Layer</strong></a><a class="anchor-link" href="#monitoring-layer" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Application Insights</strong>: <code>BankStatementAgent-AppInsights</code></li>
+<li><strong>Function Logs</strong>: Real-time execution monitoring with ASCII-only output</li>
+<li><strong>Custom Scripts</strong>: PowerShell monitoring tools</li>
+<li><strong>Azure Portal</strong>: Function execution history and health metrics</li>
+</ul>
+<hr />
+<h2 id="ai-agent-components"><a class="toclink" href="#ai-agent-components">AI Agent Components</a><a class="anchor-link" href="#ai-agent-components" title="Permanent link">&para;</a></h2>
+<h3 id="agent-characteristics"><a class="toclink" href="#agent-characteristics">Agent Characteristics</a><a class="anchor-link" href="#agent-characteristics" title="Permanent link">&para;</a></h3>
+<div class="mermaid">graph LR
+    subgraph "AI Agent Loop"
+        A[Perceive] --> B[Analyze]
+        B --> C[Reason]
+        C --> D[Act]
+        D --> E[Monitor]
+        E --> A
     end
 
-    subgraph &quot;Capabilities&quot;
+    subgraph "Capabilities"
         F[Autonomous Operation]
         G[Adaptive Intelligence]
         H[Goal-Oriented Behavior]
         I[Error Recovery]
     end
 
-    A -.-&gt; F
-    B -.-&gt; G
-    C -.-&gt; H
-    D -.-&gt; I&lt;/div&gt;
+    A -.-> F
+    B -.-> G
+    C -.-> H
+    D -.-> I</div>
 
-### Core Intelligence Components
-
-#### **1. Perception Module**
-- **EventGrid Trigger**: Real-time detection of new PDF files via Azure EventGrid
-- **File Validation**: Checks file type, accessibility, and size
-- **Queue Management**: Serverless processing with automatic scaling
-
-#### **2. Analysis Module**
-- **Document Intelligence**: 
-  - Primary: `prebuilt-bankStatement.us` model for specialized bank statement processing
-  - Fallback: `prebuilt-layout` model for OCR when bank statement model fails
-- **OpenAI Integration**: GPT-4 powered routing number extraction with intelligent bank name correlation
-- **Content Assessment**: Evaluates document quality and structure
-- **Multi-Strategy Approach**: Graceful degradation between AI models (Document Intelligence → OpenAI → OCR)
-
-#### **3. Reasoning Module**
-- **Smart Processing**: Uses appropriate AI model based on document type and quality
-- **Context Understanding**: Interprets banking terminology and transaction formats
-- **Intelligent Routing**: OpenAI-powered analysis for complex routing number extraction scenarios
-- **Data Validation**: Ensures extracted data integrity and completeness with multiple verification layers
-- **Reconciliation Logic**: Built-in transaction reconciliation and balance verification with mathematical precision
-
-#### **4. Action Module**
-- **BAI2 Generation**: Creates industry-standard banking format files
-- **File Management**: Organizes outputs with &quot;Working Copy&quot; labels and archives originals
-- **Error Handling**: Comprehensive exception management with detailed logging
-- **Clean Output**: ASCII-only logging for compatibility and readability
-
----
-
-## Data Flow
-
-&lt;div class=&quot;mermaid&quot;&gt;sequenceDiagram
+<h3 id="core-intelligence-components"><a class="toclink" href="#core-intelligence-components">Core Intelligence Components</a><a class="anchor-link" href="#core-intelligence-components" title="Permanent link">&para;</a></h3>
+<h4 id="1-perception-module"><a class="toclink" href="#1-perception-module"><strong>1. Perception Module</strong></a><a class="anchor-link" href="#1-perception-module" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>EventGrid Trigger</strong>: Real-time detection of new PDF files via Azure EventGrid</li>
+<li><strong>File Validation</strong>: Checks file type, accessibility, and size</li>
+<li><strong>Queue Management</strong>: Serverless processing with automatic scaling</li>
+</ul>
+<h4 id="2-analysis-module"><a class="toclink" href="#2-analysis-module"><strong>2. Analysis Module</strong></a><a class="anchor-link" href="#2-analysis-module" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Document Intelligence</strong>: </li>
+<li>Primary: <code>prebuilt-bankStatement.us</code> model for specialized bank statement processing</li>
+<li>Fallback: <code>prebuilt-layout</code> model for OCR when bank statement model fails</li>
+<li><strong>OpenAI Integration</strong>: GPT-4 powered routing number extraction with intelligent bank name correlation</li>
+<li><strong>Content Assessment</strong>: Evaluates document quality and structure</li>
+<li><strong>Multi-Strategy Approach</strong>: Graceful degradation between AI models (Document Intelligence → OpenAI → OCR)</li>
+</ul>
+<h4 id="3-reasoning-module"><a class="toclink" href="#3-reasoning-module"><strong>3. Reasoning Module</strong></a><a class="anchor-link" href="#3-reasoning-module" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Smart Processing</strong>: Uses appropriate AI model based on document type and quality</li>
+<li><strong>Context Understanding</strong>: Interprets banking terminology and transaction formats</li>
+<li><strong>Intelligent Routing</strong>: OpenAI-powered analysis for complex routing number extraction scenarios</li>
+<li><strong>Data Validation</strong>: Ensures extracted data integrity and completeness with multiple verification layers</li>
+<li><strong>Reconciliation Logic</strong>: Built-in transaction reconciliation and balance verification with mathematical precision</li>
+</ul>
+<h4 id="4-action-module"><a class="toclink" href="#4-action-module"><strong>4. Action Module</strong></a><a class="anchor-link" href="#4-action-module" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>BAI2 Generation</strong>: Creates industry-standard banking format files</li>
+<li><strong>File Management</strong>: Organizes outputs with "Working Copy" labels and archives originals</li>
+<li><strong>Error Handling</strong>: Comprehensive exception management with detailed logging</li>
+<li><strong>Clean Output</strong>: ASCII-only logging for compatibility and readability</li>
+</ul>
+<hr />
+<h2 id="data-flow"><a class="toclink" href="#data-flow">Data Flow</a><a class="anchor-link" href="#data-flow" title="Permanent link">&para;</a></h2>
+<div class="mermaid">sequenceDiagram
     participant U as User
     participant BS as Blob Storage
     participant EG as EventGrid
@@ -351,28 +374,26 @@
     participant ARC as Archive
     participant AI as App Insights
 
-    U-&gt;&gt;BS: Upload PDF to incoming-bank-statements/
-    BS-&gt;&gt;EG: Blob created event
-    EG-&gt;&gt;AF: Trigger EventGrid function (1-3 min delay)
-    AF-&gt;&gt;DI: Send PDF for bankStatement.us analysis
+    U->>BS: Upload PDF to incoming-bank-statements/
+    BS->>EG: Blob created event
+    EG->>AF: Trigger EventGrid function (1-3 min delay)
+    AF->>DI: Send PDF for bankStatement.us analysis
     alt Bank Statement Model Success
-        DI-&gt;&gt;AF: Return structured bank data
+        DI->>AF: Return structured bank data
     else Bank Statement Model Fails
-        AF-&gt;&gt;DI: Fallback to layout model for OCR
-        DI-&gt;&gt;AF: Return raw text and layout
+        AF->>DI: Fallback to layout model for OCR
+        DI->>AF: Return raw text and layout
     end
-    AF-&gt;&gt;BAI: Generate BAI2 format file
-    BAI-&gt;&gt;BS: Save to bai2-outputs/ (Working Copy)
-    AF-&gt;&gt;ARC: Move original to archive/ (Working Copy)
-    AF-&gt;&gt;AI: Log processing results (ASCII only)
-    AF-&gt;&gt;BS: Delete from incoming/
-    Note over AF,AI: Reconciliation summary included in logs&lt;/div&gt;
+    AF->>BAI: Generate BAI2 format file
+    BAI->>BS: Save to bai2-outputs/ (Working Copy)
+    AF->>ARC: Move original to archive/ (Working Copy)
+    AF->>AI: Log processing results (ASCII only)
+    AF->>BS: Delete from incoming/
+    Note over AF,AI: Reconciliation summary included in logs</div>
 
-### Processing Steps Detail
-
-#### **Step 1: File Detection**
-```python
-# EventGrid trigger activates when file uploaded (replaces blob trigger)
+<h3 id="processing-steps-detail"><a class="toclink" href="#processing-steps-detail">Processing Steps Detail</a><a class="anchor-link" href="#processing-steps-detail" title="Permanent link">&para;</a></h3>
+<h4 id="step-1-file-detection"><a class="toclink" href="#step-1-file-detection"><strong>Step 1: File Detection</strong></a><a class="anchor-link" href="#step-1-file-detection" title="Permanent link">&para;</a></h4>
+<pre class="codehilite"><code class="language-python"># EventGrid trigger activates when file uploaded (replaces blob trigger)
 @app.event_grid_trigger(arg_name=&quot;event&quot;)
 def process_new_file(event: func.EventGridEvent):
     # Extract blob information from EventGrid event
@@ -516,7 +537,7 @@ def extract_routing_with_openai(bank_name, statement_text):
 <ul>
 <li>Azure Subscription</li>
 <li>Azure CLI installed and configured</li>
-<li>Python 3.12+ environment</li>
+<li>Python 3.10 environment</li>
 <li>Git repository access</li>
 </ul>
 <h3 id="deployment-steps"><a class="toclink" href="#deployment-steps">Deployment Steps</a><a class="anchor-link" href="#deployment-steps" title="Permanent link">&para;</a></h3>
@@ -553,7 +574,7 @@ az functionapp create \
   --resource-group azure_ai_rg \
   --consumption-plan-location &quot;East US&quot; \
   --runtime python \
-  --runtime-version 3.12 \
+  --runtime-version 3.10 \
   --functions-version 4 \
   --name BankStatementAgent \
   --storage-account waazuse1aistorage \
@@ -768,70 +789,12 @@ def print_and_log(message):
     F --> K
     F --> L</div>
 
-<h3 id="application-insights-queries"><a class="toclink" href="#application-insights-queries">Application Insights Queries</a><a class="anchor-link" href="#application-insights-queries" title="Permanent link">&para;</a></h3>
-<h4 id="recent-processing-activity"><a class="toclink" href="#recent-processing-activity"><strong>Recent Processing Activity</strong></a><a class="anchor-link" href="#recent-processing-activity" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-kusto">traces
-| where cloud_RoleName == &quot;BankStatementAgent&quot;
-| where timestamp &gt; ago(4h)
-| where message contains &quot;WORKING COPY&quot; or message contains &quot;BAI2&quot;
-| order by timestamp desc
-| project timestamp, message, severityLevel
-</code></pre>
-
-<h4 id="eventgrid-trigger-analysis"><a class="toclink" href="#eventgrid-trigger-analysis"><strong>EventGrid Trigger Analysis</strong></a><a class="anchor-link" href="#eventgrid-trigger-analysis" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-kusto">traces
-| where cloud_RoleName == &quot;BankStatementAgent&quot;
-| where message contains &quot;EventGrid event received&quot;
-| order by timestamp desc
-| project timestamp, message, operation_Id
-</code></pre>
-
-<h4 id="document-intelligence-performance"><a class="toclink" href="#document-intelligence-performance"><strong>Document Intelligence Performance</strong></a><a class="anchor-link" href="#document-intelligence-performance" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-kusto">traces
-| where cloud_RoleName == &quot;BankStatementAgent&quot;
-| where message contains &quot;bankStatement.us&quot; or message contains &quot;layout model&quot;
-| order by timestamp desc
-| project timestamp, message, operation_Id
-</code></pre>
-
-<h4 id="error-analysis"><a class="toclink" href="#error-analysis"><strong>Error Analysis</strong></a><a class="anchor-link" href="#error-analysis" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-kusto">union traces, exceptions
-| where cloud_RoleName == &quot;BankStatementAgent&quot;
-| where severityLevel &gt;= 2
-| order by timestamp desc
-| project timestamp, message, severityLevel, operation_Name
-</code></pre>
-
-<h3 id="log-output-features"><a class="toclink" href="#log-output-features">Log Output Features</a><a class="anchor-link" href="#log-output-features" title="Permanent link">&para;</a></h3>
-<h4 id="ascii-only-output"><a class="toclink" href="#ascii-only-output"><strong>ASCII-Only Output</strong></a><a class="anchor-link" href="#ascii-only-output" title="Permanent link">&para;</a></h4>
-<p>All log messages use ASCII characters only for maximum compatibility:
-- <code>✅</code> becomes <code>[OK]</code>
-- <code>❌</code> becomes <code>[ERROR]</code>
-- <code>📤</code> becomes <code>[UPLOAD]</code>
-- <code>⏳</code> becomes <code>[WAIT]</code>
-- <code>🔄</code> becomes <code>[CONVERT]</code></p>
-<h4 id="working-copy-labels"><a class="toclink" href="#working-copy-labels"><strong>Working Copy Labels</strong></a><a class="anchor-link" href="#working-copy-labels" title="Permanent link">&para;</a></h4>
-<p>All processed files are labeled as "Working Copy" in logs and filenames:</p>
-<pre class="codehilite"><code>[WORKING COPY] Processing file: statement.pdf
-[WORKING COPY] BAI2 file generated: statement_bai2.txt
-[WORKING COPY] File archived: archived_statement.pdf
-</code></pre>
-
-<h4 id="reconciliation-reporting"><a class="toclink" href="#reconciliation-reporting"><strong>Reconciliation Reporting</strong></a><a class="anchor-link" href="#reconciliation-reporting" title="Permanent link">&para;</a></h4>
-<p>Final processing summary includes reconciliation information:</p>
-<pre class="codehilite"><code>[RECONCILIATION] Opening Balance: $1,234.56
-[RECONCILIATION] Total Debits: $500.00
-[RECONCILIATION] Total Credits: $750.00
-[RECONCILIATION] Closing Balance: $1,484.56
-[RECONCILIATION] Balance Verified: True
-</code></pre>
-
 <h3 id="troubleshooting-common-issues"><a class="toclink" href="#troubleshooting-common-issues">Troubleshooting Common Issues</a><a class="anchor-link" href="#troubleshooting-common-issues" title="Permanent link">&para;</a></h3>
 <h4 id="eventgrid-trigger-delay"><a class="toclink" href="#eventgrid-trigger-delay"><strong>EventGrid Trigger Delay</strong></a><a class="anchor-link" href="#eventgrid-trigger-delay" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Expected Behavior</strong>: 1-3 minute delay is normal for EventGrid processing</li>
 <li><strong>Verification</strong>: Check EventGrid subscription status in Azure Portal</li>
-<li><strong>Monitoring</strong>: Use Application Insights to track event timing</li>
+<li><strong>Monitoring</strong>: Use Azure Portal monitoring to track event timing</li>
 </ul>
 <h4 id="document-intelligence-model-errors"><a class="toclink" href="#document-intelligence-model-errors"><strong>Document Intelligence Model Errors</strong></a><a class="anchor-link" href="#document-intelligence-model-errors" title="Permanent link">&para;</a></h4>
 <ul>
@@ -854,7 +817,7 @@ def print_and_log(message):
 <h3 id="performance-optimization"><a class="toclink" href="#performance-optimization">Performance Optimization</a><a class="anchor-link" href="#performance-optimization" title="Permanent link">&para;</a></h3>
 <h4 id="function-configuration"><a class="toclink" href="#function-configuration"><strong>Function Configuration</strong></a><a class="anchor-link" href="#function-configuration" title="Permanent link">&para;</a></h4>
 <ul>
-<li><strong>Runtime</strong>: Python 3.12 on Flex Consumption plan</li>
+<li><strong>Runtime</strong>: Python 3.10 on Flex Consumption plan</li>
 <li><strong>Timeout</strong>: Set to 5 minutes for large file processing</li>
 <li><strong>Memory</strong>: Use default settings unless processing very large files</li>
 <li><strong>Concurrency</strong>: Flex Consumption plan automatically scales</li>
@@ -1002,12 +965,8 @@ az functionapp show --name BankStatementAgent --resource-group Azure_AI_RG
 - Files processed but errors in logs
 - Incomplete BAI2 files
 - Missing archived files</p>
-<p><strong>Diagnosis:</strong></p>
-<pre class="codehilite"><code class="language-kql">exceptions
-| where cloud_RoleName == &quot;BankStatementAgent&quot;
-| order by timestamp desc
-</code></pre>
-
+<p><strong>Diagnosis:</strong>
+Check function logs and error messages in the Azure Portal for detailed error information.</p>
 <p><strong>Solutions:</strong>
 1. Check AI service quotas and limits
 2. Validate API keys and endpoints
@@ -1299,14 +1258,7 @@ az functionapp identity assign \
 </code></pre>
 
 <h4 id="monitoring"><a class="toclink" href="#monitoring"><strong>Monitoring</strong></a><a class="anchor-link" href="#monitoring" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-kql">// Security monitoring query
-SecurityEvent
-| where EventID in (4625, 4648, 4672)  // Failed logons, explicit credentials, special privileges
-| where TimeGenerated &gt; ago(24h)
-| summarize count() by Account, Computer, EventID
-| order by count_ desc
-</code></pre>
-
+<p>Security monitoring can be performed through Azure Portal monitoring dashboards and function logs to track authentication events and system access.</p>
 <h3 id="repository-security"><a class="toclink" href="#repository-security">Repository Security</a><a class="anchor-link" href="#repository-security" title="Permanent link">&para;</a></h3>
 <h4 id="source-code-protection"><a class="toclink" href="#source-code-protection"><strong>Source Code Protection</strong></a><a class="anchor-link" href="#source-code-protection" title="Permanent link">&para;</a></h4>
 <p>The BankStatementAgent repository implements comprehensive security measures to protect sensitive information and maintain production-ready code quality:</p>
@@ -1423,7 +1375,7 @@ Test Docs/                # Sample documentation
 <ul>
 <li>✅ <strong>EventGrid Triggers</strong>: Replaced blob triggers with EventGrid for real-time processing</li>
 <li>✅ <strong>Document Intelligence Update</strong>: Implemented <code>prebuilt-bankStatement.us</code> model with <code>azure-ai-documentintelligence</code> SDK</li>
-<li>✅ <strong>Flex Consumption Plan</strong>: Upgraded to Python 3.12 with modern Azure Functions runtime</li>
+<li>✅ <strong>Flex Consumption Plan</strong>: Upgraded to Python 3.10 with modern Azure Functions runtime</li>
 <li>✅ <strong>ASCII Logging</strong>: All output uses ASCII characters for maximum compatibility</li>
 <li>✅ <strong>Working Copy Labels</strong>: All processed files labeled as "Working Copy" </li>
 <li>✅ <strong>Enhanced Reconciliation</strong>: Built-in transaction reconciliation with summary reporting</li>
@@ -1465,7 +1417,7 @@ Test Docs/                # Sample documentation
 </ul>
 <h4 id="configuration-requirements"><a class="toclink" href="#configuration-requirements"><strong>🔧 Configuration Requirements</strong></a><a class="anchor-link" href="#configuration-requirements" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Azure Function App: <code>BankStatementAgent</code> (Flex Consumption, Python 3.12)</li>
+<li>Azure Function App: <code>BankStatementAgent</code> (Flex Consumption, Python 3.10)</li>
 <li>EventGrid Subscription: Monitoring blob-created events in <code>incoming-bank-statements/</code></li>
 <li>Document Intelligence: Service with both bank statement and layout models</li>
 <li>Application Insights: Integrated for comprehensive logging</li>

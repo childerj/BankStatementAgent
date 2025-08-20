@@ -45,37 +45,59 @@ The **BankStatementAgent** is an autonomous AI-powered system deployed on Azure 
 ## System Architecture
 
 ```mermaid
+
 graph TB
-    subgraph "User Interface"
+
+    %% --- User Interface ---
+    subgraph User Interface
         A[PDF Upload to Blob Storage]
         B[Monitoring Scripts]
         C[Azure Portal Dashboard]
     end
-    
-    subgraph "Azure Cloud Environment"
-        subgraph "BankStatementAgent Function App"
+    style A fill:#cce5ff,stroke:#004085,stroke-width:2px
+    style B fill:#cce5ff,stroke:#004085,stroke-width:2px
+    style C fill:#cce5ff,stroke:#004085,stroke-width:2px
+
+    %% --- Azure Cloud Environment ---
+    subgraph Azure Cloud Environment
+        %% Function App
+        subgraph BankStatementAgent Function App
             D[EventGrid Trigger Function]
             E[Setup HTTP Function]
         end
-        
-        subgraph "AI Services"
-            F[Azure Document Intelligence<br/>prebuilt-bankStatement.us]
-            G[Azure Document Intelligence<br/>prebuilt-layout (fallback)]
+        style D fill:#e0ffff,stroke:#006666,stroke-width:2px
+        style E fill:#e0ffff,stroke:#006666,stroke-width:2px
+
+        %% AI Services
+        subgraph AI Services
+            F["Azure Document Intelligence\nprebuilt-bankStatement.us"]
+            G["Azure Document Intelligence\nprebuilt-layout (fallback)"]
         end
-        
-        subgraph "Storage & Events"
+        style F fill:#ffe5b4,stroke:#cc6600,stroke-width:2px
+        style G fill:#ffe5b4,stroke:#cc6600,stroke-width:2px
+
+        %% Storage & Events
+        subgraph Storage & Events
             H[Incoming Statements Container]
             I[BAI2 Outputs Container]
             J[Archive Container]
             K[EventGrid Subscription]
         end
-        
-        subgraph "Monitoring"
+        style H fill:#d4edda,stroke:#155724,stroke-width:2px
+        style I fill:#d4edda,stroke:#155724,stroke-width:2px
+        style J fill:#d4edda,stroke:#155724,stroke-width:2px
+        style K fill:#d4edda,stroke:#155724,stroke-width:2px
+
+        %% Monitoring
+        subgraph Monitoring
             L[Application Insights]
             M[Function Logs]
         end
+        style L fill:#e2d9f3,stroke:#4b0082,stroke-width:2px
+        style M fill:#e2d9f3,stroke:#4b0082,stroke-width:2px
     end
-    
+
+    %% --- Connections ---
     A --> H
     H --> K
     K --> D
@@ -89,8 +111,7 @@ graph TB
     B --> J
     C --> L
     E --> L
-```
-    E --> L
+
 ```
 
 ### Architecture Components
@@ -99,7 +120,7 @@ graph TB
 - **Azure Function App**: `BankStatementAgent`
   - Resource Group: `azure_ai_rg`
   - Location: `East US`
-  - Runtime: `Python 3.12`
+  - Runtime: `Python 3.10`
   - Plan: `Flex Consumption (Serverless)`
   - Trigger: `EventGrid` (blob-created events)
 
@@ -393,7 +414,7 @@ def extract_routing_with_openai(bank_name, statement_text):
 ### Prerequisites
 - Azure Subscription
 - Azure CLI installed and configured
-- Python 3.12+ environment
+- Python 3.10 environment
 - Git repository access
 
 ### Deployment Steps
@@ -435,7 +456,7 @@ az functionapp create \
   --resource-group azure_ai_rg \
   --consumption-plan-location "East US" \
   --runtime python \
-  --runtime-version 3.12 \
+  --runtime-version 3.10 \
   --functions-version 4 \
   --name BankStatementAgent \
   --storage-account waazuse1aistorage \
@@ -670,79 +691,12 @@ graph TB
     F --> L
 ```
 
-### Application Insights Queries
-
-#### **Recent Processing Activity**
-```kusto
-traces
-| where cloud_RoleName == "BankStatementAgent"
-| where timestamp > ago(4h)
-| where message contains "WORKING COPY" or message contains "BAI2"
-| order by timestamp desc
-| project timestamp, message, severityLevel
-```
-
-#### **EventGrid Trigger Analysis**
-```kusto
-traces
-| where cloud_RoleName == "BankStatementAgent"
-| where message contains "EventGrid event received"
-| order by timestamp desc
-| project timestamp, message, operation_Id
-```
-
-#### **Document Intelligence Performance**
-```kusto
-traces
-| where cloud_RoleName == "BankStatementAgent"
-| where message contains "bankStatement.us" or message contains "layout model"
-| order by timestamp desc
-| project timestamp, message, operation_Id
-```
-
-#### **Error Analysis**
-```kusto
-union traces, exceptions
-| where cloud_RoleName == "BankStatementAgent"
-| where severityLevel >= 2
-| order by timestamp desc
-| project timestamp, message, severityLevel, operation_Name
-```
-
-### Log Output Features
-
-#### **ASCII-Only Output**
-All log messages use ASCII characters only for maximum compatibility:
-- `✅` becomes `[OK]`
-- `❌` becomes `[ERROR]`
-- `📤` becomes `[UPLOAD]`
-- `⏳` becomes `[WAIT]`
-- `🔄` becomes `[CONVERT]`
-
-#### **Working Copy Labels**
-All processed files are labeled as "Working Copy" in logs and filenames:
-```
-[WORKING COPY] Processing file: statement.pdf
-[WORKING COPY] BAI2 file generated: statement_bai2.txt
-[WORKING COPY] File archived: archived_statement.pdf
-```
-
-#### **Reconciliation Reporting**
-Final processing summary includes reconciliation information:
-```
-[RECONCILIATION] Opening Balance: $1,234.56
-[RECONCILIATION] Total Debits: $500.00
-[RECONCILIATION] Total Credits: $750.00
-[RECONCILIATION] Closing Balance: $1,484.56
-[RECONCILIATION] Balance Verified: True
-```
-
 ### Troubleshooting Common Issues
 
 #### **EventGrid Trigger Delay**
 - **Expected Behavior**: 1-3 minute delay is normal for EventGrid processing
 - **Verification**: Check EventGrid subscription status in Azure Portal
-- **Monitoring**: Use Application Insights to track event timing
+- **Monitoring**: Use Azure Portal monitoring to track event timing
 
 #### **Document Intelligence Model Errors**
 - **Bank Statement Model**: If `prebuilt-bankStatement.us` fails, function automatically falls back to `prebuilt-layout`
@@ -762,7 +716,7 @@ Final processing summary includes reconciliation information:
 ### Performance Optimization
 
 #### **Function Configuration**
-- **Runtime**: Python 3.12 on Flex Consumption plan
+- **Runtime**: Python 3.10 on Flex Consumption plan
 - **Timeout**: Set to 5 minutes for large file processing
 - **Memory**: Use default settings unless processing very large files
 - **Concurrency**: Flex Consumption plan automatically scales
@@ -930,11 +884,7 @@ az functionapp show --name BankStatementAgent --resource-group Azure_AI_RG
 - Missing archived files
 
 **Diagnosis:**
-```kql
-exceptions
-| where cloud_RoleName == "BankStatementAgent"
-| order by timestamp desc
-```
+Check function logs and error messages in the Azure Portal for detailed error information.
 
 **Solutions:**
 1. Check AI service quotas and limits
@@ -1198,14 +1148,7 @@ az functionapp identity assign \
 ```
 
 #### **Monitoring**
-```kql
-// Security monitoring query
-SecurityEvent
-| where EventID in (4625, 4648, 4672)  // Failed logons, explicit credentials, special privileges
-| where TimeGenerated > ago(24h)
-| summarize count() by Account, Computer, EventID
-| order by count_ desc
-```
+Security monitoring can be performed through Azure Portal monitoring dashboards and function logs to track authentication events and system access.
 
 ### Repository Security
 
@@ -1305,7 +1248,7 @@ Test Docs/                # Sample documentation
 ### **v4.0 - Previous (August 2025)**
 - ✅ **EventGrid Triggers**: Replaced blob triggers with EventGrid for real-time processing
 - ✅ **Document Intelligence Update**: Implemented `prebuilt-bankStatement.us` model with `azure-ai-documentintelligence` SDK
-- ✅ **Flex Consumption Plan**: Upgraded to Python 3.12 with modern Azure Functions runtime
+- ✅ **Flex Consumption Plan**: Upgraded to Python 3.10 with modern Azure Functions runtime
 - ✅ **ASCII Logging**: All output uses ASCII characters for maximum compatibility
 - ✅ **Working Copy Labels**: All processed files labeled as "Working Copy" 
 - ✅ **Enhanced Reconciliation**: Built-in transaction reconciliation with summary reporting
@@ -1343,7 +1286,7 @@ Test Docs/                # Sample documentation
 - PowerShell monitoring scripts
 
 #### **🔧 Configuration Requirements**
-- Azure Function App: `BankStatementAgent` (Flex Consumption, Python 3.12)
+- Azure Function App: `BankStatementAgent` (Flex Consumption, Python 3.10)
 - EventGrid Subscription: Monitoring blob-created events in `incoming-bank-statements/`
 - Document Intelligence: Service with both bank statement and layout models
 - Application Insights: Integrated for comprehensive logging
