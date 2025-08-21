@@ -32,6 +32,87 @@ if sys.platform == "win32":
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
     sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
+# Enhanced transaction extraction logic from extract_transactions_841.py
+import decimal
+from dataclasses import dataclass, asdict
+from typing import List, Dict, Any
+
+DATE_LINE = re.compile(r'^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$')
+AMOUNT_LINE = re.compile(r'^\d{1,3}(?:,\d{3})*\.\d{2}$')
+CURRENCY_CLEAN = re.compile(r'[^0-9\.-]')
+
+@dataclass
+class Transaction:
+    date: str           # MM-DD
+    type: str           # debit / credit / fee
+    amount: str         # original string amount
+    amount_decimal: float
+    description: str
+
+def parse_transactions_from_ocr(text: str) -> Dict[str, List[Transaction]]:
+    """
+    Enhanced transaction parsing logic that correctly categorizes fees based on statement section
+    """
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    n = len(lines)
+    debits: List[Transaction] = []
+    credits: List[Transaction] = []
+    i = 0
+    current_section = None
+    
+    while i < n:
+        line = lines[i]
+        upper = line.upper()
+        if upper == 'DEBITS':
+            current_section = 'debits'
+            print_and_log(f"📍 Entering DEBITS section")
+        elif upper == 'CREDITS':
+            current_section = 'credits'
+            print_and_log(f"📍 Entering CREDITS section")
+        elif DATE_LINE.match(line):
+            # Collect description lines until amount line or next date/section
+            date_val = line
+            desc_lines = []
+            j = i + 1
+            amount_line = None
+            while j < n:
+                nxt = lines[j]
+                if AMOUNT_LINE.match(nxt):
+                    amount_line = nxt
+                    j += 1
+                    break
+                if DATE_LINE.match(nxt) or nxt.upper() in ('DEBITS','CREDITS','DAILY BALANCES','OVERDRAFT/RETURN ITEM FEES'):
+                    break
+                desc_lines.append(nxt)
+                j += 1
+            if amount_line and current_section in ('debits','credits'):
+                amt_clean = CURRENCY_CLEAN.sub('', amount_line)
+                try:
+                    amt_dec = float(decimal.Decimal(amt_clean))
+                except Exception:
+                    amt_dec = 0.0
+                description = ' | '.join(desc_lines)
+                ttype = 'debit' if current_section == 'debits' else 'credit'
+                # Classify fee but keep in original section (debits fees are still debits)
+                if 'FEE' in description.upper() or 'LOSS/CHG' in description.upper():
+                    ttype = 'fee'
+                tx = Transaction(date=date_val, type=ttype, amount=amount_line, amount_decimal=amt_dec, description=description)
+                # Fees go to debits if found in DEBITS section, credits if found in CREDITS section
+                if current_section == 'debits':
+                    debits.append(tx)
+                    print_and_log(f"💸 Debit: {date_val} ${amt_dec:.2f} - {description[:50]}...")
+                else:
+                    credits.append(tx)
+                    print_and_log(f"💰 Credit: {date_val} ${amt_dec:.2f} - {description[:50]}...")
+            i = j - 1 if j>i else i
+        i += 1
+
+    print_and_log(f"📊 Transaction extraction complete: {len(debits)} debits, {len(credits)} credits")
+    return {
+        'debits': debits,
+        'credits': credits
+    }
+
 def load_local_settings():
     """Load environment variables from local.settings.json when running locally"""
     try:
@@ -525,8 +606,17 @@ def extract_account_number_from_text(text):
     """Extract account number from bank statement text using regex patterns"""
     print_and_log("🔍 Searching for account number in statement text...")
     
-    # Common account number patterns - now includes asterisks to capture masked numbers for validation
-    patterns = [
+    # Prioritized account number patterns - numeric patterns first, then text patterns
+    numeric_patterns = [
+        r'account\s*#?\s*:?\s*(\d{6,})(?:\s|$)',  # "Account #: 123456789" (numeric only)
+        r'account\s*number\s*:?\s*(\d{6,})(?:\s|$)',  # "Account number: 123456789" (numeric only)
+        r'acct\s*#?\s*:?\s*(\d{6,})(?:\s|$)',  # "Acct#: 123456789" (numeric only)
+        r'a/c\s*#?\s*:?\s*(\d{6,})(?:\s|$)',  # "A/C#: 123456789" (numeric only)
+        r'account\s*#\s+(\d{6,})(?:\s|$)',  # "Account # 123456789" (numeric only, with space)
+        r'(?:^|\s)(\d{6,12})(?:\s|$)',  # Any 6-12 digit number (standalone)
+    ]
+    
+    text_patterns = [
         r'account\s*#?\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Account #: ABC123456789" or "Account #: *5594"
         r'account\s*number\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Account number: ABC123456789" or "Account number: *5594"
         r'acct\s*#?\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Acct#: ABC123456789" or "Acct#: *5594"
@@ -543,12 +633,23 @@ def extract_account_number_from_text(text):
     
     text_lower = text.lower()
     
-    for pattern in patterns:
+    # Try numeric patterns first (highest priority)
+    for pattern in numeric_patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        for match in matches:
+            if is_valid_account_number(match):
+                print_and_log(f"✅ Found valid numeric account number: {match}")
+                return match
+            else:
+                print_and_log(f"❌ Found invalid numeric account number: {match} - rejected")
+    
+    # Then try text patterns (lower priority)
+    for pattern in text_patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         for match in matches:
             # Check if it's a valid account number first
             if is_valid_account_number(match):
-                print_and_log(f"✅ Found valid account number: {match}")
+                print_and_log(f"✅ Found valid text account number: {match}")
                 return match
             # If not valid but contains asterisks, it might be a masked account for enhanced matching
             elif "*" in match and len(match) >= 4:
@@ -683,6 +784,8 @@ def get_account_number(parsed_data):
     """Get account number from statement"""
     print_and_log("🔍 Extracting account number...")
     
+    text_account_fallback = None
+    
     # Attempt to extract account number from OpenAI parsed data
     if "account_number" in parsed_data and parsed_data["account_number"]:
         raw_account = str(parsed_data["account_number"])
@@ -708,15 +811,23 @@ def get_account_number(parsed_data):
             else:
                 print_and_log(f"❌ Parsed data account number invalid: '{account_number}' - rejected")
     
-    # Check OCR text lines
+    # Check OCR text lines - prioritize numeric account numbers over text
     if "ocr_text_lines" in parsed_data:
         full_text = '\n'.join(parsed_data["ocr_text_lines"])
         print_and_log(f"🔍 Searching OCR text for account number...")
         account_number = extract_account_number_from_text(full_text)
         if account_number:
-            return account_number
+            # Prioritize numeric account numbers over text strings
+            if account_number.isdigit() and len(account_number) >= 6:
+                print_and_log(f"✅ Found numeric account number: {account_number}")
+                return account_number
+            else:
+                # Store text account for fallback but keep looking for numeric
+                print_and_log(f"📝 Found text account number '{account_number}', but looking for numeric...")
+                text_account_fallback = account_number
     
     # Check raw fields from document intelligence
+    text_account_fallback = None
     if "raw_fields" in parsed_data:
         print_and_log(f"🔍 Checking {len(parsed_data['raw_fields'])} raw fields for account number...")
         for field_name, field_data in parsed_data["raw_fields"].items():
@@ -731,19 +842,35 @@ def get_account_number(parsed_data):
                         print_and_log(f"🔍 Account field cleaned: '{clean_content}'")
                         
                         if is_valid_account_number(clean_content):
-                            print_and_log(f"✅ Found account number in field '{field_name}': {clean_content}")
-                            return clean_content
+                            # Prioritize numeric account numbers
+                            if clean_content.isdigit() and len(clean_content) >= 6:
+                                print_and_log(f"✅ Found numeric account number in field '{field_name}': {clean_content}")
+                                return clean_content
+                            else:
+                                print_and_log(f"📝 Found text account in field '{field_name}': {clean_content}")
+                                text_account_fallback = clean_content
                         elif "*" in clean_content and len(clean_content) >= 4:
                             print_and_log(f"✅ Found masked account number in field '{field_name}': {clean_content}")
                             return clean_content
                         else:
                             print_and_log(f"❌ Account field invalid: '{clean_content}' - skipping")
                 
-                # Also try extracting from any field content
+                # Also try extracting from any field content, prioritize numeric
                 print_and_log(f"🔍 Trying regex extraction on field '{field_name}' content...")
                 account_number = extract_account_number_from_text(field_data["content"])
                 if account_number:
-                    return account_number
+                    if account_number.isdigit() and len(account_number) >= 6:
+                        print_and_log(f"✅ Found numeric account from regex in field '{field_name}': {account_number}")
+                        return account_number
+                    else:
+                        print_and_log(f"📝 Found text account from regex in field '{field_name}': {account_number}")
+                        if not text_account_fallback:
+                            text_account_fallback = account_number
+    
+    # If we found a text account but no numeric account, use the text account
+    if text_account_fallback:
+        print_and_log(f"✅ Using fallback text account number: {text_account_fallback}")
+        return text_account_fallback
     
     print_and_log("❌ No account number found in statement")
     return None
@@ -1026,21 +1153,36 @@ SCANNING STRATEGY:
 8. Extract COMPLETE transaction descriptions including reference numbers, merchant names, and transaction codes
 
 CRITICAL PARSING RULES:
+- IGNORE SCANNED IMAGES: Do not extract any data from scanned checks, deposit slips, or other image artifacts embedded in the statement
+- Focus ONLY on the bank's printed transaction tables and account summaries
+- MAXIMUM ACCURACY REQUIRED: Double-check every dollar amount and date - transcription errors are unacceptable
+- COMPLETE TRANSACTION EXTRACTION: Find every single transaction - missing transactions cause reconciliation failures
+- READ AMOUNTS CAREFULLY: $2,564.47 must NOT become $2,554.47 - verify each digit
 - Scan from the very beginning to the very end of the text
 - Every date + amount combination is likely a transaction
-- Include even small amounts (fees, interest, etc.)
+- Include even small amounts (fees, interest, etc.) with exact amounts
 - Check for negative amounts (withdrawals/debits)
 - Check for positive amounts (deposits/credits)
 - Look for check numbers, reference numbers, descriptions
-- Don't miss transactions at page breaks
+- Don't miss transactions at page breaks or statement end
 - Preserve detailed descriptions like "ACH Debit Received WORLD ACCEPTANCE CONC DEBIT 144"
 - Include all reference numbers and transaction codes
 - EXTRACT EXACT REFERENCE NUMBERS: Look for patterns like "478980340", check numbers, transaction IDs, confirmation numbers
 - Reference numbers are often found after "Ref:", "Reference:", "Check #", "Confirmation:", or as standalone numbers in transaction lines
 - Capture both bank-generated reference numbers AND merchant/transaction reference numbers
+- VERIFY TOTALS: Extracted transactions must mathematically reconcile with statement totals
 
 FULL OCR TEXT:
 {ocr_text}
+
+CRITICAL STATEMENT DATE EXTRACTION RULES:
+- FIND THE STATEMENT PERIOD DATES: Look for statement period start and end dates
+- Look for patterns like "Statement Period: MM/DD/YYYY - MM/DD/YYYY" or "STATEMENT PERIOD MM/DD/YY THROUGH MM/DD/YY"
+- Also check for "Statement Date:", "Closing Date:", "Through Date:", "Statement End Date:"
+- Parse dates in various formats: MM/DD/YYYY, MM-DD-YYYY, MM/DD/YY, Month DD, YYYY
+- If you find "Statement Period 07/01/2025 - 07/31/2025", use start_date: "2025-07-01" and end_date: "2025-07-31"
+- If only one statement date is found, use it as end_date and estimate start_date (typically one month prior)
+- ALWAYS extract statement period dates - they are critical for proper BAI2 file generation
 
 CRITICAL BALANCE EXTRACTION RULES:
 - Opening balance is the STARTING account balance at the beginning of the statement period
@@ -1087,6 +1229,13 @@ Return ONLY valid JSON with this structure (NO markdown, NO explanations):
 }}
 
 EXTRACT ALL TRANSACTIONS WITH DETAILED DESCRIPTIONS - FIND EVERY ONE!
+
+FINAL ACCURACY CHECK:
+- Count total deposits and withdrawals to match statement summary
+- Verify amounts are transcribed exactly (no digit errors)
+- Confirm all transactions from beginning to end of statement period are included
+- Ensure mathematical reconciliation: Opening Balance + Deposits - Withdrawals = Closing Balance
+- Double-check maintenance fees, service charges, and small amounts for accuracy
 """
 
     try:
@@ -1102,7 +1251,7 @@ EXTRACT ALL TRANSACTIONS WITH DETAILED DESCRIPTIONS - FIND EVERY ONE!
         
         data = {
             "messages": [
-                {"role": "system", "content": "You are an expert bank statement parser. Extract ALL transactions with 100% accuracy. Return only valid JSON."},
+                {"role": "system", "content": "You are an expert bank statement parser with perfect accuracy. Extract ALL transactions with 100% precision - no amount errors, no missing transactions, complete reconciliation required. Return only valid JSON."},
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 16000,  # Increased token limit
@@ -1438,13 +1587,15 @@ def reconcile_transactions(parsed_data):
 
 def extract_fields_with_sdk(file_bytes, filename, endpoint, key):
     """
-    Extract fields from a PDF using Azure Document Intelligence SDK.
-    Falls back to OCR/Read model if bankStatement model fails.
+    Extract fields from a PDF using Azure Document Intelligence bankStatement model ONLY.
+    If bankStatement model fails, returns error data to generate error BAI2 file.
     """
     parsed_data = {"source": filename}
     success = False
+    extraction_method = None
+    error_message = None
     
-    # Extract bank statement data using Document Intelligence bankStatement model
+    # Try bankStatement model ONLY - no fallback to OCR
     try:
         print_and_log(f"🔄 Attempting to extract using bankStatement.us model (SDK) for {filename}...")
         
@@ -1458,65 +1609,52 @@ def extract_fields_with_sdk(file_bytes, filename, endpoint, key):
             credential=AzureKeyCredential(key)
         )
         
-        print_and_log("📤 Starting analysis with layout model...")
+        print_and_log("📤 Starting analysis with bankStatement model...")
         
-        # Analyze document with layout model using proper SDK format
-        poller = client.begin_analyze_document(
-            "prebuilt-layout",
-            BytesIO(file_bytes),
-            content_type="application/pdf"
-        )
-        
-        print_and_log("⏳ Waiting for analysis to complete...")
-        result = poller.result()
-        
-        if result:
-            print_and_log("✅ Layout analysis completed successfully!")
-            parsed_data.update(parse_layout_sdk_result(result))
-            success = True
-        else:
-            print_and_log("⚠️ No result found")
-    
-    except Exception as e:
-        print_and_log(f"❌ Error with bankStatement.us model (SDK): {str(e)}")
-    
-    # If bankStatement.us model failed, try layout model for OCR
-    if not success:
+        # Try bankStatement model
         try:
-            print_and_log(f"🔄 Falling back to layout model (OCR/Read) for {filename}...")
-            
-            from azure.ai.formrecognizer import DocumentAnalysisClient
-            from azure.core.credentials import AzureKeyCredential
-            from io import BytesIO
-            
-            # Create client
-            client = DocumentAnalysisClient(
-                endpoint=endpoint,
-                credential=AzureKeyCredential(key)
-            )
-            
-            # Analyze document with layout model
             poller = client.begin_analyze_document(
-                "prebuilt-layout",
-                document=BytesIO(file_bytes)
+                "prebuilt-bankStatement.us",
+                BytesIO(file_bytes),
+                content_type="application/pdf"
             )
             
-            print_and_log("⏳ Waiting for OCR analysis to complete...")
+            print_and_log("⏳ Waiting for bankStatement analysis to complete...")
             result = poller.result()
             
             if result:
-                print_and_log("✅ OCR analysis completed successfully!")
-                parsed_data.update(parse_layout_sdk_result(result))
+                print_and_log("✅ bankStatement analysis completed successfully!")
+                parsed_data.update(parse_bankstatement_sdk_result(result))
+                extraction_method = "bankStatement.us_model"
                 success = True
             else:
-                print_and_log("⚠️ No result from OCR analysis")
-        
-        except Exception as e:
-            print_and_log(f"❌ Error with OCR fallback: {str(e)}")
+                print_and_log("⚠️ No result from bankStatement model")
+                error_message = "bankStatement model returned no result"
+                
+        except Exception as bs_error:
+            print_and_log(f"❌ bankStatement model failed: {str(bs_error)}")
+            error_message = f"bankStatement model analysis failed: {str(bs_error)}"
     
-    if not success:
-        print_and_log("❌ All extraction methods failed")
-        parsed_data["error"] = "Failed to extract data using both bankStatement.us and OCR methods"
+    except Exception as e:
+        print_and_log(f"❌ Error with Document Intelligence SDK: {str(e)}")
+        error_message = f"Document Intelligence SDK error: {str(e)}"
+    
+    # Set extraction method and handle failure
+    if success:
+        parsed_data["extraction_method"] = extraction_method
+        print_and_log(f"🎯 EXTRACTION METHOD USED: {extraction_method}")
+    else:
+        print_and_log("❌ bankStatement model extraction failed - will generate error BAI2 file")
+        parsed_data["error"] = error_message or "bankStatement model extraction failed"
+        parsed_data["extraction_method"] = "bankStatement_failed"
+        # Set minimal data structure for error BAI2 generation
+        parsed_data["bank_name"] = "UNKNOWN BANK"
+        parsed_data["account_number"] = "UNKNOWN"
+        parsed_data["routing_number"] = "UNKNOWN"
+        parsed_data["statement_date"] = "UNKNOWN"
+        parsed_data["beginning_balance"] = "0.00"
+        parsed_data["ending_balance"] = "0.00"
+        parsed_data["transactions"] = []
     
     return parsed_data
 
@@ -1622,60 +1760,30 @@ def process_new_file(event: func.EventGridEvent):
         print_and_log("   ➤ Handles complex layouts and various bank statement formats")
         print_and_log("")
         
-        # Use new SDK-based extraction
+        # Use new SDK-based extraction (bankStatement model ONLY)
         parsed_data = extract_fields_with_sdk(file_bytes, name, endpoint, key)
         
-        # Send to OpenAI for intelligent parsing if we have OCR data
-        openai_result = None
-        if parsed_data.get("ocr_text_lines"):
-            print_and_log("")
-            print_and_log("🤖 STEP 2: OpenAI Intelligent Parsing")
-            print_and_log("   ➤ Using AI to understand transaction patterns")
-            print_and_log("   ➤ Extracting all deposits, withdrawals, and balances")
-            print_and_log("")
-            
-            openai_result = send_to_openai_for_parsing(parsed_data)
-            
-            if openai_result:
-                # Perform reconciliation check
-                try:
-                    reconciliation = reconcile_transactions(openai_result)
-                    print_and_log("")
-                    print_and_log("✅ All checks passed - ready for BAI2 conversion!")
-                except Exception as reconcile_error:
-                    print_and_log(f"❌ Reconciliation failed: {str(reconcile_error)}")
-                    # Continue processing with reconciliation error noted
-                    openai_result["reconciliation_error"] = str(reconcile_error)
-        
-        # Use OpenAI result for transaction data but preserve Document Intelligence structure
-        if openai_result:
-            # Merge OpenAI transaction data with Document Intelligence structure
-            final_data = parsed_data.copy()  # Start with Document Intelligence data (has raw_fields, ocr_text_lines)
-            final_data.update({
-                'account_number': openai_result.get('account_number'),
-                'statement_period': openai_result.get('statement_period'),
-                'opening_balance': openai_result.get('opening_balance'),
-                'closing_balance': openai_result.get('closing_balance'),
-                'transactions': openai_result.get('transactions'),
-                'summary': openai_result.get('summary')
-            })
-            print_and_log("✅ Merged OpenAI transaction data with Document Intelligence structure")
+        # Check if bankStatement extraction was successful
+        if parsed_data.get("extraction_method") == "bankStatement_failed":
+            print_and_log("❌ bankStatement model failed - will generate error BAI2 file")
+            final_data = parsed_data  # Pass error data directly to BAI2 generation
         else:
-            # Use Document Intelligence data only
-            final_data = parsed_data
-            print_and_log("✅ Using Document Intelligence data only")
+            print_and_log(f"✅ bankStatement extraction successful: {parsed_data.get('extraction_method')}")
+            final_data = parsed_data  # Use bankStatement data directly
+            
+        print_and_log("🎯 PROCESSING MODE: bankStatement-only (no OCR fallback)")
+        print_and_log("   ➤ Modern AI-powered transaction extraction")
+        print_and_log("   ➤ Direct to BAI2 generation without intermediate parsing")
+        print_and_log("")
         
-        # Store reconciliation results for final summary (if available)
+        # Store reconciliation results for final summary (bankStatement-only mode)
         reconciliation_summary = None
-        if 'reconciliation' in locals() and reconciliation:
-            reconciliation_summary = reconciliation
-        elif openai_result and "reconciliation_error" in openai_result:
-            reconciliation_summary = {"error": openai_result["reconciliation_error"]}
+        print_and_log("📊 Reconciliation: Using bankStatement model data directly (no separate validation needed)")
         
         print_and_log("")
-        print_and_log("🔄 STEP 3: Converting to BAI2 format")
+        print_and_log("🔄 STEP 2: Converting to BAI2 format")
         print_and_log("   ➤ Building industry-standard BAI2 file structure")
-        print_and_log("   ➤ Including all extracted transactions and balances")
+        print_and_log("   ➤ Using bankStatement model transaction data")
         print_and_log("")
         
         # Perform enhanced matching before BAI2 conversion to get both routing and account numbers
@@ -1726,7 +1834,7 @@ def process_new_file(event: func.EventGridEvent):
         )
 
         print_and_log("")
-        print_and_log("💾 STEP 4: Saving BAI file to processed folder")
+        print_and_log("💾 STEP 3: Saving BAI file to processed folder")
         print_and_log("   ➤ Creating compliant banking format file")
         print_and_log("")
         
@@ -1757,7 +1865,7 @@ def process_new_file(event: func.EventGridEvent):
         bai2_size = len(bai2.encode('utf-8'))
         
         print_and_log("")
-        print_and_log("📁 STEP 5: Moving original file to archive")
+        print_and_log("📁 STEP 4: Moving original file to archive")
         print_and_log("   ➤ Preserving original PDF for record keeping")
 
         # Check if we're in a test mode (no actual incoming blob)
@@ -1910,676 +2018,390 @@ def process_new_file(event: func.EventGridEvent):
             _processing_files.discard(file_key)
             print_and_log(f"[DEBUG] Removed {name} from processing queue")
 
+def get_statement_date(data, filename=None):
+    """Extract statement end date from parsed data for BAI2 headers with enhanced fallback logic"""
+    from datetime import datetime
+    import re
+    
+    try:
+        # Try to get end date from statement period
+        if data and isinstance(data, dict):
+            statement_period = data.get("statement_period", {})
+            if isinstance(statement_period, dict):
+                end_date = statement_period.get("end_date")
+                if end_date:
+                    # Parse the date and convert to YYMMDD format
+                    try:
+                        # Handle YYYY-MM-DD format
+                        date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+                        print_and_log(f"✅ Extracted statement end date: {end_date} -> {date_obj.strftime('%y%m%d')}")
+                        return date_obj.strftime("%y%m%d")
+                    except ValueError:
+                        try:
+                            # Handle MM/DD/YYYY format
+                            date_obj = datetime.strptime(end_date, "%m/%d/%Y")
+                            print_and_log(f"✅ Extracted statement end date: {end_date} -> {date_obj.strftime('%y%m%d')}")
+                            return date_obj.strftime("%y%m%d")
+                        except ValueError:
+                            try:
+                                # Handle MM-DD-YYYY format
+                                date_obj = datetime.strptime(end_date, "%m-%d-%Y")
+                                print_and_log(f"✅ Extracted statement end date: {end_date} -> {date_obj.strftime('%y%m%d')}")
+                                return date_obj.strftime("%y%m%d")
+                            except ValueError:
+                                print_and_log(f"⚠️ Could not parse statement end date: {end_date}")
+            
+            # Fallback: try to get from closing balance date
+            closing_balance = data.get("closing_balance", {})
+            if isinstance(closing_balance, dict):
+                close_date = closing_balance.get("date")
+                if close_date:
+                    try:
+                        date_obj = datetime.strptime(close_date, "%Y-%m-%d")
+                        print_and_log(f"✅ Using closing balance date: {close_date} -> {date_obj.strftime('%y%m%d')}")
+                        return date_obj.strftime("%y%m%d")
+                    except ValueError:
+                        try:
+                            date_obj = datetime.strptime(close_date, "%m/%d/%Y")
+                            print_and_log(f"✅ Using closing balance date: {close_date} -> {date_obj.strftime('%y%m%d')}")
+                            return date_obj.strftime("%y%m%d")
+                        except ValueError:
+                            print_and_log(f"⚠️ Could not parse closing balance date: {close_date}")
+        
+        # Enhanced fallback: try to extract date from filename
+        if filename:
+            print_and_log(f"🔍 Attempting to extract date from filename: {filename}")
+            
+            # Look for date patterns in filename like "20250731", "2025-07-31", "07-31-25", etc.
+            date_patterns = [
+                r'(\d{4})(\d{2})(\d{2})',  # YYYYMMDD
+                r'(\d{4})-(\d{2})-(\d{2})',  # YYYY-MM-DD
+                r'(\d{2})-(\d{2})-(\d{4})',  # MM-DD-YYYY
+                r'(\d{1,2})-(\d{1,2})-(\d{2})',  # MM-DD-YY
+                r'(\d{1,2})(\d{1,2})(\d{2})',  # MMDDYY
+            ]
+            
+            for pattern in date_patterns:
+                match = re.search(pattern, filename)
+                if match:
+                    try:
+                        groups = match.groups()
+                        if len(groups[0]) == 4:  # YYYY format
+                            year, month, day = groups
+                            date_obj = datetime(int(year), int(month), int(day))
+                        elif len(groups[2]) == 4:  # MM-DD-YYYY format
+                            month, day, year = groups
+                            date_obj = datetime(int(year), int(month), int(day))
+                        else:  # MM-DD-YY format
+                            month, day, year = groups
+                            # Convert 2-digit year to 4-digit (assume 20XX for years 00-99)
+                            full_year = 2000 + int(year)
+                            date_obj = datetime(full_year, int(month), int(day))
+                        
+                        result = date_obj.strftime("%y%m%d")
+                        print_and_log(f"✅ Extracted date from filename: {filename} -> {result}")
+                        return result
+                    except (ValueError, IndexError) as e:
+                        print_and_log(f"⚠️ Failed to parse date from filename: {e}")
+                        continue
+            
+            print_and_log(f"⚠️ No date pattern found in filename: {filename}")
+                            
+    except Exception as e:
+        print_and_log(f"⚠️ Error extracting statement date: {e}")
+    
+    print_and_log(f"⚠️ No statement date found, falling back to current date")
+    return None
+
 def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=None, matched_account_number=None):
     """
-    Convert extracted data to comprehensive BAI format like Vera_baitest_20250728 (1) (1).bai
-    Generates multi-day format with detailed transaction records and summary codes
+    Convert extracted data to BAI format using OpenAI for intelligent generation
+    This replaces the complex manual BAI2 construction with AI-powered generation
     """
-    print_and_log("🔄 Converting to comprehensive BAI format...")
+    print_and_log("🤖 STARTING OpenAI BAI2 conversion - NEW APPROACH")
+    print_and_log(f"🔧 DEBUG: Function called with filename={filename}")
     
-    # Get current date and time for BAI header
-    now = datetime.now()
-    file_date = now.strftime("%y%m%d")
-    file_time = now.strftime("%H%M")
+    # Check if bankStatement extraction failed
+    if data.get("extraction_method") == "bankStatement_failed":
+        error_msg = data.get("error", "bankStatement model extraction failed")
+        print_and_log(f"❌ CRITICAL: bankStatement extraction failed - {error_msg}")
+        print_and_log("🔄 Creating ERROR BAI2 file instead of processing")
+        
+        # Use current date/time for error file
+        now = datetime.now()
+        file_date = now.strftime("%y%m%d")
+        file_time = now.strftime("%H%M")
+        
+        return create_error_bai2_file(f"Document Intelligence bankStatement model failed: {error_msg}", 
+                                    filename, file_date, file_time, "ERROR_BANKSTATEMENT_FAILED")
     
-    # Use matched account number from enhanced matching if available, otherwise extract from statement
-    if matched_account_number:
-        account_number = matched_account_number
-        print_and_log(f"✅ Using matched account number from WAC data: {account_number}")
-    else:
-        # Extract account number from statement (needed for enhanced matching)
-        account_number = get_account_number(data)
-        if not account_number:
-            print_and_log("❌ CRITICAL: No account number found on statement - creating ERROR file")
-            return create_error_bai2_file("No account number found on statement", filename, file_date, file_time, "ERROR_NO_ACCOUNT")
-        print_and_log(f"✅ Using account number from statement: {account_number}")
-    
-    # Use provided routing number or extract it
-    if routing_number:
-        originator_id = routing_number
-        print_and_log(f"✅ Using provided routing number: {originator_id}")
-    else:
-        # Try to extract routing number from data (now with account number for enhanced matching)
-        result = get_routing_number(data, account_number)
-        if result and isinstance(result, tuple) and len(result) >= 2:
-            originator_id, matched_account = result
-            if matched_account and not matched_account_number:
-                # Update account number if we got a match during routing lookup
-                account_number = matched_account
-                print_and_log(f"✅ Updated account number from enhanced matching: {account_number}")
-        elif result:
-            # Single value returned (old format)
-            originator_id = result
+    try:
+        # Extract statement date for BAI2 headers (use statement end date, not current date)
+        statement_date = get_statement_date(data, filename)
+        now = datetime.now()
+        
+        if statement_date:
+            file_date = statement_date
+            print_and_log(f"✅ Using statement end date for BAI2 headers: {file_date}")
         else:
-            originator_id = None
-            
-        if not originator_id:
-            print_and_log("❌ CRITICAL: No routing number found on statement and unable to lookup by bank name - creating ERROR file")
-            return create_error_bai2_file("No routing number found on statement", filename, file_date, file_time, "ERROR_NO_ROUTING")
-        print_and_log(f"✅ Extracted routing number: {originator_id}")
-    
-    # Initialize other defaults (these could also be made dynamic in the future)
-    receiver_id = "323809"  # Workday-configured company identifier
-    
-    currency = "USD"
-    opening_balance_amount = 0
-    transactions = []
-    reconciliation_status = "UNKNOWN"
-    error_codes = []
-    
-    # Extract reconciliation status if available
-    if reconciliation_data:
-        if isinstance(reconciliation_data, dict):
-            reconciliation_status = reconciliation_data.get("reconciliation_status", "UNKNOWN")
-            if "error" in reconciliation_data:
-                reconciliation_status = "ERROR"
-        print_and_log(f"🔍 Reconciliation Status: {reconciliation_status}")
-    
-    # Handle OpenAI parsed data (prioritize reconciliation_data if available)
-    if reconciliation_data and isinstance(reconciliation_data, dict) and "transactions" in reconciliation_data:
-        print_and_log("✅ Using OpenAI parsed transaction data from reconciliation_data")
+            file_date = now.strftime("%y%m%d")
+            print_and_log(f"⚠️ No statement date found, falling back to current date: {file_date}")
         
-        # Extract opening balance - handle both dict format {"amount": value} and direct float value
-        opening_balance_value = reconciliation_data.get("opening_balance")
-        if opening_balance_value is not None:
-            if isinstance(opening_balance_value, dict) and opening_balance_value.get("amount") is not None:
-                # Dict format: {"amount": value}
-                opening_balance_amount = int(float(opening_balance_value["amount"]) * 100)  # Convert to cents
-                print_and_log(f"💰 Opening balance: ${opening_balance_amount/100:,.2f}")
-            elif isinstance(opening_balance_value, (int, float)):
-                # Direct number format
-                opening_balance_amount = int(float(opening_balance_value) * 100)  # Convert to cents
-                print_and_log(f"💰 Opening balance: ${opening_balance_amount/100:,.2f}")
+        # Always use current time for file generation time
+        file_time = now.strftime("%H%M")
+        
+        print_and_log(f"🔧 DEBUG: BAI2 header dates - file_date={file_date}, file_time={file_time}")
+        
+        # Use matched account number from enhanced matching if available, otherwise extract from statement
+        if matched_account_number:
+            account_number = matched_account_number
+            print_and_log(f"✅ Using matched account number from WAC data: {account_number}")
+        else:
+            # Extract account number from statement (needed for enhanced matching)
+            account_number = get_account_number(data)
+            if not account_number:
+                print_and_log("❌ CRITICAL: No account number found on statement - creating ERROR file")
+                return create_error_bai2_file("No account number found on statement", filename, file_date, file_time, "ERROR_NO_ACCOUNT")
+            print_and_log(f"✅ Using account number from statement: {account_number}")
+        
+        print_and_log(f"🔧 DEBUG: Account number resolved: {account_number}")
+        
+        # Use provided routing number or extract it
+        if routing_number:
+            originator_id = routing_number
+            print_and_log(f"✅ Using provided routing number: {originator_id}")
+        else:
+            # Try to extract routing number from data (now with account number for enhanced matching)
+            result = get_routing_number(data, account_number)
+            if result and isinstance(result, tuple) and len(result) >= 2:
+                originator_id, matched_account = result
+                if matched_account and not matched_account_number:
+                    # Update account number if we got a match during routing lookup
+                    account_number = matched_account
+                    print_and_log(f"✅ Updated account number from enhanced matching: {account_number}")
+            elif result:
+                originator_id = result
             else:
-                print_and_log(f"⚠️ Unrecognized opening balance format: {type(opening_balance_value)}")
+                print_and_log("❌ CRITICAL: No routing number found - creating ERROR file")
+                return create_error_bai2_file("No routing number found on statement", filename, file_date, file_time, "ERROR_NO_ROUTING")
         
+        print_and_log(f"🔧 DEBUG: Routing number resolved: {originator_id}")
         
-        # Extract transactions
-        transactions = reconciliation_data.get("transactions", [])
-        print_and_log(f"📊 Processing {len(transactions)} transactions from reconciliation_data")
-        
-        # Validate and clean transactions array
-        if transactions:
-            valid_transactions = []
-            for i, txn in enumerate(transactions):
-                if isinstance(txn, dict):
-                    valid_transactions.append(txn)
+        # Get bank information for BAI2 generation
+        try:
+            from bank_info_loader import find_matching_bank_with_account
+            
+            # Extract bank name from statement for matching
+            bank_name_from_statement = None
+            if data and "ocr_text_lines" in data:
+                # Convert list to string if needed
+                text_lines = data["ocr_text_lines"]
+                if isinstance(text_lines, list):
+                    text_for_extraction = '\n'.join(text_lines)
                 else:
-                    print_and_log(f"⚠️ Skipping invalid transaction at index {i}: {type(txn)} - {txn}")
-            transactions = valid_transactions
-            print_and_log(f"✅ Validated transactions: {len(transactions)} valid transactions")
-        
-    # Handle OpenAI parsed data in main data structure
-    elif "transactions" in data:
-        print_and_log("✅ Using OpenAI parsed transaction data from main data")
-        
-        # Extract opening balance - handle both dict format {"amount": value} and direct float value
-        opening_balance_value = data.get("opening_balance")
-        if opening_balance_value is not None:
-            if isinstance(opening_balance_value, dict) and opening_balance_value.get("amount") is not None:
-                # Dict format: {"amount": value}
-                opening_balance_amount = int(float(opening_balance_value["amount"]) * 100)  # Convert to cents
-                print_and_log(f"💰 Opening balance: ${opening_balance_amount/100:,.2f}")
-            elif isinstance(opening_balance_value, (int, float)):
-                # Direct number format
-                opening_balance_amount = int(float(opening_balance_value) * 100)  # Convert to cents
-                print_and_log(f"💰 Opening balance: ${opening_balance_amount/100:,.2f}")
-            else:
-                print_and_log(f"⚠️ Unrecognized opening balance format: {type(opening_balance_value)}")
-        
-        
-        # Extract transactions
-        transactions = data.get("transactions", [])
-        print_and_log(f"📊 Processing {len(transactions)} transactions from main data")
-    
-    # Validate and clean transactions array - ensure all items are dictionaries
-    if transactions:
-        valid_transactions = []
-        for i, txn in enumerate(transactions):
-            if isinstance(txn, dict):
-                valid_transactions.append(txn)
-            else:
-                print_and_log(f"⚠️ Skipping invalid transaction at index {i}: {type(txn)} - {txn}")
-        transactions = valid_transactions
-        print_and_log(f"✅ Validated transactions: {len(transactions)} valid transactions")
-    
-    # Handle raw extraction data - NO FALLBACK, return error
-    else:
-        print_and_log("❌ CRITICAL: OpenAI parsing failed and no reconciliation data available - creating ERROR file")
-        return create_error_bai2_file("OpenAI parsing failed - no transaction data available", filename, file_date, file_time, "ERROR_PARSING_FAILED")
-    
-    # Build comprehensive BAI file structure
-    lines = []
-    record_count = 0  # Track records in the file (excluding file header)
-    
-    # Generate dynamic File ID (sequential based on timestamp)
-    file_id = int(now.strftime('%Y%m%d%H%M'))  # YYYYMMDDHHMM format
-    
-    # 01 - File Header (comprehensive format)
-    lines.append(f"01,{originator_id},{receiver_id},{file_date},{file_time},{file_id},,,2/")
-    # Don't count the file header in record_count
-    
-    # Always calculate transaction totals and closing balance from source data
-    # This ensures we show actual data even if reconciliation failed
-    source_total_deposits = 0
-    source_total_withdrawals = 0
-    source_transaction_count = 0
-    source_closing_balance = None
-    source_opening_balance = None
-    
-    # Calculate from source data (transactions) - prioritize reconciliation_data
-    transaction_data_source = reconciliation_data if reconciliation_data and "transactions" in reconciliation_data else data
-    
-    if "transactions" in transaction_data_source:
-        transactions_for_calc = transaction_data_source.get("transactions", [])
-        source_transaction_count = len(transactions_for_calc)
-        for txn in transactions_for_calc:
-            # Validate that txn is a dictionary
-            if not isinstance(txn, dict):
-                print_and_log(f"⚠️ Skipping invalid transaction in source calculation: {type(txn)} - {txn}")
-                continue
+                    text_for_extraction = text_lines
+                bank_name_from_statement = extract_bank_name_from_text(text_for_extraction)
+            
+            if bank_name_from_statement:
+                bank_match, similarity, bank_details = find_matching_bank_with_account(bank_name_from_statement, account_number)
                 
-            amount = float(txn.get("amount", 0))
-            if amount > 0:
-                source_total_deposits += amount
-            else:
-                source_total_withdrawals += abs(amount)
-    
-    # Get balances from source data - handle both dict and direct float formats
-    closing_balance_value = data.get("closing_balance")
-    if closing_balance_value is not None:
-        if isinstance(closing_balance_value, dict) and closing_balance_value.get("amount") is not None:
-            source_closing_balance = float(closing_balance_value["amount"])
-        elif isinstance(closing_balance_value, (int, float)):
-            source_closing_balance = float(closing_balance_value)
-    
-    opening_balance_value = data.get("opening_balance")
-    if opening_balance_value is not None:
-        if isinstance(opening_balance_value, dict) and opening_balance_value.get("amount") is not None:
-            source_opening_balance = float(opening_balance_value["amount"])
-        elif isinstance(opening_balance_value, (int, float)):
-            source_opening_balance = float(opening_balance_value)
-    
-    # Perform detailed reconciliation calculations (logic preserved but comments removed from BAI2 file)
-    if reconciliation_status != "UNKNOWN":
-        logging.info(f"Reconciliation status: {reconciliation_status}")
-        
-        # Add detailed reconciliation data and explanations (all logic preserved)
-        if reconciliation_data:
-            # Balance information (prefer reconciliation data, fallback to source)
-            opening_bal = reconciliation_data.get("opening_balance")
-            closing_bal = reconciliation_data.get("closing_balance")
-            opening_known = reconciliation_data.get("opening_balance_known", False)
-            closing_known = reconciliation_data.get("closing_balance_known", False)
-            
-            # Check if opening balance is marked as suspicious due to warnings
-            warnings = reconciliation_data.get("warnings", [])
-            opening_is_suspicious = any("confused" in warning.lower() for warning in warnings)
-            
-            # Only use source opening balance if reconciliation doesn't have it and it's NOT suspicious
-            if not opening_known and not opening_is_suspicious:
-                opening_bal = source_opening_balance
-                if opening_bal is not None:
-                    opening_known = True
-            
-            # If opening balance is marked as unknown or suspicious, set to None regardless of source
-            if not opening_known or opening_is_suspicious:
-                opening_bal = None
-                opening_known = False
-            
-            # Only use source closing balance if reconciliation doesn't have it 
-            if not closing_known:
-                closing_bal = source_closing_balance
-                if closing_bal is not None:
-                    closing_known = True
-            
-            # Log balance information
-            if opening_known and opening_bal is not None:
-                logging.info(f"Opening balance: ${opening_bal:,.2f} (from statement)")
-            else:
-                logging.info("Opening balance: UNKNOWN")
-            
-            if closing_known and closing_bal is not None:
-                logging.info(f"Closing balance: ${closing_bal:,.2f} (from statement)")
-            else:
-                logging.info("Closing balance: UNKNOWN")
-            
-            # Transaction summary (prefer reconciliation data, fallback to source calculation)
-            total_deposits = reconciliation_data.get("total_deposits", source_total_deposits)
-            total_withdrawals = reconciliation_data.get("total_withdrawals", source_total_withdrawals)
-            transaction_count = reconciliation_data.get("transaction_count", source_transaction_count)
-            
-            logging.info(f"Total deposits: ${total_deposits:,.2f} ({transaction_count} transactions)")
-            logging.info(f"Total withdrawals: ${total_withdrawals:,.2f}")
-            
-            # Add reconciliation calculation breakdown only if we have sufficient data
-            if opening_known and opening_bal is not None and closing_bal is not None:
-                # We have both balances and opening is not suspicious - show full calculation
-                logging.info("Reconciliation calculation:")
-                logging.info(f"  Starting Balance:    ${opening_bal:,.2f}")
-                logging.info(f"  + Total Deposits:    ${total_deposits:,.2f}")
-                logging.info(f"  - Total Withdrawals: ${total_withdrawals:,.2f}")
-                calculated_closing = opening_bal + total_deposits - total_withdrawals
-                logging.info(f"  = Calculated Close:  ${calculated_closing:,.2f}")
-                logging.info(f"  Actual Close:       ${closing_bal:,.2f}")
-                
-                actual_difference = closing_bal - calculated_closing
-                if abs(actual_difference) > 0.01:
-                    logging.info(f"  Difference:          ${actual_difference:,.2f}")
-                    if actual_difference > 0:
-                        logging.info(f"    (Actual is ${actual_difference:,.2f} higher)")
-                    else:
-                        logging.info(f"    (Actual is ${abs(actual_difference):,.2f} lower)")
+                if bank_match and len(bank_match) > 0:
+                    bank_name = bank_match[0].get('bank_name', 'Unknown Bank')
+                    print_and_log(f"🏦 Bank identified: {bank_name} (similarity: {similarity:.1%})")
                 else:
-                    logging.info("  ✓ BALANCED - No difference")
+                    bank_name = "Unknown Bank"
+                    print_and_log("⚠️ Bank not identified, using default")
             else:
-                # Missing essential balance data or opening balance is suspicious - cannot calculate
-                logging.info("Reconciliation status:")
-                if not opening_known:
-                    logging.info("  Opening balance unreliable - cannot use for calculation")
-                elif opening_bal is None:
-                    logging.info("  Opening balance missing from statement")
-                    logging.info("  Cannot calculate expected closing balance")
+                bank_name = "Unknown Bank"
+                print_and_log("⚠️ No bank name found on statement, using default")
                 
-                if closing_bal is None:
-                    logging.info("  Closing balance missing from statement")
-                    logging.info("  Cannot verify balance accuracy")
-                else:
-                    logging.info(f"  Actual Close:       ${closing_bal:,.2f}")
-                    
-                logging.info(f"  Transaction totals: ${total_deposits:,.2f} deposits, ${total_withdrawals:,.2f} withdrawals")
-            
-            # Reconciliation calculations
-            expected_closing = reconciliation_data.get("expected_closing")
-            difference = reconciliation_data.get("difference", 0)
-            
-            if expected_closing is not None:
-                logging.info(f"Expected closing: ${expected_closing:,.2f}")
-            
-            if abs(difference) > 0.01:  # More than 1 cent difference
-                logging.info(f"Balance difference: ${difference:,.2f}")
+        except Exception as e:
+            print_and_log(f"⚠️ Could not load bank info: {e}")
+            bank_name = "Unknown Bank"
+        
+        print_and_log(f"🔧 DEBUG: Bank info setup complete: {bank_name}")
+        
+        # FORCE OpenAI generation - no fallback allowed
+        print_and_log("🤖 FORCING OpenAI BAI2 generation - this should work or create error file")
+        
+        # Prepare comprehensive data for OpenAI BAI2 generation with precise format
+        # Check if we have enhanced transaction data and use it preferentially
+        enhanced_transactions = data.get('enhanced_transactions')
+        if enhanced_transactions:
+            print_and_log("✅ Using enhanced transaction parsing data for BAI2 generation")
+            transaction_data_source = enhanced_transactions
+            extraction_method = data.get('extraction_method', 'unknown')
+            print_and_log(f"📊 Enhanced data: {enhanced_transactions['count_debits']} debits (${enhanced_transactions['total_debits']:.2f}), {enhanced_transactions['count_credits']} credits (${enhanced_transactions['total_credits']:.2f})")
         else:
-            # No reconciliation data available - use source data
-            if source_opening_balance is not None:
-                logging.info(f"Opening balance: ${source_opening_balance:,.2f} (from statement)")
-            else:
-                logging.info("Opening balance: NOT_FOUND - Missing from bank statement")
-            
-            if source_closing_balance is not None:
-                logging.info(f"Closing balance: ${source_closing_balance:,.2f} (from statement)")
-            else:
-                logging.info("Closing balance: NOT_FOUND - Missing from bank statement")
-            
-            logging.info(f"Total deposits: ${source_total_deposits:,.2f} ({source_transaction_count} transactions)")
-            logging.info(f"Total withdrawals: ${source_total_withdrawals:,.2f}")
-            
-            # Add calculation breakdown even without reconciliation data
-            logging.info("Balance calculation:")
-            if source_opening_balance is not None:
-                logging.info(f"  Starting Balance:    ${source_opening_balance:,.2f}")
-                logging.info(f"  + Total Deposits:    ${source_total_deposits:,.2f}")
-                logging.info(f"  - Total Withdrawals: ${source_total_withdrawals:,.2f}")
-                calculated_closing = source_opening_balance + source_total_deposits - source_total_withdrawals
-                logging.info(f"  = Calculated Close:  ${calculated_closing:,.2f}")
-                
-                if source_closing_balance is not None:
-                    logging.info(f"  Actual Close:       ${source_closing_balance:,.2f}")
-                    actual_difference = source_closing_balance - calculated_closing
-                    if abs(actual_difference) > 0.01:
-                        logging.info(f"  Difference:          ${actual_difference:,.2f}")
-                        if actual_difference > 0:
-                            logging.info(f"    (Actual is ${actual_difference:,.2f} higher)")
-                        else:
-                            logging.info(f"    (Actual is ${abs(actual_difference):,.2f} lower)")
-                    else:
-                        logging.info("  ✓ BALANCED - No difference")
-                else:
-                    logging.info("  Actual Close:       UNKNOWN")
-                    logging.info("  Cannot verify balance accuracy")
-            else:
-                logging.info("  Starting Balance:    UNKNOWN")
-                logging.info(f"  + Total Deposits:    ${source_total_deposits:,.2f}")
-                logging.info(f"  - Total Withdrawals: ${source_total_withdrawals:,.2f}")
-                if source_closing_balance is not None:
-                    logging.info(f"  Actual Close:       ${source_closing_balance:,.2f}")
-                    logging.info("  Cannot calculate expected close without starting balance")
-                else:
-                    logging.info("  Actual Close:       UNKNOWN")
-                    logging.info("  Cannot perform calculation - missing balances")
+            print_and_log("⚠️ Using original extraction data for BAI2 generation")
+            transaction_data_source = data
+            extraction_method = data.get('extraction_method', 'unknown')
         
-        # Check for reconciliation failure and log balance difference info
-        if reconciliation_data and abs(reconciliation_data.get("difference", 0)) > 0.01:
-            difference = reconciliation_data.get("difference", 0)
-            logging.info(f"Balance difference: ${difference:,.2f}")
-            if reconciliation_status == "FAILED":
-                logging.info("Reconciliation failed: Balance difference exceeds tolerance")
+        bai2_prompt = f"""You are a BAI2 (Bank Administration Institute) file-format expert. Generate a complete, properly formatted BAI2 file from the inputs below. 
+Nothing may be hard-coded. All values must be taken from the inputs or derived per BAI2 rules.
+
+############################
+## INPUTS (VARIABLE DATA) ##
+############################
+FILE_META (applies to the whole file):
+Bank Name: {bank_name}
+Account Number: {account_number}
+Routing Number: {originator_id}
+Account Type: Business Checking
+Statement Date: {file_date} ({file_time})
+Extraction Method: {extraction_method}
+
+EXTRACTED STATEMENT DATA:
+{json.dumps(transaction_data_source, indent=2)}
+
+RECONCILIATION DATA (if available):
+{json.dumps(reconciliation_data, indent=2) if reconciliation_data else "None"}
+
+#######################################
+## CRITICAL OCR TEXT PARSING RULES ##
+#######################################
+IMPORTANT: The extracted data above may contain raw OCR text from a bank statement. You MUST parse this intelligently:
+
+1. TRANSACTION IDENTIFICATION:
+   - Look for patterns like "Date Description Amount" in the OCR text
+   - Transactions are usually grouped under sections like "DEBITS" and "CREDITS"  
+   - Ignore header lines, summary lines, and non-transaction text
+   - Each transaction should have: Date, Description, Amount
+
+2. SUMMARY VALIDATION:
+   - Look for summary lines like "Total additions: $X" or "Total subtractions: $Y"
+   - Use these totals to validate your transaction parsing
+   - If your individual transactions don't match the totals, reparse more carefully
+
+3. DUPLICATE AVOIDANCE:
+   - Do NOT create multiple BAI2 records for the same transaction
+   - If you see repeated amounts or descriptions, consolidate appropriately
+   - Focus on actual individual transactions, not summary or duplicate entries
+
+4. TRANSACTION TYPE CLASSIFICATION:
+   - Debits/Withdrawals: Use BAI2 code 451 (ACH withdrawal) or 475 (fees only)
+   - Credits/Deposits: Use BAI2 code 301 (deposit)
+   - Maintenance fees: Use BAI2 code 475
+
+###############################
+## OUTPUT RULES (STRICT BAI2) ##
+###############################
+GLOBAL RULES:
+- Output a valid BAI2 file ONLY — no explanations, no code fences, no extra text.
+- Every record MUST end with a forward slash "/" on its own line.
+- Use only integer amounts in cents (no decimals).
+- Do NOT hard-code any constant like receiver_id, currency, account type, dates, or IDs.
+- All values must come from the inputs or be computed dynamically per BAI2 spec.
+
+SANITIZATION RULES (apply to DESCRIPTION and any free text fields):
+- Replace any "/" with "-" (BAI2 uses "/" as record terminator).
+- Convert to plain ASCII; replace non-ASCII characters with closest ASCII or a space.
+- Remove newlines and control characters.
+- Trim descriptions to <= 80 characters where possible (truncate at word boundary if feasible).
+
+REFERENCE NUMBER RULES (REF_NUM on 16 records):
+- For each account, generate a 5-digit, zero-padded, strictly increasing sequence starting at 00001 and increment by 1.
+- No gaps and no duplicates within the account's transaction block.
+
+#####################################
+## BAI2 RECORD LAYOUTS (NO DEFAULTS) ##
+#####################################
+1) File Header (01)
+   01,{originator_id},WORKDAY,{file_date},{file_time},1,,,2/
+
+2) Group Header (02) — one per group
+   02,WORKDAY,{originator_id},1,{file_date},,USD,2/
+
+3) Account Identifier (03) — one per account
+   03,{account_number},USD,010,,,Z/
+
+4) Transaction Detail (16) — zero or more per account
+   16,TYPE_CODE,AMOUNT_CENTS,Z,REF_NUM,,DESCRIPTION/
+   - TYPE_CODE: 301 (deposit), 451 (ACH withdrawal), 475 (bank fees only)
+   - AMOUNT_CENTS: integer only (no decimals)
+   - REF_NUM: 5-digit sequential per account (00001, 00002, etc.)
+   - DESCRIPTION: sanitized text per rules above
+
+5) Account Trailer (49) — one per account
+   49,ENDING_BALANCE_CENTS,N/
+   - N = number of 16-records (transactions) emitted for this account
+
+6) Group Trailer (98) — one per group
+   98,GROUP_CONTROL_TOTAL,1,GROUP_RECORD_COUNT/
+   - GROUP_CONTROL_TOTAL = ending account balance in cents
+   - GROUP_RECORD_COUNT = total records from Group Header (02) through Account Trailer (49) inclusive
+   - Formula: 1 (02) + 1 (03) + N_transactions (16s) + 1 (49) = N+3
+
+7) File Trailer (99) — once at end of file
+   99,FILE_CONTROL_TOTAL,1,FILE_RECORD_COUNT/
+   - FILE_CONTROL_TOTAL = same as group control total
+   - FILE_RECORD_COUNT = same as group record count when only one group exists
+
+###################################
+## VALIDATION (MUST PASS BEFORE OUTPUT)
+###################################
+Validate BEFORE returning output:
+- Every line ends with "/".
+- All amounts are integers (no decimals).
+- No "/" remains inside descriptions; sanitize non-ASCII and control characters.
+- REF_NUM starts at 00001 and increments by 1 for each 16 record; no gaps or duplicates.
+- Account Trailer (49) N equals the number of 16 records generated for that account.
+- Group record count = 1 + 1 + N_transactions + 1 = N+3
+- File record count = same as group record count when only one group exists.
+
+Return ONLY the final BAI2 content as plain text records, one per line, exactly as specified.
+No explanations, no comments, no code fences."""
         
-        # Note: Warnings section disabled - only process valid transactions
+        print_and_log("🔧 DEBUG: About to call Azure OpenAI...")
         
-        # Log recommendations based on reconciliation status
-        if reconciliation_status == "COMPLETE":
-            logging.info("Recommendation: Reconciliation successful - BAI2 data is accurate")
-        elif reconciliation_status == "PARTIAL":
-            logging.info("Recommendation: Partial reconciliation - verify missing balance data manually")
-        elif reconciliation_status == "INCOMPLETE":
-            logging.info("Recommendation: Incomplete reconciliation - manual verification required")
-        elif reconciliation_status == "FAILED":
-            logging.info("Recommendation: Reconciliation failed - review statement and re-process")
-            logging.info("Possible causes: OCR errors, statement format changes, missing data")
-    else:
-        logging.info("Reconciliation status: No reconciliation data available")
+        # Use Azure OpenAI to generate the complete BAI2 file
+        from openai import AzureOpenAI
+        openai_client = AzureOpenAI(
+            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+            api_key=os.environ["AZURE_OPENAI_KEY"],
+            api_version="2024-10-01-preview"
+        )
         
-        # Still log balance and transaction information from source data
-        if source_opening_balance is not None:
-            logging.info(f"Opening balance: ${source_opening_balance:,.2f} (from statement)")
-        else:
-            logging.info("Opening balance: NOT_FOUND - Missing from bank statement")
+        print_and_log("🔧 DEBUG: OpenAI client created successfully")
         
-        if source_closing_balance is not None:
-            logging.info(f"Closing balance: ${source_closing_balance:,.2f} (from statement)")
-        else:
-            logging.info("Closing balance: NOT_FOUND - Missing from bank statement")
+        response = openai_client.chat.completions.create(
+            model=os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1"),
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a BAI2 file format expert. Generate properly formatted BAI2 files that comply with banking standards."
+                },
+                {
+                    "role": "user", 
+                    "content": bai2_prompt
+                }
+            ],
+            temperature=0,  # Use deterministic output for consistent formatting
+            max_tokens=2000
+        )
         
-        logging.info(f"Total deposits: ${source_total_deposits:,.2f} ({source_transaction_count} transactions)")
-        logging.info(f"Total withdrawals: ${source_total_withdrawals:,.2f}")
-        logging.info("Recommendation: Process with full reconciliation analysis for accuracy")
-    
-    # Enhanced transaction grouping by date with proper parsing
-    print_and_log("📅 Grouping transactions by date...")
-    transaction_groups = {}
-    
-    from datetime import datetime
-    
-    for txn in transactions:
-        # Validate that txn is a dictionary (not a float or other type)
-        if not isinstance(txn, dict):
-            print_and_log(f"⚠️ Skipping invalid transaction: {type(txn)} - {txn}")
-            continue
-            
-        txn_date = txn.get("date", "")
+        print_and_log("🔧 DEBUG: OpenAI response received successfully")
         
-        # Parse transaction date with multiple format support
-        parsed_date = None
-        group_date = file_date  # Default fallback
+        bai2_content = response.choices[0].message.content.strip()
         
-        if txn_date and txn_date.strip():
-            # Try multiple date formats commonly used in bank statements
-            date_formats = ['%m/%d/%Y', '%Y-%m-%d', '%m-%d-%Y', '%d/%m/%Y', '%m/%d/%y', '%y-%m-%d']
-            
-            for fmt in date_formats:
-                try:
-                    parsed_date = datetime.strptime(txn_date.strip(), fmt)
-                    # Convert to YYMMDD format for BAI2
-                    group_date = parsed_date.strftime("%y%m%d")
-                    print_and_log(f"   ✅ Parsed date '{txn_date}' -> {group_date}")
-                    break
-                except ValueError:
-                    continue
-            
-            if not parsed_date:
-                print_and_log(f"   ⚠️ Could not parse date '{txn_date}', using file date {file_date}")
-                group_date = file_date
-        else:
-            print_and_log(f"   ⚠️ Empty/missing date for transaction, using file date {file_date}")
-            group_date = file_date
+        # Validate the generated BAI2 content
+        if not bai2_content.startswith("01,"):
+            print_and_log("⚠️ Generated BAI2 doesn't start with file header, creating error file")
+            return create_error_bai2_file("OpenAI BAI2 generation format error", filename, file_date, file_time, "ERROR_AI_FORMAT")
         
-        # Add transaction to appropriate date group
-        if group_date not in transaction_groups:
-            transaction_groups[group_date] = []
-        transaction_groups[group_date].append(txn)
-    
-    # Log grouping results
-    print_and_log(f"📊 Transaction grouping complete:")
-    for date_key in sorted(transaction_groups.keys()):
-        txn_count = len(transaction_groups[date_key])
-        print_and_log(f"   Date {date_key}: {txn_count} transactions")
-    
-    # If no transaction groups, create a default group
-    if not transaction_groups:
-        print_and_log("⚠️ No transaction groups created, using default file date group")
-        transaction_groups[file_date] = []
-    
-    total_control_total = 0
-    total_groups = 0
-    previous_ending_balance = opening_balance_amount  # Track balance continuity for Workday
-    
-    # Process each group (day)
-    for group_date in sorted(transaction_groups.keys()):
-        group_transactions = transaction_groups[group_date]
+        print_and_log("✅ OpenAI successfully generated BAI2 file")
+        print_and_log(f"📏 Generated BAI2 length: {len(bai2_content)} characters")
+        print_and_log(f"📊 Generated BAI2 lines: {bai2_content.count(chr(10)) + 1}")
+        print_and_log("🎯 RETURNING OpenAI-generated BAI2 content")
         
-        # 02 - Group Header
-        lines.append(f"02,{receiver_id},{originator_id},1,{group_date},,{currency},2/")
-        group_record_count = 0  # Track records in this group (excluding the group header)
+        return bai2_content
         
-        # Calculate group totals
-        credit_total = 0
-        debit_total = 0
-        credit_count = 0
-        debit_count = 0
-        
-        for txn in group_transactions:
-            # Validate that txn is a dictionary
-            if not isinstance(txn, dict):
-                print_and_log(f"⚠️ Skipping invalid transaction in group totals: {type(txn)} - {txn}")
-                continue
-                
-            amount = float(txn.get("amount", 0))
-            if amount >= 0:
-                credit_total += int(amount * 100)
-                credit_count += 1
-            else:
-                debit_total += int(abs(amount) * 100)
-                debit_count += 1
-        
-        # Determine starting balance for this group to maintain continuity
-        if total_groups == 0:
-            # First group uses actual opening balance
-            starting_balance = opening_balance_amount
-        else:
-            # Subsequent groups use previous group's ending balance to maintain continuity
-            starting_balance = previous_ending_balance
-        # Calculate ending balance properly based on extracted closing balance or calculation
-        if reconciliation_data and isinstance(reconciliation_data, dict):
-            # Try to get closing balance from reconciliation data - handle both dict and direct float formats
-            closing_balance_data = reconciliation_data.get("closing_balance")
-            if closing_balance_data is not None:
-                if isinstance(closing_balance_data, dict) and closing_balance_data.get("amount") is not None:
-                    # Dict format: {"amount": value}
-                    ending_balance = int(float(closing_balance_data["amount"]) * 100)  # Convert to cents
-                    print_and_log(f"💰 Using extracted closing balance: ${ending_balance/100:,.2f}")
-                elif isinstance(closing_balance_data, (int, float)):
-                    # Direct number format
-                    ending_balance = int(float(closing_balance_data) * 100)  # Convert to cents
-                    print_and_log(f"💰 Using extracted closing balance: ${ending_balance/100:,.2f}")
-                else:
-                    # Calculate from starting balance + transactions
-                    ending_balance = starting_balance + credit_total - debit_total
-                    print_and_log(f"💰 Calculated ending balance: ${ending_balance/100:,.2f}")
-            else:
-                # Calculate from starting balance + transactions
-                ending_balance = starting_balance + credit_total - debit_total
-                print_and_log(f"💰 Calculated ending balance: ${ending_balance/100:,.2f}")
-        else:
-            # Fallback calculation
-            ending_balance = starting_balance + credit_total - debit_total
-            print_and_log(f"💰 Calculated ending balance: ${ending_balance/100:,.2f}")
-        
-        # 03 - Account Identifier (complete BAI2 format)
-        # Format: 03,account_number,currency_code,type_code,customer_account_number,account_name,extension_code/
-        # type_code: 010 = Checking Account, 015 = General Ledger Account, 020 = Savings Account
-        currency_code = "USD"  # USD currency
-        type_code = "010"      # Checking account (most common for business statements)
-        customer_account_number = ""  # Optional field for customer's internal account reference
-        account_name = ""      # Optional field for account description/name
-        extension_code = "Z"   # Standard extension code for end of data
-        
-        lines.append(f"03,{account_number},{currency_code},{type_code},{customer_account_number},{account_name},{extension_code}/")
-        group_record_count += 1
-        account_record_count = 1  # Start with 1 to include the account identifier (03)
-        
-        # 88 - Summary Records (BAI summary codes) - Standard BAI2 continuation records
-        # Extract actual opening and closing balances from reconciliation data or source data
-        opening_balance_cents = ""
-        closing_balance_cents = ""
-        
-        # Get opening balance from reconciliation data - handle both dict and direct float formats
-        if reconciliation_data and isinstance(reconciliation_data, dict):
-            opening_balance_data = reconciliation_data.get("opening_balance")
-            if opening_balance_data is not None:
-                if isinstance(opening_balance_data, dict) and opening_balance_data.get("amount") is not None:
-                    # Dict format: {"amount": value}
-                    opening_balance_cents = int(float(opening_balance_data["amount"]) * 100)  # Convert to cents
-                    print_and_log(f"💰 Using extracted opening balance: ${opening_balance_cents/100:,.2f}")
-                elif isinstance(opening_balance_data, (int, float)):
-                    # Direct number format
-                    opening_balance_cents = int(float(opening_balance_data) * 100)  # Convert to cents
-                    print_and_log(f"💰 Using extracted opening balance: ${opening_balance_cents/100:,.2f}")
-            
-            # Get closing balance from reconciliation data - handle both dict and direct float formats
-            closing_balance_data = reconciliation_data.get("closing_balance")
-            if closing_balance_data is not None:
-                if isinstance(closing_balance_data, dict) and closing_balance_data.get("amount") is not None:
-                    # Dict format: {"amount": value}
-                    closing_balance_cents = int(float(closing_balance_data["amount"]) * 100)  # Convert to cents
-                    print_and_log(f"💰 Using extracted closing balance: ${closing_balance_cents/100:,.2f}")
-                elif isinstance(closing_balance_data, (int, float)):
-                    # Direct number format
-                    closing_balance_cents = int(float(closing_balance_data) * 100)  # Convert to cents
-                    print_and_log(f"💰 Using extracted closing balance: ${closing_balance_cents/100:,.2f}")
-        
-        # Fallback to source data if not in reconciliation data
-        if not opening_balance_cents and source_opening_balance is not None:
-            opening_balance_cents = int(float(source_opening_balance) * 100)
-            print_and_log(f"💰 Using source opening balance: ${opening_balance_cents/100:,.2f}")
-        
-        if not closing_balance_cents and source_closing_balance is not None:
-            closing_balance_cents = int(float(source_closing_balance) * 100)
-            print_and_log(f"💰 Using source closing balance: ${closing_balance_cents/100:,.2f}")
-        
-        # Generate balance summary records matching working file format
-        # Based on working file analysis:
-        # 88,015 = Closing ledger balance (this is the important end-of-day balance)
-        # 88,040 = Opening available balance (empty in first section)
-        # 88,045 = Closing available balance (matches closing ledger)
-        # 88,072 = Transaction-based calculated amount 
-        
-        if closing_balance_cents:
-            lines.append(f"88,015,{closing_balance_cents},,Z/")  # Closing ledger balance
-        else:
-            lines.append(f"88,015,,,Z/")  # Empty closing balance if not available
-        
-        lines.append(f"88,040,,,Z/")  # Opening available balance (empty like working file)
-        
-        # 045 = Closing available balance (should match closing ledger balance)
-        if closing_balance_cents:
-            lines.append(f"88,045,{closing_balance_cents},,Z/")  # Closing available balance (matches 015)
-        else:
-            lines.append(f"88,045,,,Z/")  # Empty closing available balance if not available
-        
-        lines.append(f"88,072,{debit_total},,Z/")  # Transaction-based calculated amount
-        lines.append(f"88,074,000,,Z/")  # Total rejected credits
-        lines.append(f"88,100,{credit_total},{credit_count},Z/")  # Credit summary
-        lines.append(f"88,400,{debit_total},{debit_count},Z/")  # Debit summary
-        lines.append(f"88,075,,,Z/")  # Total rejected debits
-        lines.append(f"88,079,,,Z/")  # Total rejected transactions
-        
-        account_record_count += 9  # Add 9 summary records (88 records)
-        group_record_count += 9   # Also add to group count
-        
-        # 16 - Transaction Detail Records (comprehensive format)
-        transaction_id = 2147809075 + (total_groups * 100)  # Sequential transaction IDs
-        
-        if group_transactions:
-            for i, txn in enumerate(group_transactions):
-                # Validate that txn is a dictionary
-                if not isinstance(txn, dict):
-                    print_and_log(f"⚠️ Skipping invalid transaction in BAI generation: {type(txn)} - {txn}")
-                    continue
-                    
-                amount = float(txn.get("amount", 0))
-                original_description = str(txn.get("description", "Transaction"))
-                txn_type_hint = str(txn.get("type", "")).lower()
-                extracted_ref = txn.get("reference_number", "")  # Get extracted reference number
-                
-                # Convert amount to cents for BAI
-                amount_cents = int(abs(amount) * 100)
-                
-                # Use extracted reference number if available, otherwise generate in working format
-                if extracted_ref and str(extracted_ref).strip() and str(extracted_ref).strip() != "null":
-                    ref_num = str(extracted_ref).strip()
-                    print_and_log(f"✅ Using extracted reference number: {ref_num}")
-                else:
-                    ref_num = f"478980{340 + i:03d}"  # Fallback to working file format
-                    print_and_log(f"⚠️ No reference number extracted, using generated: {ref_num}")
-                
-                # Determine BAI transaction type code
-                if amount < 0 or txn_type_hint in ["withdrawal", "debit", "fee", "check"]:
-                    # Check if it's a return or ACH debit
-                    if "return" in original_description.lower() or "returned" in original_description.lower():
-                        txn_type = "555"  # Returns
-                    else:
-                        txn_type = "451"  # ACH debits
-                    bank_ref = ""  # Empty for debits in working file
-                    text_desc = original_description if original_description else ""
-                    lines.append(f"16,{txn_type},{amount_cents},Z,{ref_num},{bank_ref},{text_desc},/")
-                    # REMOVED: 88 transaction detail records per user request to remove all comments
-                    group_record_count += 1
-                    account_record_count += 1
-                else:
-                    txn_type = "301"  # Deposits
-                    # Use timestamp-based reference to ensure uniqueness across banks
-                    import time
-                    base_ref = int(time.time()) % 100000
-                    bank_ref = f"0000{base_ref + i:06d}"
-                    text_desc = original_description if original_description else "Deposit"  # Use actual description from statement
-                    lines.append(f"16,{txn_type},{amount_cents},Z,{ref_num},{bank_ref},{text_desc},/")
-                    group_record_count += 1
-                    account_record_count += 1
-                
-                transaction_id += 1
-        
-        # 49 - Account Trailer
-        account_control_total = ending_balance
-        # Account trailer should count all account records (03 + 88s + 16s) INCLUDING itself (49)
-        # Current account_record_count = 22, we need to add 1 for the trailer itself
-        account_trailer_count = account_record_count + 1  # Add 1 for the account trailer itself
-        print_and_log(f"📊 DEBUG: account_record_count={account_record_count}, account_trailer_count={account_trailer_count}")
-        lines.append(f"49,{account_control_total},{account_trailer_count}/")
-        group_record_count += 1  # Add account trailer to group count
-        
-        # 98 - Group Trailer  
-        number_of_accounts = 1
-        # Group trailer counts all group records (02 + account records + 49) INCLUDING itself (98)
-        # group_record_count now includes: account records + account trailer = 23
-        # We need to add the group header (02) and the group trailer itself (98)
-        group_trailer_count = 1 + group_record_count + 1  # +1 for group header (02) + 1 for group trailer itself (98)
-        print_and_log(f"📊 DEBUG: group_record_count={group_record_count}, group_trailer_count={group_trailer_count}")
-        group_control_total = account_control_total  # Same as account control total for single account
-        # Group trailer includes number_of_accounts field - BAI2 format requires 4 fields for record 98
-        lines.append(f"98,{group_control_total},{number_of_accounts},{group_trailer_count}/")  # 4 fields for BAI2 compliance
-        
-        total_control_total += group_control_total
-        total_groups += 1
-        # Calculate file records including all created records
-        
-        # Update balance for next group continuity
-        previous_ending_balance = ending_balance
-    
-    # 99 - File Trailer (control_total, number_of_groups, record_count) - BAI2 format requires 4 fields
-    # File trailer counts all records except file header (01) INCLUDING the file trailer (99) itself
-    # At this point, len(lines) = 26 (includes 01,02,03,88s,16s,49,98 but NOT 99 yet)
-    # We need to count: 02,03,88s,16s,49,98,99 = len(lines) - 1 (remove 01) + 1 (add 99) = len(lines)
-    total_file_records = len(lines) + 1  # Include the 99 record itself
-    print_and_log(f"📊 DEBUG: len(lines) before 99={len(lines)}, total_groups={total_groups}, total_file_records={total_file_records}")
-    # File trailer includes total_groups field - BAI2 format requires 4 fields for record 99  
-    lines.append(f"99,{total_control_total},{total_groups},{total_file_records}/")
-    
-    print_and_log(f"✅ Comprehensive BAI file created with {len(transactions)} transactions across {total_groups} groups")
-    print_and_log(f"📊 File structure: {len(lines)} total lines")
-    print_and_log(f"📊 Final record counts - Account: {account_trailer_count}, Group: {group_trailer_count}, File: {total_file_records}")
-    print_and_log(f"💰 Control total: ${total_control_total/100:,.2f}")
-    
-    return "\n".join(lines) + "\n"
+    except Exception as e:
+        print_and_log(f"❌ CRITICAL ERROR in OpenAI BAI2 generation: {str(e)}")
+        import traceback
+        print_and_log(f"� Full traceback: {traceback.format_exc()}")
+        print_and_log(f"🔄 Creating error file instead of falling back to manual approach")
+        return create_error_bai2_file(f"OpenAI BAI2 generation failed: {str(e)}", filename, file_date, file_time, "ERROR_AI_FAILED")
 
 @app.function_name("setup_containers")
 @app.route(route="setup", methods=["GET"])
