@@ -11,6 +11,21 @@ import openai
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
 
+# Configure logging to suppress verbose Azure SDK HTTP traffic
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
+logging.getLogger('azure.storage.blob').setLevel(logging.WARNING)
+logging.getLogger('azure.identity').setLevel(logging.WARNING)
+logging.getLogger('azure.core').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+
+# Import enhanced bank matching system
+try:
+    from bank_info_loader import get_bank_info_for_processing
+    print("✅ Enhanced bank matching system loaded")
+except ImportError as e:
+    print(f"⚠️ Could not load enhanced bank matching: {e}")
+    get_bank_info_for_processing = None
+
 # Configure console encoding for Unicode support
 if sys.platform == "win32":
     import codecs
@@ -39,7 +54,7 @@ def load_local_settings():
     return True
 
 def print_and_log(message):
-    """Print to console and log simultaneously with proper encoding handling"""
+    """Print to console with proper encoding handling - Azure Functions will automatically capture console output in logs"""
     # Create emoji replacements dictionary
     emoji_replacements = {
         '🚀': '[START]',
@@ -191,32 +206,6 @@ def print_and_log(message):
         # Fallback for Windows console encoding issues
         safe_message = clean_message.encode('ascii', 'replace').decode('ascii')
         print(safe_message, flush=True)
-    
-    # For logging, create a clean ASCII version
-    try:
-        import re
-        
-        # Convert the message to ASCII, replacing all non-ASCII characters
-        # This is more aggressive but ensures clean logs
-        log_message = message.encode('ascii', 'replace').decode('ascii')
-        
-        # Clean up any question marks or replacement characters that result from encoding
-        log_message = log_message.replace('?', ' ')
-        
-        # Apply emoji replacements on the original message before ASCII conversion
-        # This preserves intended emoji meanings
-        for emoji, replacement in emoji_replacements.items():
-            if emoji in message:  # Check original message
-                log_message = log_message.replace('?', replacement, 1)  # Replace one ? with the meaning
-        
-        # Clean up multiple spaces and ensure we have clean content
-        log_message = ' '.join(log_message.split())
-        
-        if log_message.strip():  # Only log if there's content left
-            logging.info(log_message)
-    except Exception as e:
-        # Ultimate fallback - log a basic message
-        logging.info(f"Message logged ({len(message)} chars): {str(e)}")
 
 # Load local settings after print_and_log is defined
 load_local_settings()
@@ -557,16 +546,22 @@ def extract_account_number_from_text(text):
     for pattern in patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         for match in matches:
-            # Basic validation for account number (this will reject asterisks)
+            # Check if it's a valid account number first
             if is_valid_account_number(match):
-                print_and_log(f"✅ Found potential account number: {match}")
+                print_and_log(f"✅ Found valid account number: {match}")
                 return match
+            # If not valid but contains asterisks, it might be a masked account for enhanced matching
+            elif "*" in match and len(match) >= 4:
+                print_and_log(f"✅ Found masked account number for enhanced matching: {match}")
+                return match
+            # If it's a 4-digit number, convert to masked format
+            elif len(match) == 4 and match.isdigit():
+                masked_account = "*" + match
+                print_and_log(f"✅ Found partial account, converting to masked format: {masked_account}")
+                return masked_account
             else:
                 # Log what we found but rejected
-                if "*" in match:
-                    print_and_log(f"❌ Found masked account number with asterisks: {match} - treating as missing")
-                else:
-                    print_and_log(f"❌ Found invalid account number: {match} - rejected")
+                print_and_log(f"❌ Found invalid account number: {match} - rejected")
     
     print_and_log("❌ No account number found in statement text")
     return None
@@ -660,8 +655,8 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
     # 02 - Group Header
     lines.append(f"02,ERROR,000000000,1,{file_date},,USD,2/")
     
-    # 03 - Account Identifier (use ERROR as account number) - NO routing number
-    lines.append(f"03,ERROR,,010,0,,Z/")
+    # 03 - Account Identifier (use ERROR as account number with complete BAI2 format)
+    lines.append(f"03,ERROR,USD,010,,,Z/")
     
     # Add error diagnostic record for detection with specific error code
     lines.append(f"88,999,{error_code},,Z/")
@@ -701,8 +696,15 @@ def get_account_number(parsed_data):
             print_and_log(f"✅ Found account number from parsed data: {account_number}")
             return account_number
         else:
-            if "*" in account_number:
-                print_and_log(f"❌ Parsed data account number contains asterisks (masked): '{account_number}' - treating as missing")
+            # Check if this is a masked account number that we should preserve for enhanced matching
+            if "*" in account_number and len(account_number) >= 4:
+                print_and_log(f"✅ Found masked account number from parsed data: {account_number}")
+                return account_number
+            elif len(account_number) == 4 and account_number.isdigit():
+                # This might be the last 4 digits of a masked account - add asterisk prefix
+                masked_account = "*" + account_number
+                print_and_log(f"✅ Found partial account, converting to masked format: {masked_account}")
+                return masked_account
             else:
                 print_and_log(f"❌ Parsed data account number invalid: '{account_number}' - rejected")
     
@@ -731,11 +733,11 @@ def get_account_number(parsed_data):
                         if is_valid_account_number(clean_content):
                             print_and_log(f"✅ Found account number in field '{field_name}': {clean_content}")
                             return clean_content
+                        elif "*" in clean_content and len(clean_content) >= 4:
+                            print_and_log(f"✅ Found masked account number in field '{field_name}': {clean_content}")
+                            return clean_content
                         else:
-                            if "*" in clean_content:
-                                print_and_log(f"❌ Account field contains asterisks (masked): '{clean_content}' - skipping")
-                            else:
-                                print_and_log(f"❌ Account field invalid: '{clean_content}' - skipping")
+                            print_and_log(f"❌ Account field invalid: '{clean_content}' - skipping")
                 
                 # Also try extracting from any field content
                 print_and_log(f"🔍 Trying regex extraction on field '{field_name}' content...")
@@ -746,7 +748,7 @@ def get_account_number(parsed_data):
     print_and_log("❌ No account number found in statement")
     return None
 
-def get_routing_number(parsed_data):
+def get_routing_number(parsed_data, account_number=None):
     """Get routing number from statement or lookup via OpenAI"""
     print_and_log("🔍 Extracting routing number...")
     print_and_log(f"🔍 DEBUG: parsed_data keys: {list(parsed_data.keys())}")
@@ -841,18 +843,46 @@ def get_routing_number(parsed_data):
         print_and_log(f"✅ BANK NAME FOUND: '{bank_name}'")
         print_and_log(f"=====================================")
         
-        # Lookup routing number by bank name
+        # Try enhanced bank info matching first
+        if get_bank_info_for_processing and account_number:
+            print_and_log(f"🔍 DEBUG: Attempting enhanced bank info matching...")
+            print_and_log(f"   Bank Name: '{bank_name}'")
+            print_and_log(f"   Account Number: '{account_number}'")
+            
+            try:
+                result = get_bank_info_for_processing(bank_name, account_number)
+                if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
+                    matched_account, matched_routing, match_type = result
+                    routing_number = matched_routing
+                    print_and_log(f"✅ Enhanced matching found routing number: {routing_number}")
+                    print_and_log(f"   Match Type: {match_type}")
+                    print_and_log(f"   Matched Account: {matched_account}")
+                    # Return both routing number and matched account number
+                    return routing_number, matched_account
+                else:
+                    print_and_log(f"❌ Enhanced matching returned no routing number")
+            except Exception as e:
+                print_and_log(f"⚠️ Enhanced matching failed: {str(e)}")
+        else:
+            if not get_bank_info_for_processing:
+                print_and_log(f"⚠️ Enhanced bank matching not available")
+            if not account_number:
+                print_and_log(f"⚠️ No account number available for enhanced matching")
+        
+        # Fallback to OpenAI lookup if enhanced matching didn't work
         print_and_log(f"🤖 DEBUG: Attempting OpenAI lookup for bank: {bank_name}")
         routing_number = lookup_routing_number_by_bank_name(bank_name)
         if routing_number:
             print_and_log(f"✅ DEBUG: OpenAI returned routing number: {routing_number}")
+            # Return routing number with no matched account (use original account)
+            return routing_number, None
         else:
             print_and_log(f"❌ DEBUG: OpenAI lookup failed for bank: {bank_name}")
     
     # No fallback - return None if routing number cannot be determined
     if not routing_number:
         print_and_log("❌ CRITICAL: No routing number found and unable to lookup by bank name")
-        return None
+        return None, None
     
     print_and_log(f"✅ Using routing number: {routing_number}")
     return routing_number
@@ -1124,6 +1154,49 @@ EXTRACT ALL TRANSACTIONS WITH DETAILED DESCRIPTIONS - FIND EVERY ONE!
             try:
                 parsed_result = json.loads(content)
                 print_and_log("✅ Successfully parsed JSON response!")
+                
+                # PRODUCTION DEBUGGING: Analyze transaction dates and grouping
+                print_and_log("🔍 PRODUCTION DEBUG: Analyzing OpenAI response...")
+                
+                if "transactions" in parsed_result:
+                    transactions = parsed_result["transactions"]
+                    print_and_log(f"📊 DEBUG: Found {len(transactions)} transactions in OpenAI response")
+                    
+                    # Analyze transaction dates
+                    date_analysis = {}
+                    missing_dates = 0
+                    date_formats = set()
+                    
+                    for i, txn in enumerate(transactions[:10]):  # Analyze first 10
+                        txn_date = txn.get('date', 'NO_DATE')
+                        amount = txn.get('amount', 0)
+                        desc = txn.get('description', 'No description')[:50]
+                        
+                        print_and_log(f"   Transaction {i+1}: date='{txn_date}' amount=${amount:.2f} desc='{desc}'")
+                        
+                        if txn_date and txn_date != 'NO_DATE':
+                            if txn_date not in date_analysis:
+                                date_analysis[txn_date] = 0
+                            date_analysis[txn_date] += 1
+                            
+                            # Detect date format
+                            if '/' in txn_date:
+                                date_formats.add('MM/DD/YYYY')
+                            elif '-' in txn_date and len(txn_date) == 10:
+                                date_formats.add('YYYY-MM-DD')
+                            else:
+                                date_formats.add('OTHER')
+                        else:
+                            missing_dates += 1
+                    
+                    print_and_log(f"📅 DEBUG: Date analysis - {len(date_analysis)} unique dates found")
+                    print_and_log(f"📅 DEBUG: Date formats detected: {list(date_formats)}")
+                    print_and_log(f"📅 DEBUG: Transactions missing dates: {missing_dates}")
+                    
+                    if date_analysis:
+                        sorted_dates = sorted(date_analysis.keys())
+                        print_and_log(f"📅 DEBUG: Date range: {sorted_dates[0]} to {sorted_dates[-1]}")
+                        print_and_log(f"📅 DEBUG: Sample dates: {list(sorted_dates)[:5]}")
                 
                 # Detailed analysis
                 if "transactions" in parsed_result:
@@ -1605,8 +1678,52 @@ def process_new_file(event: func.EventGridEvent):
         print_and_log("   ➤ Including all extracted transactions and balances")
         print_and_log("")
         
-        # Generate comprehensive BAI from processed data
-        bai2 = convert_to_bai2(final_data, name, reconciliation_summary)
+        # Perform enhanced matching before BAI2 conversion to get both routing and account numbers
+        enhanced_routing_number = None
+        enhanced_account_number = None
+        
+        # Get account number from statement for enhanced matching
+        statement_account = get_account_number(final_data)
+        
+        if statement_account:
+            # Get bank name for enhanced matching
+            bank_name = None
+            if final_data and "ocr_text_lines" in final_data:
+                # Convert list to string if needed
+                text_lines = final_data["ocr_text_lines"]
+                if isinstance(text_lines, list):
+                    # Join list elements into a single string
+                    text_for_extraction = '\n'.join(text_lines)
+                else:
+                    text_for_extraction = text_lines
+                bank_name = extract_bank_name_from_text(text_for_extraction)
+            
+            if bank_name and get_bank_info_for_processing:
+                print_and_log(f"🔍 Pre-BAI2 enhanced matching check...")
+                print_and_log(f"   Bank Name: '{bank_name}'")
+                print_and_log(f"   Statement Account: '{statement_account}'")
+                
+                try:
+                    result = get_bank_info_for_processing(bank_name, statement_account)
+                    if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
+                        enhanced_account_number, enhanced_routing_number, match_type = result
+                        print_and_log(f"✅ Enhanced matching successful!")
+                        print_and_log(f"   Matched Account: {enhanced_account_number}")
+                        print_and_log(f"   Routing Number: {enhanced_routing_number}")
+                        print_and_log(f"   Match Type: {match_type}")
+                    else:
+                        print_and_log(f"❌ Enhanced matching failed - will use statement account")
+                except Exception as e:
+                    print_and_log(f"⚠️ Enhanced matching error: {str(e)}")
+        
+        # Generate comprehensive BAI from processed data with enhanced matching results
+        bai2 = convert_to_bai2(
+            final_data, 
+            name, 
+            reconciliation_summary, 
+            routing_number=enhanced_routing_number,
+            matched_account_number=enhanced_account_number
+        )
 
         print_and_log("")
         print_and_log("💾 STEP 4: Saving BAI file to processed folder")
@@ -1793,7 +1910,7 @@ def process_new_file(event: func.EventGridEvent):
             _processing_files.discard(file_key)
             print_and_log(f"[DEBUG] Removed {name} from processing queue")
 
-def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=None):
+def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=None, matched_account_number=None):
     """
     Convert extracted data to comprehensive BAI format like Vera_baitest_20250728 (1) (1).bai
     Generates multi-day format with detailed transaction records and summary codes
@@ -1805,13 +1922,37 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
     file_date = now.strftime("%y%m%d")
     file_time = now.strftime("%H%M")
     
+    # Use matched account number from enhanced matching if available, otherwise extract from statement
+    if matched_account_number:
+        account_number = matched_account_number
+        print_and_log(f"✅ Using matched account number from WAC data: {account_number}")
+    else:
+        # Extract account number from statement (needed for enhanced matching)
+        account_number = get_account_number(data)
+        if not account_number:
+            print_and_log("❌ CRITICAL: No account number found on statement - creating ERROR file")
+            return create_error_bai2_file("No account number found on statement", filename, file_date, file_time, "ERROR_NO_ACCOUNT")
+        print_and_log(f"✅ Using account number from statement: {account_number}")
+    
     # Use provided routing number or extract it
     if routing_number:
         originator_id = routing_number
         print_and_log(f"✅ Using provided routing number: {originator_id}")
     else:
-        # Try to extract routing number from data
-        originator_id = get_routing_number(data)
+        # Try to extract routing number from data (now with account number for enhanced matching)
+        result = get_routing_number(data, account_number)
+        if result and isinstance(result, tuple) and len(result) >= 2:
+            originator_id, matched_account = result
+            if matched_account and not matched_account_number:
+                # Update account number if we got a match during routing lookup
+                account_number = matched_account
+                print_and_log(f"✅ Updated account number from enhanced matching: {account_number}")
+        elif result:
+            # Single value returned (old format)
+            originator_id = result
+        else:
+            originator_id = None
+            
         if not originator_id:
             print_and_log("❌ CRITICAL: No routing number found on statement and unable to lookup by bank name - creating ERROR file")
             return create_error_bai2_file("No routing number found on statement", filename, file_date, file_time, "ERROR_NO_ROUTING")
@@ -1819,14 +1960,6 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
     
     # Initialize other defaults (these could also be made dynamic in the future)
     receiver_id = "323809"  # Workday-configured company identifier
-    
-    # Extract account number from statement
-    account_number = get_account_number(data)
-    if not account_number:
-        print_and_log("❌ CRITICAL: No account number found on statement - creating ERROR file")
-        return create_error_bai2_file("No account number found on statement", filename, file_date, file_time, "ERROR_NO_ACCOUNT")
-    
-    print_and_log(f"✅ Using account number: {account_number}")
     
     currency = "USD"
     opening_balance_amount = 0
@@ -2151,28 +2284,59 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
         logging.info(f"Total withdrawals: ${source_total_withdrawals:,.2f}")
         logging.info("Recommendation: Process with full reconciliation analysis for accuracy")
     
-    # Group transactions by date (simulate multi-day format)
+    # Enhanced transaction grouping by date with proper parsing
+    print_and_log("📅 Grouping transactions by date...")
     transaction_groups = {}
+    
+    from datetime import datetime
+    
     for txn in transactions:
         # Validate that txn is a dictionary (not a float or other type)
         if not isinstance(txn, dict):
             print_and_log(f"⚠️ Skipping invalid transaction: {type(txn)} - {txn}")
             continue
             
-        txn_date = txn.get("date", now.strftime("%Y-%m-%d"))
-        # Convert date to YYMMDD format
-        try:
-            dt = datetime.strptime(txn_date, "%Y-%m-%d")
-            group_date = dt.strftime("%y%m%d")
-        except:
+        txn_date = txn.get("date", "")
+        
+        # Parse transaction date with multiple format support
+        parsed_date = None
+        group_date = file_date  # Default fallback
+        
+        if txn_date and txn_date.strip():
+            # Try multiple date formats commonly used in bank statements
+            date_formats = ['%m/%d/%Y', '%Y-%m-%d', '%m-%d-%Y', '%d/%m/%Y', '%m/%d/%y', '%y-%m-%d']
+            
+            for fmt in date_formats:
+                try:
+                    parsed_date = datetime.strptime(txn_date.strip(), fmt)
+                    # Convert to YYMMDD format for BAI2
+                    group_date = parsed_date.strftime("%y%m%d")
+                    print_and_log(f"   ✅ Parsed date '{txn_date}' -> {group_date}")
+                    break
+                except ValueError:
+                    continue
+            
+            if not parsed_date:
+                print_and_log(f"   ⚠️ Could not parse date '{txn_date}', using file date {file_date}")
+                group_date = file_date
+        else:
+            print_and_log(f"   ⚠️ Empty/missing date for transaction, using file date {file_date}")
             group_date = file_date
         
+        # Add transaction to appropriate date group
         if group_date not in transaction_groups:
             transaction_groups[group_date] = []
         transaction_groups[group_date].append(txn)
     
+    # Log grouping results
+    print_and_log(f"📊 Transaction grouping complete:")
+    for date_key in sorted(transaction_groups.keys()):
+        txn_count = len(transaction_groups[date_key])
+        print_and_log(f"   Date {date_key}: {txn_count} transactions")
+    
     # If no transaction groups, create a default group
     if not transaction_groups:
+        print_and_log("⚠️ No transaction groups created, using default file date group")
         transaction_groups[file_date] = []
     
     total_control_total = 0
@@ -2240,8 +2404,16 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
             ending_balance = starting_balance + credit_total - debit_total
             print_and_log(f"💰 Calculated ending balance: ${ending_balance/100:,.2f}")
         
-        # 03 - Account Identifier (account_number, currency, status_code) - NO routing number
-        lines.append(f"03,{account_number},,010,,,Z/")
+        # 03 - Account Identifier (complete BAI2 format)
+        # Format: 03,account_number,currency_code,type_code,customer_account_number,account_name,extension_code/
+        # type_code: 010 = Checking Account, 015 = General Ledger Account, 020 = Savings Account
+        currency_code = "USD"  # USD currency
+        type_code = "010"      # Checking account (most common for business statements)
+        customer_account_number = ""  # Optional field for customer's internal account reference
+        account_name = ""      # Optional field for account description/name
+        extension_code = "Z"   # Standard extension code for end of data
+        
+        lines.append(f"03,{account_number},{currency_code},{type_code},{customer_account_number},{account_name},{extension_code}/")
         group_record_count += 1
         account_record_count = 1  # Start with 1 to include the account identifier (03)
         
