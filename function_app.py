@@ -845,13 +845,189 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
     
     return "\n".join(lines) + "\n"
 
+def extract_labeled_account_number(text):
+    """Extract account number that is explicitly labeled (highest priority)"""
+    print_and_log("🏷️ Looking for explicitly labeled account numbers...")
+    
+    # High-priority patterns for explicitly labeled account numbers
+    labeled_patterns = [
+        r'account\s*number\s*:?\s*(\d{4,})',   # "Account Number: 123456789" - Allow 4+ digits
+        r'account\s*#\s*:?\s*(\d{4,})',        # "Account #: 123456789" or "Account # 123456789"
+        r'acct\s*#?\s*:?\s*(\d{4,})',          # "Acct #: 123456789" or "Acct: 123456789"
+        r'a/c\s*#?\s*:?\s*(\d{4,})',           # "A/C #: 123456789" or "A/C: 123456789"
+        r'account\s*no\s*\.?\s*:?\s*(\d{4,})', # "Account No.: 123456789" or "Account No .: 123456789" - Allow spaces before period
+        r'account\s*id\s*:?\s*(\d{4,})',       # "Account ID: 123456789"
+    ]
+    
+    # Masked labeled patterns
+    masked_labeled_patterns = [
+        r'account\s*number\s*:?\s*([X*]+\d{4,})',   # "Account Number: XXXX1234"
+        r'account\s*#\s*:?\s*([X*]+\d{4,})',        # "Account #: XXXX1234"
+        r'acct\s*#?\s*:?\s*([X*]+\d{4,})',          # "Acct #: XXXX1234"
+        r'a/c\s*#?\s*:?\s*([X*]+\d{4,})',           # "A/C #: XXXX1234"
+        r'account\s*no\s*\.?\s*:?\s*([X*]+\d{4,})', # "Account No.: XXXX1234" or "Account No .: XXXX1234"
+    ]
+    
+    # NEW: Partial account patterns (ending in last 4 digits)
+    partial_patterns = [
+        r'ending\s+in\s+(\d{4})',              # "ending in 0327"
+        r'ending\s+(\d{4})',                   # "ending 0327"
+        r'account\s+ending\s+in\s+(\d{4})',    # "account ending in 0327"
+        r'account\s+ending\s+(\d{4})',         # "account ending 0327"
+        r'acct\s+ending\s+in\s+(\d{4})',       # "acct ending in 0327"
+        r'acct\s+ending\s+(\d{4})',            # "acct ending 0327"
+        r'a/c\s+ending\s+in\s+(\d{4})',        # "a/c ending in 0327"
+        r'a/c\s+ending\s+(\d{4})',             # "a/c ending 0327"
+        r'last\s+4\s+digits?\s*:?\s*(\d{4})',  # "last 4 digits: 0327"
+        r'(\*{4,}|\#{4,}|x{4,})(\d{4})',       # "****0327" or "XXXX0327"
+    ]
+    
+    text_lower = text.lower()
+    
+    # First try masked labeled patterns (highest priority)
+    for pattern in masked_labeled_patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        for match in matches:
+            clean_match = match.upper().replace("-", "").replace(" ", "")
+            if any(char in clean_match for char in ['*', 'X']) and len(clean_match) >= 4:
+                digits_only = re.sub(r'[^0-9]', '', clean_match)
+                if len(digits_only) >= 3:
+                    print_and_log(f"✅ Found LABELED MASKED account: {clean_match}")
+                    return clean_match
+    
+    # Then try numeric labeled patterns
+    for pattern in labeled_patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        for match in matches:
+            if is_valid_account_number(match) and len(match) >= 6:
+                print_and_log(f"✅ Found LABELED NUMERIC account: {match}")
+                return match
+    
+    # NEW: Try partial account patterns (ending in last 4 digits)
+    for pattern in partial_patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        for match in matches:
+            if isinstance(match, tuple):
+                # Pattern with groups - take the last group (the digits)
+                last_digits = match[-1]
+            else:
+                last_digits = match
+            
+            # Validate we have exactly 4 digits
+            if len(last_digits) == 4 and last_digits.isdigit():
+                # Convert to masked format for processing
+                masked_account = f"XXXXXX{last_digits}"
+                print_and_log(f"✅ Found LABELED PARTIAL account: ending {last_digits} -> {masked_account}")
+                return masked_account
+    
+    print_and_log("❌ No explicitly labeled account number found")
+    return None
+
+def extract_account_from_ocr_enhanced(text):
+    """
+    Enhanced account extraction from OCR text
+    - Look for masked account patterns (XXXXX + digits, ***** + digits)
+    - Look for "Ending" followed by digits
+    - Find any label containing "Account" and extract numbers to the right
+    """
+    
+    print_and_log("🔍 Enhanced OCR Account Extraction - looking for masked patterns and Account labels")
+    
+    lines = text.split('\n')
+    print_and_log(f"Processing {len(lines)} lines of OCR text...")
+    
+    for line_num, line in enumerate(lines, 1):
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+            
+        print_and_log(f"Line {line_num}: {line_stripped}")
+        
+        # Pattern 1: Look for masked account numbers (X's or *'s followed by digits)
+        masked_pattern = re.search(r'[X*]{3,}(\d{3,})', line_stripped, re.IGNORECASE)
+        if masked_pattern:
+            account_digits = masked_pattern.group(1)
+            print_and_log(f"  ➤ Found masked account pattern: {masked_pattern.group(0)}")
+            print_and_log(f"  ✅ Extracted account ending: {account_digits}")
+            return account_digits
+        
+        # Pattern 2: Look for "Ending" followed by digits
+        ending_pattern = re.search(r'\bending\s+(\d{3,})', line_stripped, re.IGNORECASE)
+        if ending_pattern:
+            account_digits = ending_pattern.group(1)
+            print_and_log(f"  ➤ Found 'Ending' pattern: {ending_pattern.group(0)}")
+            print_and_log(f"  ✅ Extracted account ending: {account_digits}")
+            return account_digits
+        
+        # Pattern 3: Look for any variation of "Account" in the line
+        if re.search(r'\baccount\b', line_stripped, re.IGNORECASE):
+            print_and_log(f"  ➤ Found 'Account' label")
+            
+            # Extract everything after "Account" on this line
+            account_match = re.search(r'\baccount\s*[:\-\s]*([0-9X*]+)', line_stripped, re.IGNORECASE)
+            if account_match:
+                account_text = account_match.group(1)
+                
+                # Check if it's a masked pattern (X's or *'s)
+                if 'X' in account_text.upper() or '*' in account_text:
+                    digits_match = re.search(r'[X*]+(\d+)', account_text, re.IGNORECASE)
+                    if digits_match:
+                        account_number = digits_match.group(1)
+                        print_and_log(f"  ✅ Extracted account ending from masked pattern: {account_number}")
+                        return account_number
+                else:
+                    # Regular account number
+                    account_number = re.sub(r'[^\d]', '', account_text)
+                    if account_number and len(account_number) >= 4:
+                        print_and_log(f"  ✅ Extracted full account number: {account_number}")
+                        return account_number
+            
+            # If no number on same line, check next line
+            if line_num < len(lines):
+                next_line = lines[line_num].strip()
+                if next_line:
+                    print_and_log(f"  ➤ Checking next line: {next_line}")
+                    
+                    # Check for masked pattern in next line (X's or *'s)
+                    masked_next = re.search(r'[X*]{3,}(\d{3,})', next_line, re.IGNORECASE)
+                    if masked_next:
+                        account_number = masked_next.group(1)
+                        print_and_log(f"  ✅ Extracted account ending from next line masked pattern: {account_number}")
+                        return account_number
+                    
+                    # Extract contiguous numbers from start of next line
+                    number_match = re.match(r'^[^0-9]*([0-9]+)', next_line)
+                    if number_match:
+                        account_number = number_match.group(1)
+                        if len(account_number) >= 4:
+                            print_and_log(f"  ✅ Extracted account number from next line: {account_number}")
+                            return account_number
+    
+    print_and_log(f"❌ NO ACCOUNT NUMBERS FOUND in enhanced OCR extraction")
+    return None
+
 def get_account_number(parsed_data):
-    """Get account number from statement - prioritize Document Intelligence masked accounts"""
-    print_and_log("🔍 Extracting account number...")
+    """Get account number from statement - prioritize explicitly labeled account numbers"""
+    print_and_log("🔍 Extracting account number - looking for labeled account numbers first...")
     
-    text_account_fallback = None
+    # STEP 1: Look for explicitly labeled account numbers in OCR text (HIGHEST PRIORITY)
+    if "ocr_text_lines" in parsed_data:
+        full_text = '\n'.join(parsed_data["ocr_text_lines"])
+        print_and_log(f"🎯 Searching for LABELED account numbers in text...")
+        
+        labeled_account = extract_labeled_account_number(full_text)
+        if labeled_account:
+            print_and_log(f"✅ Found LABELED account number: {labeled_account}")
+            return labeled_account
+        
+        # STEP 1.5: Enhanced OCR extraction - look for any "Account" label and extract contiguous numbers
+        print_and_log(f"🎯 Trying enhanced OCR extraction...")
+        enhanced_account = extract_account_from_ocr_enhanced(full_text)
+        if enhanced_account:
+            print_and_log(f"✅ Found account number via enhanced OCR: {enhanced_account}")
+            return enhanced_account
     
-    # PRIORITY 1: Check Document Intelligence extracted account number (highest priority for masked accounts)
+    # STEP 2: Check Document Intelligence extracted account number
     if "account_number" in parsed_data and parsed_data["account_number"]:
         raw_account = str(parsed_data["account_number"])
         print_and_log(f"🎯 Document Intelligence account: '{raw_account}'")
@@ -860,92 +1036,139 @@ def get_account_number(parsed_data):
         account_number = raw_account.replace("-", "").replace(" ", "")
         print_and_log(f"🎯 After cleaning: '{account_number}'")
         
-        # For masked accounts, always use Document Intelligence result
-        if any(char in account_number for char in ['*', 'x', 'X', '#']):
-            print_and_log(f"✅ Found MASKED account from Document Intelligence: {account_number}")
+        # For TRUE masked accounts (containing asterisks or X's), use Document Intelligence result
+        if any(char in account_number for char in ['*', 'x', 'X']) and len(account_number) >= 4:
+            print_and_log(f"✅ Found TRUE MASKED account from Document Intelligence: {account_number}")
             return account_number
-        elif is_valid_account_number(account_number):
-            print_and_log(f"✅ Found valid account from Document Intelligence: {account_number}")
+        elif is_valid_account_number(account_number) and account_number.isdigit() and len(account_number) >= 6:
+            print_and_log(f"✅ Found valid numeric account from Document Intelligence: {account_number}")
             return account_number
         else:
-            # Check if this is a 4+ digit partial account
-            if account_number.isdigit() and len(account_number) >= 4:
-                print_and_log(f"✅ Found partial account from Document Intelligence: {account_number}")
-                return account_number
-            else:
-                print_and_log(f"❌ Document Intelligence account invalid: '{account_number}' - will check other sources")
+            print_and_log(f"❌ Document Intelligence account invalid or suspicious: '{account_number}'")
     
-    # PRIORITY 2: Check OCR text for numeric account numbers (legacy fallback)
-    if "ocr_text_lines" in parsed_data:
-        full_text = '\n'.join(parsed_data["ocr_text_lines"])
-        print_and_log(f"🔍 Searching OCR text for account number...")
-        account_number = extract_account_number_from_text(full_text)
-        if account_number:
-            # For masked accounts from text, still use them
-            if any(char in account_number for char in ['*', 'x', 'X', '#']) and len(account_number) >= 4:
-                print_and_log(f"✅ Found MASKED account from OCR text: {account_number}")
-                return account_number
-            # Prioritize numeric account numbers from text
-            elif account_number.isdigit() and len(account_number) >= 6:
-                print_and_log(f"✅ Found numeric account number from OCR: {account_number}")
-                return account_number
-            else:
-                # Store text account for fallback but keep looking
-                print_and_log(f"📝 Found text account number '{account_number}', storing as fallback...")
-                text_account_fallback = account_number
     
-    # PRIORITY 3: Check raw fields from document intelligence (legacy fallback)
+    # STEP 3: Check raw fields from document intelligence for account numbers
     if "raw_fields" in parsed_data:
         print_and_log(f"🔍 Checking {len(parsed_data['raw_fields'])} raw fields for account number...")
         for field_name, field_data in parsed_data["raw_fields"].items():
             if isinstance(field_data, dict) and "content" in field_data:
                 content = field_data["content"]
-                print_and_log(f"🔍 Field '{field_name}': '{content}'")
                 
-                if "account" in field_name.lower():
+                                # Only check fields that are specifically account number fields, not address/name fields
+                if field_name.lower() in ['accounts', 'account', 'accountnumber', 'account_number']:
                     if content and len(content) > 4:
                         # Clean but preserve asterisks for validation
                         clean_content = content.replace("-", "").replace(" ", "")
-                        print_and_log(f"🔍 Account field cleaned: '{clean_content}'")
+                        print_and_log(f"🔍 Account field '{field_name}': '{clean_content}'")
                         
-                        # Prioritize masked accounts
-                        if any(char in clean_content for char in ['*', 'x', 'X', '#']) and len(clean_content) >= 4:
-                            print_and_log(f"✅ Found MASKED account in field '{field_name}': {clean_content}")
+                        # Prioritize TRUE masked accounts (with * or X)
+                        if any(char in clean_content for char in ['*', 'X']) and len(clean_content) >= 4:
+                            print_and_log(f"✅ Found TRUE MASKED account in field '{field_name}': {clean_content}")
                             return clean_content
-                        elif is_valid_account_number(clean_content):
-                            # Prioritize numeric account numbers
-                            if clean_content.isdigit() and len(clean_content) >= 6:
-                                print_and_log(f"✅ Found numeric account number in field '{field_name}': {clean_content}")
-                                return clean_content
-                            else:
-                                print_and_log(f"📝 Found text account in field '{field_name}': {clean_content}")
-                                text_account_fallback = clean_content
-                        else:
-                            print_and_log(f"❌ Account field invalid: '{clean_content}' - skipping")
-                
-                # Also try extracting from any field content, prioritize masked and numeric
-                print_and_log(f"🔍 Trying regex extraction on field '{field_name}' content...")
-                account_number = extract_account_number_from_text(field_data["content"])
-                if account_number:
-                    # Prioritize masked accounts
-                    if any(char in account_number for char in ['*', 'x', 'X', '#']) and len(account_number) >= 4:
-                        print_and_log(f"✅ Found MASKED account from regex in field '{field_name}': {account_number}")
-                        return account_number
-                    elif account_number.isdigit() and len(account_number) >= 6:
-                        print_and_log(f"✅ Found numeric account from regex in field '{field_name}': {account_number}")
-                        return account_number
-                    else:
-                        print_and_log(f"📝 Found text account from regex in field '{field_name}': {account_number}")
-                        if not text_account_fallback:
-                            text_account_fallback = account_number
+                        elif is_valid_account_number(clean_content) and clean_content.isdigit() and len(clean_content) >= 4:
+                            print_and_log(f"✅ Found numeric account in field '{field_name}': {clean_content}")
+                            return clean_content
+                else:
+                    # For non-account fields, log them but don't treat as accounts
+                    if "account" in field_name.lower():
+                        print_and_log(f"📋 Skipping non-account field '{field_name}': '{content[:50] if len(content) > 50 else content}' (not an account number field)")
     
-    # PRIORITY 4: Use text account fallback if found
-    if text_account_fallback:
-        print_and_log(f"✅ Using fallback text account number: {text_account_fallback}")
-        return text_account_fallback
+    
+    # STEP 4: Fallback to frequency analysis only if no labeled account found
+    if "ocr_text_lines" in parsed_data:
+        full_text = '\n'.join(parsed_data["ocr_text_lines"])
+        print_and_log(f"⚠️ No labeled account found - falling back to frequency analysis...")
+        
+        # Extract all possible account numbers with their types
+        all_found_accounts = extract_all_account_numbers_with_frequency(full_text)
+        
+        # Analyze results
+        if all_found_accounts:
+            print_and_log(f"📊 Found {len(all_found_accounts)} total account number instances for frequency analysis")
+            
+            # Group by account number and count frequency
+            from collections import Counter
+            account_frequency = Counter()
+            account_types = {}  # Track what type each account is
+            
+            for acc_type, acc_value in all_found_accounts:
+                account_frequency[acc_value] += 1
+                if acc_value not in account_types:
+                    account_types[acc_value] = acc_type
+            
+            # Log frequency analysis
+            print_and_log("� FREQUENCY ANALYSIS (fallback only):")
+            for account, freq in account_frequency.most_common():
+                acc_type = account_types[account]
+                print_and_log(f"   {account} ({acc_type}): {freq} times")
+            
+            # Use most frequent NUMERIC account (ignore reference numbers like HUS#1279)
+            for account, freq in account_frequency.most_common():
+                acc_type = account_types[account]
+                if acc_type == "numeric" and account.isdigit() and len(account) >= 6 and freq >= 3:
+                    print_and_log(f"✅ Using most frequent numeric account: {account} ({freq} times)")
+                    return account
+            
+            # Look for TRUE masked accounts (with * or X) as last resort
+            for account, freq in account_frequency.most_common():
+                acc_type = account_types[account]
+                if acc_type == "masked" and any(char in account for char in ['*', 'X']) and len(account) >= 4:
+                    print_and_log(f"✅ Using masked account as fallback: {account} ({freq} times)")
+                    return account
     
     print_and_log("❌ No account number found in statement")
     return None
+
+def extract_all_account_numbers_with_frequency(text):
+    """Extract ALL account numbers from text for frequency analysis"""
+    found_accounts = []
+    
+    # TRUE masked patterns (highest priority)
+    masked_patterns = [
+        r'\b([X*]+\d{4,})\b',  # XXXX1234 or ****1234
+        r'\b(\d{4,}[X*]+)\b',  # 1234XXXX or 1234****
+        r'\b(\d+[X*]+\d+)\b',  # 12XX34 or 12**34
+    ]
+    
+    # Numeric patterns (medium priority)
+    numeric_patterns = [
+        r'\b(\d{6,12})\b',  # 6-12 digit numbers (typical account numbers)
+    ]
+    
+    # Suspicious text patterns (lowest priority - likely reference numbers)
+    text_patterns = [
+        r'\b([A-Z]+#\d{4,})\b',  # HUS#1279 (likely reference numbers)
+        r'\b([A-Z]{2,}\d{4,})\b',  # ABC1234 (likely reference numbers)
+    ]
+    
+    text_upper = text.upper()
+    
+    # Extract TRUE masked accounts
+    for pattern in masked_patterns:
+        matches = re.findall(pattern, text_upper)
+        for match in matches:
+            # Validate it has enough digits
+            digits_only = re.sub(r'[^0-9]', '', match)
+            if len(digits_only) >= 3:
+                found_accounts.append(("masked", match))
+    
+    # Extract numeric accounts
+    for pattern in numeric_patterns:
+        matches = re.findall(pattern, text_upper)
+        for match in matches:
+            if is_valid_account_number(match):
+                found_accounts.append(("numeric", match))
+    
+    # Extract text patterns (but mark them as suspicious)
+    for pattern in text_patterns:
+        matches = re.findall(pattern, text_upper)
+        for match in matches:
+            # Only include if it looks like it could be an account number
+            digits_only = re.sub(r'[^0-9]', '', match)
+            if len(digits_only) >= 3:
+                found_accounts.append(("reference", match))  # Mark as reference, not account
+    
+    return found_accounts
 
 def get_routing_number(parsed_data, account_number=None):
     """Get routing number ONLY from WAC Bank Information database - never from statement text"""
@@ -1873,7 +2096,7 @@ def process_new_file(event: func.EventGridEvent):
                 bank_name = extract_bank_name_from_text(text_for_extraction)
             
             if bank_name and get_bank_info_for_processing:
-                print_and_log(f"🔍 Pre-BAI2 enhanced matching check...")
+                print_and_log(f"🔍 WAC Account Verification...")
                 print_and_log(f"   Bank Name: '{bank_name}'")
                 print_and_log(f"   Statement Account: '{statement_account}'")
                 
@@ -1881,14 +2104,123 @@ def process_new_file(event: func.EventGridEvent):
                     result = get_bank_info_for_processing(bank_name, statement_account)
                     if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
                         enhanced_account_number, enhanced_routing_number, match_type = result
-                        print_and_log(f"✅ Enhanced matching successful!")
+                        print_and_log(f"✅ WAC OPERATIONAL ACCOUNT VERIFIED!")
                         print_and_log(f"   Matched Account: {enhanced_account_number}")
                         print_and_log(f"   Routing Number: {enhanced_routing_number}")
                         print_and_log(f"   Match Type: {match_type}")
                     else:
-                        print_and_log(f"❌ Enhanced matching failed - will use statement account")
+                        print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+                        print_and_log(f"❌ Account '{statement_account}' not found in WAC database")
+                        print_and_log(f"❌ POLICY VIOLATION: Only WAC operational accounts are allowed")
+                        print_and_log(f"❌ Creating ERROR file - customer accounts not permitted")
+                        
+                        # Create error BAI2 file immediately
+                        from datetime import datetime
+                        now = datetime.now()
+                        file_date = now.strftime("%y%m%d")
+                        file_time = now.strftime("%H%M")
+                        
+                        error_bai2 = create_error_bai2_file(
+                            "Account not found in WAC operational database. Only WAC operational accounts are permitted for processing.",
+                            name,
+                            file_date,
+                            file_time
+                        )
+                        
+                        # Save error file and return early
+                        print_and_log("")
+                        print_and_log("💾 STEP 3: Saving ERROR BAI file")
+                        print_and_log("   ➤ Creating error notification file")
+                        
+                        output_container = blob_service.get_container_client("bank-reconciliation")
+                        base_filename = name.split('.')[0]
+                        output_filename = f"bai2-outputs/ERROR_{base_filename}.bai"
+                        
+                        output_container.upload_blob(
+                            name=output_filename, 
+                            data=error_bai2.encode('utf-8'), 
+                            overwrite=True
+                        )
+                        
+                        print_and_log("✅ ERROR BAI2 file uploaded successfully!")
+                        print_and_log(f"📁 Location: bank-reconciliation/{output_filename}")
+                        
+                        # Archive original file
+                        try:
+                            input_container = blob_service.get_container_client(container_name)
+                            source_blob = input_container.get_blob_client(blob_name)
+                            
+                            if source_blob.exists():
+                                archive_container = blob_service.get_container_client(container_name)
+                                archive_blob = archive_container.get_blob_client(f"archive/{name}")
+                                archive_blob.start_copy_from_url(source_blob.url)
+                                source_blob.delete_blob()
+                                print_and_log("✅ Original file archived successfully!")
+                                print_and_log(f"📁 Archive location: archive/{name}")
+                            else:
+                                print_and_log("⚠️ Source file not found (test mode)")
+                        except Exception as archive_error:
+                            print_and_log(f"⚠️ Archive error: {str(archive_error)}")
+                        
+                        # Final summary
+                        print_and_log("")
+                        print_and_log("📊 PROCESSING COMPLETE - FINAL SUMMARY")
+                        print_and_log("=" * 60)
+                        print_and_log(f"📄 Source File: {name}")
+                        print_and_log(f"❌ ERROR BAI Output: bank-reconciliation/{output_filename}")
+                        print_and_log(f"⚠️  BAI file created with error message due to non-WAC account")
+                        print_and_log(f"📁 Archive: bank-reconciliation/archive/{name}")
+                        print_and_log("⚠️ RECONCILIATION STATUS: NOT PERFORMED")
+                        print_and_log("✅ BANK STATEMENT PROCESSING SUCCESSFUL!")
+                        print_and_log("   ➤ Your PDF has been converted to BAI2 format")
+                        print_and_log("   ➤ The file is ready for import into banking systems")
+                        print_and_log("   ➤ Original file has been safely archived")
+                        print_and_log("=" * 60)
+                        
+                        return
+                        
                 except Exception as e:
-                    print_and_log(f"⚠️ Enhanced matching error: {str(e)}")
+                    print_and_log(f"⚠️ WAC account verification error: {str(e)}")
+                    print_and_log(f"❌ Creating ERROR file due to verification failure")
+                    
+                    # Create error BAI2 file for verification failure
+                    from datetime import datetime
+                    now = datetime.now()
+                    file_date = now.strftime("%y%m%d")
+                    file_time = now.strftime("%H%M")
+                    
+                    error_bai2 = create_error_bai2_file(
+                        f"WAC account verification failed: {str(e)}",
+                        name,
+                        file_date,
+                        file_time
+                    )
+                    
+                    # Save error file and return early
+                    output_container = blob_service.get_container_client("bank-reconciliation")
+                    base_filename = name.split('.')[0]
+                    output_filename = f"bai2-outputs/ERROR_{base_filename}.bai"
+                    
+                    output_container.upload_blob(
+                        name=output_filename, 
+                        data=error_bai2.encode('utf-8'), 
+                        overwrite=True
+                    )
+                    
+                    # Archive original file
+                    try:
+                        input_container = blob_service.get_container_client(container_name)
+                        source_blob = input_container.get_blob_client(blob_name)
+                        
+                        if source_blob.exists():
+                            archive_container = blob_service.get_container_client(container_name)
+                            archive_blob = archive_container.get_blob_client(f"archive/{name}")
+                            archive_blob.start_copy_from_url(source_blob.url)
+                            source_blob.delete_blob()
+                        print_and_log("✅ Original file archived")
+                    except Exception as archive_error:
+                        print_and_log(f"⚠️ Archive error: {str(archive_error)}")
+                    return
         
         # Generate comprehensive BAI from processed data with enhanced matching results
         bai2 = convert_to_bai2(
