@@ -8,16 +8,9 @@ import sys
 import json
 import re
 import openai
-import traceback
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
-from azure.ai.documentintelligence import DocumentIntelligenceClient
-from azure.core.credentials import AzureKeyCredential
-from io import BytesIO
-from openai import AzureOpenAI
-
-# Configuration constants
-FUNCTION_APP_NAME = "BankStatementAgent"
+from collections import Counter
 
 # Configure logging to suppress verbose Azure SDK HTTP traffic
 logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
@@ -26,14 +19,6 @@ logging.getLogger('azure.identity').setLevel(logging.WARNING)
 logging.getLogger('azure.core').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
-# Import bai2_fixer for BAI2 validation and fixing
-try:
-    import bai2_fixer
-    print("✅ BAI2 fixer module loaded successfully")
-except ImportError as e:
-    print(f"⚠️ Could not load bai2_fixer module: {e}")
-    bai2_fixer = None
-
 # Import enhanced bank matching system
 try:
     from bank_info_loader import get_bank_info_for_processing
@@ -41,132 +26,6 @@ try:
 except ImportError as e:
     print(f"⚠️ Could not load enhanced bank matching: {e}")
     get_bank_info_for_processing = None
-
-# === THROTTLING AND RATE LIMITING SYSTEM ===
-import threading
-from collections import defaultdict
-from typing import Optional
-
-# Import throttling configuration
-try:
-    from throttling_config import ThrottlingConfig
-    print("✅ Throttling configuration loaded")
-    # Adjust for Azure OpenAI (you can change this based on your actual plan)
-    ThrottlingConfig.adjust_for_plan('azure')
-except ImportError as e:
-    print(f"⚠️ Could not load throttling config: {e}")
-    # Fallback configuration
-    class ThrottlingConfig:
-        CALLS_PER_MINUTE = 50
-        MIN_DELAY_BETWEEN_CALLS = 2
-        RETRY_DELAYS = [2, 5, 10, 20]
-        INITIAL_PROCESSING_DELAY_MIN = 1
-        INITIAL_PROCESSING_DELAY_MAX = 5
-        RETRYABLE_ERROR_KEYWORDS = ['rate limit', 'quota', 'too many requests', '429', 'timeout', 'connection', 'network']
-
-class OpenAIThrottler:
-    """Thread-safe throttling system for OpenAI API calls"""
-    
-    def __init__(self):
-        self._lock = threading.Lock()
-        self._last_call_time = 0
-        self._call_count = 0
-        self._reset_time = 0
-        
-    def wait_if_needed(self):
-        """Enforce rate limiting before making OpenAI call"""
-        with self._lock:
-            current_time = time.time()
-            
-            # Reset counter every minute
-            if current_time - self._reset_time >= 60:
-                self._call_count = 0
-                self._reset_time = current_time
-            
-            # Check if we've hit the rate limit
-            if self._call_count >= ThrottlingConfig.CALLS_PER_MINUTE:
-                wait_time = 60 - (current_time - self._reset_time)
-                if wait_time > 0:
-                    print_and_log(f"⏳ Rate limit reached ({ThrottlingConfig.CALLS_PER_MINUTE}/min), waiting {wait_time:.1f} seconds...")
-                    time.sleep(wait_time)
-                    self._call_count = 0
-                    self._reset_time = time.time()
-            
-            # Enforce minimum delay between calls
-            time_since_last_call = current_time - self._last_call_time
-            if time_since_last_call < ThrottlingConfig.MIN_DELAY_BETWEEN_CALLS:
-                delay = ThrottlingConfig.MIN_DELAY_BETWEEN_CALLS - time_since_last_call
-                print_and_log(f"⏱️ Throttling: waiting {delay:.1f}s between calls...")
-                time.sleep(delay)
-            
-            self._call_count += 1
-            self._last_call_time = time.time()
-            print_and_log(f"🤖 OpenAI call #{self._call_count}/{ThrottlingConfig.CALLS_PER_MINUTE} this minute")
-
-    def retry_with_backoff(self, func, *args, **kwargs):
-        """Execute function with exponential backoff retry"""
-        for attempt, delay in enumerate(ThrottlingConfig.RETRY_DELAYS):
-            try:
-                self.wait_if_needed()
-                return func(*args, **kwargs)
-            except Exception as e:
-                error_str = str(e).lower()
-                if attempt == len(ThrottlingConfig.RETRY_DELAYS) - 1:
-                    # Last attempt failed
-                    print_and_log(f"❌ OpenAI call failed after {len(ThrottlingConfig.RETRY_DELAYS)} attempts: {str(e)}")
-                    raise e
-                
-                # Check if this is a retryable error
-                is_retryable = any(keyword in error_str for keyword in ThrottlingConfig.RETRYABLE_ERROR_KEYWORDS)
-                
-                if is_retryable:
-                    print_and_log(f"🔄 Retryable error (attempt {attempt + 1}/{len(ThrottlingConfig.RETRY_DELAYS)}), backing off {delay}s...")
-                    print_and_log(f"   Error: {str(e)[:100]}...")
-                    time.sleep(delay)
-                else:
-                    # Non-retryable error
-                    print_and_log(f"❌ Non-retryable error: {str(e)}")
-                    raise e
-
-# Global throttler instance
-openai_throttler = OpenAIThrottler()
-
-# Processing queue to handle multiple file uploads
-class ProcessingQueue:
-    """Simple in-memory queue to serialize file processing"""
-    
-    def __init__(self):
-        self._lock = threading.Lock()
-        self._processing = set()
-        
-    def is_processing(self, file_key: str) -> bool:
-        """Check if file is currently being processed"""
-        with self._lock:
-            return file_key in self._processing
-    
-    def start_processing(self, file_key: str) -> bool:
-        """Mark file as being processed. Returns True if processing started, False if already processing"""
-        with self._lock:
-            if file_key in self._processing:
-                return False
-            self._processing.add(file_key)
-            return True
-    
-    def finish_processing(self, file_key: str):
-        """Mark file as finished processing"""
-        with self._lock:
-            self._processing.discard(file_key)
-    
-    def get_queue_status(self) -> dict:
-        """Get current queue status for monitoring"""
-        with self._lock:
-            return {
-                'currently_processing': len(self._processing),
-                'processing_files': list(self._processing)
-            }
-
-# Global processing queue
-processing_queue = ProcessingQueue()
 
 # Configure console encoding for Unicode support
 if sys.platform == "win32":
@@ -275,6 +134,289 @@ def load_local_settings():
         print(f"⚠️ Could not load local.settings.json: {e}")
         return False
     return True
+
+# ==============================
+# BAI2 Fixer Functions (from bai2_fixer.py)
+# ==============================
+
+def today_yymmdd():
+    return datetime.now().strftime("%y%m%d")
+
+def yymmdd_valid(s: str) -> bool:
+    if not (isinstance(s, str) and len(s) == 6 and s.isdigit()):
+        return False
+    try:
+        datetime.strptime(s, "%y%m%d")
+        return True
+    except ValueError:
+        return False
+
+def sanitize_description(desc: str) -> (str, bool, list):
+    changes = []
+    original = desc
+    # Replace "/" with "-"
+    if "/" in desc:
+        changes.append("replace slash with dash")
+    desc = desc.replace("/", "-")
+    # Remove control chars
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in desc):
+        changes.append("remove control chars")
+    desc = re.sub(r"[\x00-\x1F\x7F]", " ", desc)
+    # Convert to ASCII (replace non-ASCII with space)
+    if any(ord(ch) > 126 for ch in desc):
+        changes.append("non-ascii -> space")
+    desc = re.sub(r"[^\x20-\x7E]", " ", desc)
+    # Collapse whitespace
+    desc = re.sub(r"\s+", " ", desc).strip()
+    changed = (desc != original)
+    return desc, changed, changes
+
+def ensure_int_cents(amount_str: str) -> (str, bool):
+    # Keep digits only (BAI2 amounts here should be integer cents)
+    new = re.sub(r"\D", "", amount_str or "")
+    return new, (new != (amount_str or ""))
+
+class Entry16:
+    def __init__(self, line_no:int, fields:list):
+        # Ensure at least 7 fields so indexing is safe
+        while len(fields) < 7:
+            fields.append("")
+        self.line_no = line_no
+        self.type_code = fields[1] if len(fields) > 1 else ""
+        self.amount = fields[2] if len(fields) > 2 else ""
+        self.zone = fields[3] if len(fields) > 3 else "Z"
+        self.ref_num = fields[4] if len(fields) > 4 else ""
+        self.desc = fields[6] if len(fields) > 6 else ""
+
+class Account03:
+    def __init__(self, line_no:int, fields:list):
+        while len(fields) < 7:
+            fields.append("")
+        self.line_no = line_no
+        self.account_number = fields[1]
+        self.account_currency = fields[2]
+        self.account_type_code = fields[3]
+        self.continuation_code = fields[6]
+        self.entries = []
+        self.orig_49_fields = None
+        self.ending_balance = "0"  # will be set from orig 49 if present
+        self.audit = {
+            "ref_renumbered": False,
+            "ending_balance_fixed": False,
+            "amounts_normalized": 0,
+            "descriptions_sanitized": 0,
+            "desc_change_reasons": Counter(),
+        }
+
+    def finalize(self):
+        # Renumber ref nums sequentially 00001..
+        for idx, e in enumerate(self.entries, start=1):
+            e.ref_num = f"{idx:05d}"
+        self.audit["ref_renumbered"] = True
+        # If we saw a 49, keep its ending balance; fix if not integer
+        if self.orig_49_fields and len(self.orig_49_fields) > 1:
+            eb_fixed, changed = ensure_int_cents(self.orig_49_fields[1])
+            self.ending_balance = eb_fixed or "0"
+            self.audit["ending_balance_fixed"] = changed
+        else:
+            self.ending_balance = "0"
+
+class Group02:
+    def __init__(self, line_no:int, fields:list):
+        while len(fields) < 8:
+            fields.append("")
+        self.line_no = line_no
+        self.receiver_id = fields[1]
+        self.originator_id = fields[2]
+        self.group_sequence = fields[3]
+        self.group_date = fields[4]
+        self.currency = fields[6]
+        self.record_length_indicator = fields[7] if len(fields) > 7 else "2"
+        self.accounts = []
+        self.orig_98_fields = None
+
+    def compute_98(self):
+        group_total = sum(int(a.ending_balance or "0") for a in self.accounts)
+        account_count = len(self.accounts)
+        group_record_count = 1 + sum(1 + len(a.entries) + 1 for a in self.accounts)  # 02 + Σ(03 + Ns + 49)
+        return group_total, account_count, group_record_count
+
+class File01:
+    def __init__(self, fields:list):
+        while len(fields) < 9:
+            fields.append("")
+        self.originator_id = fields[1]
+        self.receiver_id = fields[2]
+        self.file_date = fields[3]
+        self.file_time = fields[4]
+        self.file_id_sequence = fields[5]
+        self.record_length_indicator = fields[8] if len(fields) > 8 else "2"
+
+def parse_bai2(raw_text:str):
+    lines = [ln.rstrip("\r\n") for ln in raw_text.splitlines() if ln.strip()]
+    file01 = None
+    groups = []
+    cur_group = None
+    cur_account = None
+
+    # Track what was missing for audit
+    missing = {"49": 0, "98": 0, "99": 0}
+
+    for idx, ln in enumerate(lines, start=1):
+        fields = (ln[:-1] if ln.endswith("/") else ln).split(",")
+        rec = fields[0]
+        if rec == "01":
+            file01 = File01(fields)
+        elif rec == "02":
+            cur_group = Group02(idx, fields)
+            groups.append(cur_group)
+            cur_account = None
+        elif rec == "03" and cur_group is not None:
+            cur_account = Account03(idx, fields)
+            cur_group.accounts.append(cur_account)
+        elif rec == "16" and cur_account is not None:
+            entry = Entry16(idx, fields)
+            # normalize amount
+            new_amount, changed = ensure_int_cents(entry.amount)
+            if changed:
+                cur_account.audit["amounts_normalized"] += 1
+            entry.amount = new_amount
+            # sanitize desc
+            new_desc, desc_changed, reasons = sanitize_description(entry.desc)
+            if desc_changed:
+                cur_account.audit["descriptions_sanitized"] += 1
+                for r in reasons:
+                    cur_account.audit["desc_change_reasons"][r] += 1
+            entry.desc = new_desc
+            cur_account.entries.append(entry)
+        elif rec == "49" and cur_account is not None:
+            cur_account.orig_49_fields = fields
+            cur_account = None  # close account
+        elif rec == "98" and cur_group is not None:
+            cur_group.orig_98_fields = fields
+            cur_group = None  # close group
+        elif rec == "99":
+            # we don't need fields content; rebuilt later
+            pass
+        else:
+            # unknown or out-of-order records ignored for rebuilding
+            pass
+
+    # Finalize 01/02 dates (invalid -> today)
+    audit = {"file_date_corrected": False, "group_dates_corrected": 0}
+    if file01 is None:
+        raise ValueError("Missing 01 header")
+    if not yymmdd_valid(file01.file_date):
+        file01.file_date = today_yymmdd()
+        audit["file_date_corrected"] = True
+    for g in groups:
+        if not yymmdd_valid(g.group_date):
+            g.group_date = today_yymmdd()
+            audit["group_dates_corrected"] += 1
+
+    # Finalize accounts (renumber refs, fix ending balance format)
+    for g in groups:
+        for a in g.accounts:
+            a.finalize()
+
+    return file01, groups, audit
+
+def rebuild_bai2(file01:File01, groups:list):
+    out = []
+
+    # 01
+    out.append(f"01,{file01.originator_id},{file01.receiver_id},{file01.file_date},{file01.file_time},{file01.file_id_sequence},,,{file01.record_length_indicator}/")
+
+    # 02..98 per group
+    group_totals = []
+    for g in groups:
+        out.append(f"02,{g.receiver_id},{g.originator_id},{g.group_sequence},{g.group_date},,{g.currency},{g.record_length_indicator}/")
+        for a in g.accounts:
+            out.append(f"03,{a.account_number},{a.account_currency},{a.account_type_code},,,{a.continuation_code}/")
+            for e in a.entries:
+                # enforce 301/451 only if clearly indicated? We keep original type_code as-is to avoid changing business data
+                type_code = e.type_code
+                out.append(f"16,{type_code},{e.amount},Z,{e.ref_num},,{e.desc}/")
+            N = len(a.entries)
+            out.append(f"49,{a.ending_balance},{N}/")
+        # 98
+        g_total, acct_ct, rec_ct = g.compute_98()
+        group_totals.append(g_total)
+        out.append(f"98,{g_total},{acct_ct},{rec_ct}/")
+
+    # 99
+    file_control_total = sum(group_totals)
+    group_count = len(groups)
+    # Count records from first 02 to last 98 inclusive
+    recs_between = 0
+    started = False
+    for line in out[1:]:
+        if line.startswith("02,"):
+            started = True
+        if started:
+            recs_between += 1
+        if line.startswith("98,"):
+            # keep counting; we will include all through last 98
+            pass
+    out.append(f"99,{file_control_total},{group_count},{recs_between}/")
+    return out
+
+def fix_bai2_with_bai2_fixer(raw_bai2_text: str) -> (str, str):
+    """
+    Fix BAI2 content using the bai2_fixer.py logic
+    Returns: (fixed_bai2_content, audit_log)
+    """
+    try:
+        file01, groups, audit_dates = parse_bai2(raw_bai2_text)
+        rebuilt_lines = rebuild_bai2(file01, groups)
+
+        # Build audit text
+        audit_lines = []
+        if audit_dates["file_date_corrected"]:
+            audit_lines.append(f"corrected 01 file date -> {file01.file_date}")
+        if audit_dates["group_dates_corrected"]:
+            audit_lines.append(f"corrected {audit_dates['group_dates_corrected']} group date(s) in 02")
+
+        # Account-level audits
+        total_ref_renum = 0
+        total_amt_norm = 0
+        total_desc_san = 0
+        reasons = Counter()
+        ending_bal_fixed = 0
+        for g in groups:
+            for a in g.accounts:
+                if a.audit["ref_renumbered"]:
+                    total_ref_renum += 1
+                total_amt_norm += a.audit["amounts_normalized"]
+                total_desc_san += a.audit["descriptions_sanitized"]
+                reasons.update(a.audit["desc_change_reasons"])
+                if a.audit["ending_balance_fixed"]:
+                    ending_bal_fixed += 1
+
+        if total_ref_renum:
+            audit_lines.append(f"renumbered REF_NUMs for {total_ref_renum} account(s)")
+        if total_amt_norm:
+            audit_lines.append(f"normalized {total_amt_norm} amount(s) to integer cents")
+        if total_desc_san:
+            rs = ", ".join([f"{k}={v}" for k,v in reasons.items()]) if reasons else "sanitized descriptions"
+            audit_lines.append(f"sanitized {total_desc_san} description(s) ({rs})")
+        if ending_bal_fixed:
+            audit_lines.append(f"fixed non-integer ending balances in {ending_bal_fixed} account(s)")
+
+        # File-level recomputed trailers summary
+        stats = Counter()
+        for line in rebuilt_lines:
+            rec = line.split(",")[0]
+            stats[rec] += 1
+        audit_lines.append(f"rebuilt trailers: 49={stats.get('49',0)}, 98={stats.get('98',0)}, 99={stats.get('99',0)}")
+
+        fixed_content = "\n".join(rebuilt_lines)
+        audit_log = "; ".join(audit_lines) if audit_lines else "No changes needed"
+        
+        return fixed_content, audit_log
+        
+    except Exception as e:
+        raise Exception(f"BAI2 fixing failed: {str(e)}")
 
 def print_and_log(message):
     """Print to console with proper encoding handling - Azure Functions will automatically capture console output in logs"""
@@ -434,14 +576,32 @@ def print_and_log(message):
 load_local_settings()
 
 def extract_routing_number_from_text(text):
-    """DEPRECATED: Extract routing number from bank statement text using regex patterns
+    """Extract routing number from bank statement text using regex patterns"""
+    print_and_log("🔍 Searching for routing number in statement text...")
     
-    WARNING: This function is no longer used as per policy change.
-    Routing numbers are now ONLY obtained from the WAC Bank Information database.
-    Customer statements should not be processed for routing numbers.
-    """
-    print_and_log("⚠️ DEPRECATED: extract_routing_number_from_text called - this function is disabled")
-    print_and_log("⚠️ POLICY: Only using routing numbers from WAC Bank Information database")
+    # Common routing number patterns
+    patterns = [
+        r'routing\s*#?\s*:?\s*(\d{9})',  # "Routing #: 123456789"
+        r'routing\s*number\s*:?\s*(\d{9})',  # "Routing number: 123456789"
+        r'rt\s*#?\s*:?\s*(\d{9})',  # "RT#: 123456789"
+        r'aba\s*#?\s*:?\s*(\d{9})',  # "ABA#: 123456789"
+        r'transit\s*#?\s*:?\s*(\d{9})',  # "Transit#: 123456789"
+        r'routing\s*(\d{9})',  # "Routing 123456789"
+        r'(\d{9})\s*routing',  # "123456789 routing"
+        r'\b(\d{9})\b',  # Any 9-digit number (last resort)
+    ]
+    
+    text_lower = text.lower()
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        for match in matches:
+            # Validate routing number (basic checksum)
+            if is_valid_routing_number(match):
+                print_and_log(f"✅ Found valid routing number: {match}")
+                return match
+    
+    print_and_log("❌ No routing number found in statement text")
     return None
 
 def is_valid_routing_number(routing_number):
@@ -462,48 +622,167 @@ def is_valid_routing_number(routing_number):
     return checksum % 10 == 0
 
 def extract_bank_name_from_text(text):
-    """Extract bank name from statement text using intelligent word boundary detection"""
-    print_and_log("🏦 Searching for bank name in statement text...")
-    print_and_log(f"🏦 DEBUG: Input text length: {len(text)} characters")
-    print_and_log(f"🏦 DEBUG: Input text sample: {text[:200]}...")
+    """Extract bank name from statement text using completely generic patterns"""
+    print_and_log("🏦 Searching for bank name in statement text using generic patterns...")
     
-    # Smart approach: Look for the bank name at the beginning of the statement
-    # Most bank statements start with the bank name as the first meaningful content
+    # Split text into lines for analysis
     lines = text.split('\n')
-    words = text.split()
+    print_and_log(f"🏦 Total lines in document: {len(lines)}")
     
-    # Try to find complete bank name by looking for natural stopping points
-    print_and_log("🏦 SMART EXTRACTION: Looking for complete bank name at document start...")
+    # Show first few lines for context
+    print_and_log("🏦 First few lines of document:")
+    for i, line in enumerate(lines[:5]):
+        if line.strip():
+            print_and_log(f"  Line {i+1}: {line.strip()}")
     
-    # Check first few lines for bank name
-    for line_num, line in enumerate(lines[:5], 1):
-        line = line.strip()
-        if not line or len(line) < 3:
-            continue
-            
-        print_and_log(f"🏦 DEBUG: Line {line_num}: '{line}'")
+    # Generic patterns to capture ANY bank name format (no hardcoding)
+    bank_patterns = [
+        # Pattern 1: Any text ending with common banking institution keywords
+        r'([A-Za-z][A-Za-z0-9\s&\.,\-\']+(?:Bank|Trust|Credit Union|Federal Credit Union|FCU|Savings|Financial|Association|Corp|Corporation|Company|Inc)(?:\s*(?:&|and)\s*(?:Trust|Company))?)',
         
-        # Skip obvious non-bank content
-        if any(skip_word in line.lower() for skip_word in ['report', 'statement', 'date', 'page', 'account', 'balance']):
-            continue
-            
-        # This line might contain the bank name - extract it intelligently
-        bank_name = extract_complete_bank_name_from_line(line)
-        if bank_name:
-            print_and_log(f"✅ Found complete bank name: '{bank_name}'")
-            return bank_name
+        # Pattern 2: "Bank of [anything]" format
+        r'(Bank\s+of\s+[A-Za-z][A-Za-z0-9\s&\.,\-\']+)',
+        
+        # Pattern 3: Words containing "bank" anywhere (like "BankFirst", "Interbank")
+        r'([A-Za-z]*[Bb]ank[A-Za-z]*(?:\s+[A-Za-z][A-Za-z0-9\s&\.,\-\']*)?)',
+        
+        # Pattern 4: Multi-word entities with banking keywords
+        r'([A-Za-z][A-Za-z0-9\s&\.,\-\']*\s+(?:National|State|Federal|Community|Regional|Local|First|Second|Third|Citizens|Farmers|Merchants|Commercial|Industrial)\s+[A-Za-z][A-Za-z0-9\s&\.,\-\']*)',
+        
+        # Pattern 5: Entities with common corporate suffixes that might be banks
+        r'([A-Za-z][A-Za-z0-9\s&\.,\-\']+\s+(?:N\.A\.|NA|LLC|Ltd|Limited))',
+        
+        # Pattern 6: Acronyms or short names (3+ characters) that might be banks
+        r'([A-Z]{3,}(?:\s+[A-Za-z][A-Za-z0-9\s&\.,\-\']*)?)',
+        
+        # Pattern 7: Any capitalized multi-word phrase (2-6 words) - catch-all
+        r'([A-Z][A-Za-z0-9]*(?:\s+[A-Z&][A-Za-z0-9&]*){1,5})',
+        
+        # Pattern 8: Single words that might be bank names (fallback)
+        r'([A-Z][A-Za-z0-9]{4,})',
+    ]
     
-    # Fallback: Try first few words approach
-    print_and_log("🏦 FALLBACK: Using first meaningful words approach...")
-    if words:
-        # Look for natural stopping points in the first several words
-        bank_name = extract_bank_name_from_words(words[:10])  # Check first 10 words
-        if bank_name:
-            print_and_log(f"✅ Found bank name from words: '{bank_name}'")
-            return bank_name
+    found_banks = []
     
-    print_and_log("❌ No bank name found in statement text")
-    return None
+    # Check each pattern against the text
+    for i, pattern in enumerate(bank_patterns):
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        if matches:
+            print_and_log(f"🏦 Pattern {i+1} found: {matches}")
+            found_banks.extend(matches)
+    
+    # Clean and filter the found bank names
+    cleaned_banks = []
+    for bank in found_banks:
+        cleaned = clean_bank_name(bank)
+        if is_valid_bank_name_improved(cleaned):
+            cleaned_banks.append(cleaned)
+    
+    print_and_log(f"🏦 Cleaned bank names: {cleaned_banks}")
+    
+    # Look specifically in header lines (first 10 lines) for better accuracy
+    header_banks = []
+    for i, line in enumerate(lines[:10]):
+        if line.strip():
+            for j, pattern in enumerate(bank_patterns):
+                matches = re.findall(pattern, line, re.IGNORECASE)
+                if matches:
+                    # Clean header matches
+                    for match in matches:
+                        cleaned = clean_bank_name(match)
+                        if is_valid_bank_name_improved(cleaned):
+                            header_banks.append(cleaned)
+    
+    print_and_log(f"🏦 Header bank names: {header_banks}")
+    
+    # Return the most likely bank name (prioritize header findings and longer names)
+    if header_banks:
+        # Sort by length to get the most complete name
+        header_banks.sort(key=len, reverse=True)
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_headers = []
+        for bank in header_banks:
+            if bank.lower() not in seen:
+                seen.add(bank.lower())
+                unique_headers.append(bank)
+        return unique_headers[0] if unique_headers else None
+    elif cleaned_banks:
+        cleaned_banks.sort(key=len, reverse=True)
+        # Remove duplicates
+        seen = set()
+        unique_found = []
+        for bank in cleaned_banks:
+            if bank.lower() not in seen:
+                seen.add(bank.lower())
+                unique_found.append(bank)
+        return unique_found[0] if unique_found else None
+    else:
+        print_and_log("❌ No bank name found in statement text")
+        return None
+
+def clean_bank_name(name):
+    """Clean up extracted bank name."""
+    # Remove extra whitespace
+    name = ' '.join(name.split())
+    
+    # Remove trailing punctuation and comma from "Wells Fargo, N.A."
+    name = re.sub(r'[.,;:!?]+$', '', name)
+    
+    # Capitalize properly
+    name = name.title()
+    
+    # Fix common abbreviations
+    name = re.sub(r'\bAnd\b', '&', name)
+    name = re.sub(r'\bFcu\b', 'FCU', name)
+    name = re.sub(r'\bUsa\b', 'USA', name)
+    name = re.sub(r'\bN\.A\.$', 'N.A.', name)  # Handle "N.A." properly
+    
+    return name
+
+def is_valid_bank_name_improved(name):
+    """Filter out invalid bank name extractions using generic logic only."""
+    if not name or len(name.strip()) < 2:
+        return False
+    
+    name = name.strip()
+    
+    # Must be reasonable length (not too short or too long)
+    if len(name) < 2 or len(name) > 100:
+        return False
+    
+    # Must contain at least one letter (not just numbers/symbols)
+    if not any(c.isalpha() for c in name):
+        return False
+        
+    # Must contain banking keywords OR look like a proper name
+    banking_keywords = ['bank', 'trust', 'credit union', 'fcu', 'savings', 'financial', 
+                       'association', 'corp', 'corporation', 'company', 'inc', 'n.a.', 'na']
+    has_banking_keyword = any(keyword in name.lower() for keyword in banking_keywords)
+    
+    # If it has banking keywords, it's likely valid
+    if has_banking_keyword:
+        # Additional check: shouldn't contain obvious non-bank words
+        invalid_words = ['report', 'statement', 'balance', 'account', 'customer', 
+                        'created', 'date', 'currency', 'activity', 'summary', 'page',
+                        'total', 'amount', 'transaction', 'deposit', 'withdrawal']
+        if any(word in name.lower() for word in invalid_words):
+            return False
+        return True
+    
+    # If no banking keywords, check if it looks like a proper name (capitalized words)
+    words = name.split()
+    if len(words) >= 2:
+        # Check if most words are capitalized (proper noun pattern)
+        capitalized_words = sum(1 for word in words if word and word[0].isupper())
+        if capitalized_words >= len(words) * 0.7:  # At least 70% capitalized
+            return True
+    
+    # Single word that's capitalized and reasonable length
+    if len(words) == 1 and len(name) >= 4 and name[0].isupper():
+        return True
+        
+    return False
 
 def extract_complete_bank_name_from_line(line):
     """Extract complete bank name from a single line with advanced logic for complex names"""
@@ -653,6 +932,7 @@ def lookup_routing_number_by_bank_name(bank_name):
             return None
         
         # Set up Azure OpenAI client
+        from openai import AzureOpenAI
         print_and_log(f"🔍 DEBUG: Creating Azure OpenAI client...")
         client = AzureOpenAI(
             azure_endpoint=endpoint,
@@ -721,39 +1001,17 @@ def lookup_routing_number_by_bank_name(bank_name):
             
     except Exception as e:
         print_and_log(f"❌ Error looking up routing number with OpenAI: {str(e)}")
+        import traceback
         print_and_log(f"❌ Full error traceback: {traceback.format_exc()}")
         return None
 
-def extract_digits_from_account(account_str):
-    """Extract digits from masked account number (e.g., 'XXXXXX2101' -> '2101')"""
-    if not account_str:
-        return account_str
-    
-    # If account contains masking characters, extract only the digits
-    if any(char in str(account_str) for char in ['*', 'x', 'X', '#']):
-        digits_only = re.sub(r'[^0-9]', '', str(account_str))
-        print_and_log(f"🔍 Extracting digits from masked account: '{account_str}' -> '{digits_only}'")
-        return digits_only
-    
-    # Otherwise return as-is
-    return str(account_str)
-
 def extract_account_number_from_text(text):
-    """Extract account number from bank statement text using regex patterns - prioritize masked accounts"""
-    print_and_log("🔍 Searching for account number in statement text...")
+    """Extract account number from bank statement text using generic patterns"""
+    print_and_log("🔍 Searching for account number in statement text using generic patterns...")
     
-    # PRIORITY 1: Masked account patterns (highest priority)
-    masked_patterns = [
-        r'account\s*#?\s*:?\s*([X*#]+\d{4,})(?:\s|$)',  # "Account #: XXXXXX2101" or "Account: ***1234"
-        r'account\s*number\s*:?\s*([X*#]+\d{4,})(?:\s|$)',  # "Account number: XXXXXX2101"
-        r'acct\s*#?\s*:?\s*([X*#]+\d{4,})(?:\s|$)',  # "Acct#: XXXXXX2101"
-        r'a/c\s*#?\s*:?\s*([X*#]+\d{4,})(?:\s|$)',  # "A/C#: XXXXXX2101"
-        r'account\s+([X*#]+\d{4,})(?:\s|$)',  # "Account XXXXXX2101"
-        r'(?:^|\s)([X*#]{4,}\d{4,})(?:\s|$)',  # "XXXXXX2101" standalone
-        r'ending\s*in\s+([X*#]*\d{4,})(?:\s|$)',  # "Ending in 2101" or "Ending in ***2101"
-    ]
+    # No hardcoded bank-specific patterns - using only generic patterns
     
-    # PRIORITY 2: Numeric patterns (medium priority)
+    # Prioritized account number patterns - numeric patterns first
     numeric_patterns = [
         r'account\s*#?\s*:?\s*(\d{6,})(?:\s|$)',  # "Account #: 123456789" (numeric only)
         r'account\s*number\s*:?\s*(\d{6,})(?:\s|$)',  # "Account number: 123456789" (numeric only)
@@ -763,120 +1021,80 @@ def extract_account_number_from_text(text):
         r'(?:^|\s)(\d{6,12})(?:\s|$)',  # Any 6-12 digit number (standalone)
     ]
     
-    # PRIORITY 3: General text patterns (lowest priority)
+    # Text patterns (fallback)
     text_patterns = [
-        r'account\s*#?\s*:?\s*([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Account #: ABC123456789" 
-        r'account\s*number\s*:?\s*([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Account number: ABC123456789"
-        r'acct\s*#?\s*:?\s*([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Acct#: ABC123456789"
-        r'a/c\s*#?\s*:?\s*([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "A/C#: ABC123456789"
-        r'account\s+([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Account ABC123456789"
-        r'(?:^|\s)([A-Za-z0-9\-\*X#]+)\s+account(?:\s|$)',  # "ABC123456789 account"
-        r'for\s*account\s+([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "For account ABC123456789"
-        r'account\s*#\s+([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Account # ABC123456789" (with space)
-        r'a/c\s*#\s+([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "A/C # ABC123456789" (with space)
-        r'acct\s*#\s+([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Acct # ABC123456789" (with space)
-        r'(?:^|\s)([A-Za-z0-9\-\*X#]{8,})(?:\s|$)',  # Any 8+ character alphanumeric including masking (last resort)
+        r'account\s*#?\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Account #: ABC123456789" or "Account #: *5594"
+        r'account\s*number\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Account number: ABC123456789" or "Account number: *5594"
+        r'acct\s*#?\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Acct#: ABC123456789" or "Acct#: *5594"
+        r'a/c\s*#?\s*:?\s*([A-Za-z0-9\-\*]+)(?:\s|$)',  # "A/C#: ABC123456789" or "A/C#: *5594"
+        r'account\s+([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Account ABC123456789" or "Account *5594"
+        r'(?:^|\s)([A-Za-z0-9\-\*]+)\s+account(?:\s|$)',  # "ABC123456789 account" or "*5594 account"
+        r'for\s*account\s+([A-Za-z0-9\-\*]+)(?:\s|$)',  # "For account ABC123456789" or "For account *5594"
+        r'ending\s*in\s+([A-Za-z0-9\*]+)(?:\s|$)',  # "Ending in AB1234" or "Ending in *1234" (partial account)
+        r'account\s*#\s+([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Account # ABC123456789" or "Account # *5594" (with space)
+        r'a/c\s*#\s+([A-Za-z0-9\-\*]+)(?:\s|$)',  # "A/C # ABC123456789" or "A/C # *5594" (with space)
+        r'acct\s*#\s+([A-Za-z0-9\-\*]+)(?:\s|$)',  # "Acct # ABC123456789" or "Acct # *5594" (with space)
+        r'(?:^|\s)([A-Za-z0-9\-\*]{8,})(?:\s|$)',  # Any 8+ character alphanumeric including asterisks (last resort)
     ]
     
     text_lower = text.lower()
-    found_accounts = []
     
-    # PRIORITY 1: Try masked patterns first (highest priority)
-    print_and_log("🎯 Searching for MASKED account patterns...")
-    for pattern in masked_patterns:
-        matches = re.findall(pattern, text_lower, re.IGNORECASE)
-        for match in matches:
-            # Clean but preserve masking characters
-            clean_match = match.upper().replace("-", "").replace(" ", "")
-            if any(char in clean_match for char in ['*', 'X', '#']) and len(clean_match) >= 4:
-                # Extract digits to validate we have enough
-                digits_only = re.sub(r'[^0-9]', '', clean_match)
-                if len(digits_only) >= 3:
-                    print_and_log(f"✅ Found MASKED account number: {clean_match} (digits: {digits_only})")
-                    return clean_match
-                else:
-                    print_and_log(f"❌ Masked account has insufficient digits: {clean_match} -> {digits_only}")
-            else:
-                print_and_log(f"❌ Not a valid masked account: {clean_match}")
-    
-    # PRIORITY 2: Try numeric patterns (medium priority)
-    print_and_log("🔢 Searching for NUMERIC account patterns...")
-    for pattern in numeric_patterns:
+    # Try numeric patterns (high priority)
+    print_and_log("🔍 Testing numeric patterns...")
+    for i, pattern in enumerate(numeric_patterns):
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         for match in matches:
             if is_valid_account_number(match):
                 print_and_log(f"✅ Found valid numeric account number: {match}")
-                found_accounts.append(("numeric", match))
+                return match
             else:
                 print_and_log(f"❌ Found invalid numeric account number: {match} - rejected")
     
-    # PRIORITY 3: Try text patterns (lowest priority)
-    print_and_log("📝 Searching for TEXT account patterns...")
-    for pattern in text_patterns:
+    # Then try text patterns (lower priority)
+    print_and_log("🔍 Testing text patterns...")
+    for i, pattern in enumerate(text_patterns):
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         for match in matches:
-            clean_match = match.upper().replace("-", "").replace(" ", "")
-            
-            # Check if it's a masked account
-            if any(char in clean_match for char in ['*', 'X', '#']) and len(clean_match) >= 4:
-                digits_only = re.sub(r'[^0-9]', '', clean_match)
-                if len(digits_only) >= 3:
-                    print_and_log(f"✅ Found MASKED account in text patterns: {clean_match} (digits: {digits_only})")
-                    return clean_match
-                else:
-                    print_and_log(f"❌ Masked account has insufficient digits: {clean_match} -> {digits_only}")
-            # Check if it's a valid numeric account
-            elif is_valid_account_number(clean_match):
-                print_and_log(f"✅ Found valid text account number: {clean_match}")
-                found_accounts.append(("text", clean_match))
-            # Check if it's a 4-digit partial account
-            elif len(clean_match) == 4 and clean_match.isdigit():
-                masked_account = "XXXXXX" + clean_match
+            # Check if it's a valid account number first
+            if is_valid_account_number(match):
+                print_and_log(f"✅ Found valid text account number: {match}")
+                return match
+            # If not valid but contains asterisks, it might be a masked account for enhanced matching
+            elif "*" in match and len(match) >= 4:
+                print_and_log(f"✅ Found masked account number for enhanced matching: {match}")
+                return match
+            # If it's a 4-digit number, convert to masked format
+            elif len(match) == 4 and match.isdigit():
+                masked_account = "*" + match
                 print_and_log(f"✅ Found partial account, converting to masked format: {masked_account}")
                 return masked_account
             else:
-                print_and_log(f"❌ Found invalid account number: {clean_match} - rejected")
-    
-    # Return the best account found (prefer numeric over text)
-    if found_accounts:
-        # Prefer numeric accounts if found
-        for account_type, account in found_accounts:
-            if account_type == "numeric":
-                print_and_log(f"✅ Using best numeric account: {account}")
-                return account
-        
-        # Otherwise use first text account
-        for account_type, account in found_accounts:
-            if account_type == "text":
-                print_and_log(f"✅ Using fallback text account: {account}")
-                return account
+                # Log what we found but rejected
+                print_and_log(f"❌ Found invalid account number: {match} - rejected")
     
     print_and_log("❌ No account number found in statement text")
     return None
 
 def is_valid_account_number(account_number):
-    """Validate account number - extract digits from masked numbers and validate the result"""
+    """Validate account number - reject any with asterisks (masked) or other invalid characteristics"""
     if not account_number:
         return False
     
     account_str = str(account_number).strip()
     
-    # Extract digits from masked account numbers (e.g., "XXXXXX2101" -> "2101")
-    digits_only = re.sub(r'[^0-9]', '', account_str)
+    # Critical: Reject account numbers containing asterisks (masked/redacted numbers)
+    # This catches cases like "*5594", "5594*", "55*94", "****5594", etc.
+    if "*" in account_str:
+        print_and_log(f"❌ Account number validation failed: contains asterisk(s): '{account_str}'")
+        return False
     
-    # If we have masking characters, extract and validate the digits
-    if any(char in account_str for char in ['*', 'x', 'X', '#']):
-        print_and_log(f"🔍 Found masked account number: '{account_str}' -> extracting digits: '{digits_only}'")
-        
-        # Validate extracted digits
-        if len(digits_only) >= 3:  # At least 3 digits for partial matching
-            print_and_log(f"✅ Extracted valid digits from masked account: '{digits_only}'")
-            return True
-        else:
-            print_and_log(f"❌ Not enough digits in masked account: '{digits_only}' (need at least 3)")
-            return False
+    # Also reject other masking characters sometimes used
+    if any(char in account_str for char in ['x', 'X', '#']) and len(account_str) <= 8:
+        # Allow X/x/# in longer account numbers, but not in short ones (likely masked)
+        print_and_log(f"❌ Account number validation failed: likely masked with X/#: '{account_str}'")
+        return False
     
-    # For non-masked numbers, use the original validation logic
+    # Account numbers should be reasonable length (at least 4 characters after cleaning)
     clean_account = account_str.replace("-", "").replace(" ", "").replace("_", "")
     if len(clean_account) < 4:
         print_and_log(f"❌ Account number validation failed: too short after cleaning: '{clean_account}'")
@@ -900,12 +1118,11 @@ def is_valid_account_number(account_number):
         print_and_log(f"❌ Account number validation failed: all same character: '{clean_account}'")
         return False
     
-    # Allow 4-digit accounts only if they came from specific patterns like "ACCT 1093"
-    # Reject standalone 4-digit numbers that are likely partial/masked
+    # Special case: reject common partial account numbers that are often the result of masking
+    # These are typically the last 4 digits of a masked account number like "*5594"
     if len(clean_account) == 4 and clean_account.isdigit():
-        # Allow 4-digit accounts - they could be valid short account numbers
-        print_and_log(f"⚠️ 4-digit account detected: '{clean_account}' - allowing for database lookup")
-        # Note: Will be validated against WAC database during routing lookup
+        print_and_log(f"❌ Account number validation failed: likely partial/masked 4-digit number: '{clean_account}'")
+        return False
     
     # If we get here, the account number passed all checks
     print_and_log(f"✅ Account number validation passed: '{account_str}' -> '{clean_account}'")
@@ -971,450 +1188,236 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
     
     return "\n".join(lines) + "\n"
 
-def extract_labeled_account_number(text):
-    """Extract account number that is explicitly labeled (highest priority)"""
-    print_and_log("🏷️ Looking for explicitly labeled account numbers...")
-    
-    # High-priority patterns for explicitly labeled account numbers
-    labeled_patterns = [
-        r'account\s*number\s*:?\s*(\d{4,})',   # "Account Number: 123456789" - Allow 4+ digits
-        r'account\s*#\s*:?\s*(\d{4,})',        # "Account #: 123456789" or "Account # 123456789"
-        r'acct\s*#?\s*:?\s*(\d{4,})',          # "Acct #: 123456789" or "Acct: 123456789"
-        r'a/c\s*#?\s*:?\s*(\d{4,})',           # "A/C #: 123456789" or "A/C: 123456789"
-        r'account\s*no\s*\.?\s*:?\s*(\d{4,})', # "Account No.: 123456789" or "Account No .: 123456789" - Allow spaces before period
-        r'account\s*id\s*:?\s*(\d{4,})',       # "Account ID: 123456789"
-    ]
-    
-    # Masked labeled patterns
-    masked_labeled_patterns = [
-        r'account\s*number\s*:?\s*([X*]+\d{4,})',   # "Account Number: XXXX1234"
-        r'account\s*#\s*:?\s*([X*]+\d{4,})',        # "Account #: XXXX1234"
-        r'acct\s*#?\s*:?\s*([X*]+\d{4,})',          # "Acct #: XXXX1234"
-        r'a/c\s*#?\s*:?\s*([X*]+\d{4,})',           # "A/C #: XXXX1234"
-        r'account\s*no\s*\.?\s*:?\s*([X*]+\d{4,})', # "Account No.: XXXX1234" or "Account No .: XXXX1234"
-    ]
-    
-    # NEW: Partial account patterns (ending in last 4 digits)
-    partial_patterns = [
-        r'ending\s+in\s+(\d{4})',              # "ending in 0327"
-        r'ending\s+(\d{4})',                   # "ending 0327"
-        r'account\s+ending\s+in\s+(\d{4})',    # "account ending in 0327"
-        r'account\s+ending\s+(\d{4})',         # "account ending 0327"
-        r'acct\s+ending\s+in\s+(\d{4})',       # "acct ending in 0327"
-        r'acct\s+ending\s+(\d{4})',            # "acct ending 0327"
-        r'a/c\s+ending\s+in\s+(\d{4})',        # "a/c ending in 0327"
-        r'a/c\s+ending\s+(\d{4})',             # "a/c ending 0327"
-        r'last\s+4\s+digits?\s*:?\s*(\d{4})',  # "last 4 digits: 0327"
-        r'(\*{4,}|\#{4,}|x{4,})(\d{4})',       # "****0327" or "XXXX0327"
-    ]
-    
-    text_lower = text.lower()
-    
-    # First try masked labeled patterns (highest priority)
-    for pattern in masked_labeled_patterns:
-        matches = re.findall(pattern, text_lower, re.IGNORECASE)
-        for match in matches:
-            clean_match = match.upper().replace("-", "").replace(" ", "")
-            if any(char in clean_match for char in ['*', 'X']) and len(clean_match) >= 4:
-                digits_only = re.sub(r'[^0-9]', '', clean_match)
-                if len(digits_only) >= 3:
-                    print_and_log(f"✅ Found LABELED MASKED account: {clean_match}")
-                    return clean_match
-    
-    # Then try numeric labeled patterns
-    for pattern in labeled_patterns:
-        matches = re.findall(pattern, text_lower, re.IGNORECASE)
-        for match in matches:
-            if is_valid_account_number(match) and len(match) >= 6:
-                print_and_log(f"✅ Found LABELED NUMERIC account: {match}")
-                return match
-    
-    # NEW: Try partial account patterns (ending in last 4 digits)
-    for pattern in partial_patterns:
-        matches = re.findall(pattern, text_lower, re.IGNORECASE)
-        for match in matches:
-            if isinstance(match, tuple):
-                # Pattern with groups - take the last group (the digits)
-                last_digits = match[-1]
-            else:
-                last_digits = match
-            
-            # Validate we have exactly 4 digits
-            if len(last_digits) == 4 and last_digits.isdigit():
-                # Convert to masked format for processing
-                masked_account = f"XXXXXX{last_digits}"
-                print_and_log(f"✅ Found LABELED PARTIAL account: ending {last_digits} -> {masked_account}")
-                return masked_account
-    
-    print_and_log("❌ No explicitly labeled account number found")
-    return None
-
-def extract_account_from_ocr_enhanced(text):
-    """
-    Enhanced account extraction from OCR text
-    - Look for masked account patterns (XXXXX + digits, ***** + digits)
-    - Look for "Ending" followed by digits
-    - Find any label containing "Account" and extract numbers to the right
-    """
-    
-    print_and_log("🔍 Enhanced OCR Account Extraction - looking for masked patterns and Account labels")
-    
-    lines = text.split('\n')
-    print_and_log(f"Processing {len(lines)} lines of OCR text...")
-    
-    for line_num, line in enumerate(lines, 1):
-        line_stripped = line.strip()
-        if not line_stripped:
-            continue
-            
-        print_and_log(f"Line {line_num}: {line_stripped}")
-        
-        # Pattern 1: Look for masked account numbers (X's or *'s followed by digits)
-        masked_pattern = re.search(r'[X*]{3,}(\d{3,})', line_stripped, re.IGNORECASE)
-        if masked_pattern:
-            account_digits = masked_pattern.group(1)
-            print_and_log(f"  ➤ Found masked account pattern: {masked_pattern.group(0)}")
-            print_and_log(f"  ✅ Extracted account ending: {account_digits}")
-            return account_digits
-        
-        # Pattern 2: Look for "Ending" followed by digits
-        ending_pattern = re.search(r'\bending\s+(\d{3,})', line_stripped, re.IGNORECASE)
-        if ending_pattern:
-            account_digits = ending_pattern.group(1)
-            print_and_log(f"  ➤ Found 'Ending' pattern: {ending_pattern.group(0)}")
-            print_and_log(f"  ✅ Extracted account ending: {account_digits}")
-            return account_digits
-        
-        # Pattern 3: Look for any variation of "Account" in the line
-        if re.search(r'\baccount\b', line_stripped, re.IGNORECASE):
-            print_and_log(f"  ➤ Found 'Account' label")
-            
-            # Extract everything after "Account" on this line
-            account_match = re.search(r'\baccount\s*[:\-\s]*([0-9X*]+)', line_stripped, re.IGNORECASE)
-            if account_match:
-                account_text = account_match.group(1)
-                
-                # Check if it's a masked pattern (X's or *'s)
-                if 'X' in account_text.upper() or '*' in account_text:
-                    digits_match = re.search(r'[X*]+(\d+)', account_text, re.IGNORECASE)
-                    if digits_match:
-                        account_number = digits_match.group(1)
-                        print_and_log(f"  ✅ Extracted account ending from masked pattern: {account_number}")
-                        return account_number
-                else:
-                    # Regular account number
-                    account_number = re.sub(r'[^\d]', '', account_text)
-                    if account_number and len(account_number) >= 4:
-                        print_and_log(f"  ✅ Extracted full account number: {account_number}")
-                        return account_number
-            
-            # If no number on same line, check next line
-            if line_num < len(lines):
-                next_line = lines[line_num].strip()
-                if next_line:
-                    print_and_log(f"  ➤ Checking next line: {next_line}")
-                    
-                    # Check for masked pattern in next line (X's or *'s)
-                    masked_next = re.search(r'[X*]{3,}(\d{3,})', next_line, re.IGNORECASE)
-                    if masked_next:
-                        account_number = masked_next.group(1)
-                        print_and_log(f"  ✅ Extracted account ending from next line masked pattern: {account_number}")
-                        return account_number
-                    
-                    # Extract contiguous numbers from start of next line
-                    number_match = re.match(r'^[^0-9]*([0-9]+)', next_line)
-                    if number_match:
-                        account_number = number_match.group(1)
-                        if len(account_number) >= 4:
-                            print_and_log(f"  ✅ Extracted account number from next line: {account_number}")
-                            return account_number
-    
-    print_and_log(f"❌ NO ACCOUNT NUMBERS FOUND in enhanced OCR extraction")
-    return None
-
 def get_account_number(parsed_data):
-    """Get account number from statement - prioritize explicitly labeled account numbers"""
-    print_and_log("🔍 Extracting account number - looking for labeled account numbers first...")
+    """Get account number from statement"""
+    print_and_log("🔍 Extracting account number...")
     
-    # STEP 1: Look for explicitly labeled account numbers in OCR text (HIGHEST PRIORITY)
-    if "ocr_text_lines" in parsed_data:
-        full_text = '\n'.join(parsed_data["ocr_text_lines"])
-        print_and_log(f"🎯 Searching for LABELED account numbers in text...")
-        
-        labeled_account = extract_labeled_account_number(full_text)
-        if labeled_account:
-            print_and_log(f"✅ Found LABELED account number: {labeled_account}")
-            return labeled_account
-        
-        # STEP 1.5: Enhanced OCR extraction - look for any "Account" label and extract contiguous numbers
-        print_and_log(f"🎯 Trying enhanced OCR extraction...")
-        enhanced_account = extract_account_from_ocr_enhanced(full_text)
-        if enhanced_account:
-            print_and_log(f"✅ Found account number via enhanced OCR: {enhanced_account}")
-            return enhanced_account
+    text_account_fallback = None
     
-    # STEP 2: Check Document Intelligence extracted account number
+    # Attempt to extract account number from OpenAI parsed data
     if "account_number" in parsed_data and parsed_data["account_number"]:
         raw_account = str(parsed_data["account_number"])
-        print_and_log(f"🎯 Document Intelligence account: '{raw_account}'")
+        print_and_log(f"🔍 Raw account from parsed data: '{raw_account}'")
         
-        # Clean but preserve asterisks and X's for validation
+        # Clean but preserve asterisks for validation
         account_number = raw_account.replace("-", "").replace(" ", "")
-        print_and_log(f"🎯 After cleaning: '{account_number}'")
+        print_and_log(f"🔍 After cleaning: '{account_number}'")
         
-        # For TRUE masked accounts (containing asterisks or X's), use Document Intelligence result
-        if any(char in account_number for char in ['*', 'x', 'X']) and len(account_number) >= 4:
-            print_and_log(f"✅ Found TRUE MASKED account from Document Intelligence: {account_number}")
-            return account_number
-        elif is_valid_account_number(account_number) and account_number.isdigit() and len(account_number) >= 6:
-            print_and_log(f"✅ Found valid numeric account from Document Intelligence: {account_number}")
+        if is_valid_account_number(account_number):
+            print_and_log(f"✅ Found account number from parsed data: {account_number}")
             return account_number
         else:
-            print_and_log(f"❌ Document Intelligence account invalid or suspicious: '{account_number}'")
+            # Check if this is a masked account number that we should preserve for enhanced matching
+            if "*" in account_number and len(account_number) >= 4:
+                print_and_log(f"✅ Found masked account number from parsed data: {account_number}")
+                return account_number
+            elif len(account_number) == 4 and account_number.isdigit():
+                # This might be the last 4 digits of a masked account - add asterisk prefix
+                masked_account = "*" + account_number
+                print_and_log(f"✅ Found partial account, converting to masked format: {masked_account}")
+                return masked_account
+            else:
+                print_and_log(f"❌ Parsed data account number invalid: '{account_number}' - rejected")
     
+    # Check OCR text lines - prioritize numeric account numbers over text
+    if "ocr_text_lines" in parsed_data:
+        full_text = '\n'.join(parsed_data["ocr_text_lines"])
+        print_and_log(f"🔍 Searching OCR text for account number...")
+        account_number = extract_account_number_from_text(full_text)
+        if account_number:
+            # Prioritize numeric account numbers over text strings
+            if account_number.isdigit() and len(account_number) >= 6:
+                print_and_log(f"✅ Found numeric account number: {account_number}")
+                return account_number
+            else:
+                # Store text account for fallback but keep looking for numeric
+                print_and_log(f"📝 Found text account number '{account_number}', but looking for numeric...")
+                text_account_fallback = account_number
     
-    # STEP 3: Check raw fields from document intelligence for account numbers
+    # Check raw fields from document intelligence
+    text_account_fallback = None
     if "raw_fields" in parsed_data:
         print_and_log(f"🔍 Checking {len(parsed_data['raw_fields'])} raw fields for account number...")
         for field_name, field_data in parsed_data["raw_fields"].items():
             if isinstance(field_data, dict) and "content" in field_data:
                 content = field_data["content"]
+                print_and_log(f"🔍 Field '{field_name}': '{content}'")
                 
-                                # Only check fields that are specifically account number fields, not address/name fields
-                if field_name.lower() in ['accounts', 'account', 'accountnumber', 'account_number']:
+                if "account" in field_name.lower():
                     if content and len(content) > 4:
                         # Clean but preserve asterisks for validation
                         clean_content = content.replace("-", "").replace(" ", "")
-                        print_and_log(f"🔍 Account field '{field_name}': '{clean_content}'")
+                        print_and_log(f"🔍 Account field cleaned: '{clean_content}'")
                         
-                        # Prioritize TRUE masked accounts (with * or X)
-                        if any(char in clean_content for char in ['*', 'X']) and len(clean_content) >= 4:
-                            print_and_log(f"✅ Found TRUE MASKED account in field '{field_name}': {clean_content}")
+                        if is_valid_account_number(clean_content):
+                            # Prioritize numeric account numbers
+                            if clean_content.isdigit() and len(clean_content) >= 6:
+                                print_and_log(f"✅ Found numeric account number in field '{field_name}': {clean_content}")
+                                return clean_content
+                            else:
+                                print_and_log(f"📝 Found text account in field '{field_name}': {clean_content}")
+                                text_account_fallback = clean_content
+                        elif "*" in clean_content and len(clean_content) >= 4:
+                            print_and_log(f"✅ Found masked account number in field '{field_name}': {clean_content}")
                             return clean_content
-                        elif is_valid_account_number(clean_content) and clean_content.isdigit() and len(clean_content) >= 4:
-                            print_and_log(f"✅ Found numeric account in field '{field_name}': {clean_content}")
-                            return clean_content
-                else:
-                    # For non-account fields, log them but don't treat as accounts
-                    if "account" in field_name.lower():
-                        print_and_log(f"📋 Skipping non-account field '{field_name}': '{content[:50] if len(content) > 50 else content}' (not an account number field)")
+                        else:
+                            print_and_log(f"❌ Account field invalid: '{clean_content}' - skipping")
+                
+                # Also try extracting from any field content, prioritize numeric
+                print_and_log(f"🔍 Trying regex extraction on field '{field_name}' content...")
+                account_number = extract_account_number_from_text(field_data["content"])
+                if account_number:
+                    if account_number.isdigit() and len(account_number) >= 6:
+                        print_and_log(f"✅ Found numeric account from regex in field '{field_name}': {account_number}")
+                        return account_number
+                    else:
+                        print_and_log(f"📝 Found text account from regex in field '{field_name}': {account_number}")
+                        if not text_account_fallback:
+                            text_account_fallback = account_number
     
-    
-    # STEP 4: Fallback to frequency analysis only if no labeled account found
-    if "ocr_text_lines" in parsed_data:
-        full_text = '\n'.join(parsed_data["ocr_text_lines"])
-        print_and_log(f"⚠️ No labeled account found - falling back to frequency analysis...")
-        
-        # Extract all possible account numbers with their types
-        all_found_accounts = extract_all_account_numbers_with_frequency(full_text)
-        
-        # Analyze results
-        if all_found_accounts:
-            print_and_log(f"📊 Found {len(all_found_accounts)} total account number instances for frequency analysis")
-            
-            # Group by account number and count frequency
-            from collections import Counter
-            account_frequency = Counter()
-            account_types = {}  # Track what type each account is
-            
-            for acc_type, acc_value in all_found_accounts:
-                account_frequency[acc_value] += 1
-                if acc_value not in account_types:
-                    account_types[acc_value] = acc_type
-            
-            # Log frequency analysis
-            print_and_log("� FREQUENCY ANALYSIS (fallback only):")
-            for account, freq in account_frequency.most_common():
-                acc_type = account_types[account]
-                print_and_log(f"   {account} ({acc_type}): {freq} times")
-            
-            # Use most frequent NUMERIC account (ignore reference numbers like HUS#1279)
-            for account, freq in account_frequency.most_common():
-                acc_type = account_types[account]
-                if acc_type == "numeric" and account.isdigit() and len(account) >= 6 and freq >= 3:
-                    print_and_log(f"✅ Using most frequent numeric account: {account} ({freq} times)")
-                    return account
-            
-            # Look for TRUE masked accounts (with * or X) as last resort
-            for account, freq in account_frequency.most_common():
-                acc_type = account_types[account]
-                if acc_type == "masked" and any(char in account for char in ['*', 'X']) and len(account) >= 4:
-                    print_and_log(f"✅ Using masked account as fallback: {account} ({freq} times)")
-                    return account
+    # If we found a text account but no numeric account, use the text account
+    if text_account_fallback:
+        print_and_log(f"✅ Using fallback text account number: {text_account_fallback}")
+        return text_account_fallback
     
     print_and_log("❌ No account number found in statement")
     return None
 
-def extract_all_account_numbers_with_frequency(text):
-    """Extract ALL account numbers from text for frequency analysis"""
-    found_accounts = []
-    
-    # TRUE masked patterns (highest priority)
-    masked_patterns = [
-        r'\b([X*]+\d{4,})\b',  # XXXX1234 or ****1234
-        r'\b(\d{4,}[X*]+)\b',  # 1234XXXX or 1234****
-        r'\b(\d+[X*]+\d+)\b',  # 12XX34 or 12**34
-    ]
-    
-    # Numeric patterns (medium priority)
-    numeric_patterns = [
-        r'\b(\d{6,12})\b',  # 6-12 digit numbers (typical account numbers)
-    ]
-    
-    # Suspicious text patterns (lowest priority - likely reference numbers)
-    text_patterns = [
-        r'\b([A-Z]+#\d{4,})\b',  # HUS#1279 (likely reference numbers)
-        r'\b([A-Z]{2,}\d{4,})\b',  # ABC1234 (likely reference numbers)
-    ]
-    
-    text_upper = text.upper()
-    
-    # Extract TRUE masked accounts
-    for pattern in masked_patterns:
-        matches = re.findall(pattern, text_upper)
-        for match in matches:
-            # Validate it has enough digits
-            digits_only = re.sub(r'[^0-9]', '', match)
-            if len(digits_only) >= 3:
-                found_accounts.append(("masked", match))
-    
-    # Extract numeric accounts
-    for pattern in numeric_patterns:
-        matches = re.findall(pattern, text_upper)
-        for match in matches:
-            if is_valid_account_number(match):
-                found_accounts.append(("numeric", match))
-    
-    # Extract text patterns (but mark them as suspicious)
-    for pattern in text_patterns:
-        matches = re.findall(pattern, text_upper)
-        for match in matches:
-            # Only include if it looks like it could be an account number
-            digits_only = re.sub(r'[^0-9]', '', match)
-            if len(digits_only) >= 3:
-                found_accounts.append(("reference", match))  # Mark as reference, not account
-    
-    return found_accounts
-
 def get_routing_number(parsed_data, account_number=None):
-    """Get routing number ONLY from WAC Bank Information database - never from statement text"""
+    """Get routing number from statement or lookup via OpenAI"""
     print_and_log("🔍 Extracting routing number...")
-    print_and_log("⚠️ POLICY: Only using routing numbers from WAC Bank Information database")
+    print_and_log(f"🔍 DEBUG: parsed_data keys: {list(parsed_data.keys())}")
     
-    # Get bank name from statement for database lookup
-    bank_name = None
+    # Extract routing number directly from statement text
+    routing_number = None
     
-    # Check if Document Intelligence extracted the bank name
-    if "raw_fields" in parsed_data and "BankName" in parsed_data["raw_fields"]:
-        bank_data = parsed_data["raw_fields"]["BankName"]
-        if isinstance(bank_data, dict) and "content" in bank_data:
-            bank_name = bank_data["content"].strip()
-            confidence = bank_data.get("confidence", 0.0)
-            print_and_log(f"✅ Found bank name from Document Intelligence: {bank_name} ({confidence:.2%} confidence)")
+    # Check OCR text lines
+    if "ocr_text_lines" in parsed_data:
+        full_text = '\n'.join(parsed_data["ocr_text_lines"])
+        print_and_log(f"🔍 DEBUG: OCR text length: {len(full_text)} characters")
+        print_and_log(f"🔍 DEBUG: OCR text preview: {full_text[:200]}...")
+        routing_number = extract_routing_number_from_text(full_text)
+        if routing_number:
+            print_and_log(f"✅ DEBUG: Found routing number in OCR text: {routing_number}")
     
-    # Fallback: Extract bank name from OCR text
-    if not bank_name and "ocr_text_lines" in parsed_data:
-        ocr_text = "\n".join(parsed_data["ocr_text_lines"])
-        bank_name = extract_bank_name_from_text(ocr_text)
-        if bank_name:
-            print_and_log(f"✅ Extracted bank name from OCR: {bank_name}")
+    # Check raw fields from document intelligence
+    if not routing_number and "raw_fields" in parsed_data:
+        print_and_log(f"🔍 DEBUG: Checking {len(parsed_data['raw_fields'])} raw fields")
+        for field_name, field_data in parsed_data["raw_fields"].items():
+            print_and_log(f"🔍 DEBUG: Field '{field_name}': {field_data}")
+            if isinstance(field_data, dict) and "content" in field_data:
+                routing_number = extract_routing_number_from_text(field_data["content"])
+                if routing_number:
+                    print_and_log(f"✅ DEBUG: Found routing number in field '{field_name}': {routing_number}")
+                    break
     
-    if not bank_name:
-        print_and_log("❌ CRITICAL: Bank name not found - cannot lookup routing number")
-        return None, None
-    
-    # ONLY use WAC Bank Information database for routing number lookup
-    if account_number:
-        # Extract digits from masked account numbers for database lookup
-        lookup_account = extract_digits_from_account(account_number)
+    # If no routing number found, attempt lookup by bank name
+    if not routing_number:
+        print_and_log("🏦 No routing number found, attempting bank name lookup...")
         
-        print_and_log(f"🔍 WAC Database lookup (ACCOUNT-FIRST approach)...")
-        print_and_log(f"   Original Account: '{account_number}'")
-        print_and_log(f"   Lookup Account: '{lookup_account}'")
-        print_and_log(f"   Bank Name (for validation): '{bank_name}'")
+        bank_name = None
         
-        try:
-            # Load bank data directly for account-first matching
-            from bank_info_loader import load_bank_information_yaml
-            yaml_content, bank_data = load_bank_information_yaml()
-            
-            if not bank_data:
-                print_and_log(f"❌ WAC Bank Information database not available")
-                return None, None
-            
-            print_and_log(f"📄 WAC Database loaded ({len(bank_data['wac_banks'])} banks available)")
-            
-            # STEP 1: Try exact account number match first (using extracted digits)
-            exact_matches = []
-            for bank_info in bank_data.get('wac_banks', []):
-                if str(bank_info['account_number']).strip() == str(lookup_account).strip():
-                    exact_matches.append(bank_info)
-            
-            if exact_matches:
-                match = exact_matches[0]  # Should only be one exact match
-                print_and_log(f"✅ EXACT ACCOUNT MATCH found!")
-                print_and_log(f"   Account: {match['account_number']}")
-                print_and_log(f"   Bank: {match['bank_name']}")
-                print_and_log(f"   Routing: {match['routing_number']}")
-                
-                # Validate bank name if available (optional)
+        print_and_log(f"🏦 DEBUG: BANK NAME DETECTION PROCESS")
+        print_and_log(f"=====================================")
+        
+        # Display parsed data structure for bank name extraction
+        print_and_log(f"🔍 DEBUG: parsed_data keys: {list(parsed_data.keys())}")
+        if "raw_fields" in parsed_data:
+            print_and_log(f"🔍 DEBUG: raw_fields keys: {list(parsed_data['raw_fields'].keys())}")
+            for field_name, field_data in parsed_data["raw_fields"].items():
+                print_and_log(f"🔍 DEBUG: Field '{field_name}': {field_data}")
+        
+        # Check if Document Intelligence extracted the bank name directly
+        if "raw_fields" in parsed_data and "BankName" in parsed_data["raw_fields"]:
+            bank_data = parsed_data["raw_fields"]["BankName"]
+            if isinstance(bank_data, dict) and "content" in bank_data:
+                bank_name = bank_data["content"].strip()
+                confidence = bank_data.get("confidence", 0.0)
+                print_and_log(f"✅ DEBUG: Found bank name from Document Intelligence: {bank_name} ({confidence:.2%} confidence)")
+            else:
+                print_and_log(f"❌ DEBUG: BankName field exists but wrong format: {bank_data}")
+        else:
+            print_and_log(f"❌ DEBUG: No BankName field found in raw_fields")
+        
+        # FALLBACK: Try to extract bank name from OCR text if Document Intelligence failed
+        if not bank_name:
+            print_and_log("🔍 FALLBACK: Attempting manual bank name extraction from OCR text...")
+            if "ocr_text_lines" in parsed_data and parsed_data["ocr_text_lines"]:
+                ocr_text = "\n".join(parsed_data["ocr_text_lines"])
+                bank_name = extract_bank_name_from_text(ocr_text)
                 if bank_name:
-                    from bank_info_loader import calculate_similarity
-                    similarity = calculate_similarity(bank_name, match['bank_name'])
-                    print_and_log(f"   Bank name validation: {similarity:.1%} similarity")
-                    if similarity < 0.7:
-                        print_and_log(f"⚠️ Warning: Bank name mismatch but account match is definitive")
-                
-                return match['routing_number'], match['account_number']
+                    print_and_log(f"✅ FALLBACK: Extracted bank name from OCR: {bank_name}")
+                else:
+                    print_and_log("❌ FALLBACK: No bank name found in OCR text")
             
-            # STEP 2: Try masked/partial account matching
-            from bank_info_loader import validate_account_match
-            extracted_digits = lookup_account  # Use the already extracted digits
-            
-            if extracted_digits and len(extracted_digits) >= 3:  # Changed from 4 to 3 for more flexibility
-                print_and_log(f"🔍 No exact match, trying partial/masked account matching...")
-                print_and_log(f"   Extracted digits: '{extracted_digits}'")
-                
-                partial_matches = []
-                for bank_info in bank_data.get('wac_banks', []):
-                    account_valid, match_ratio = validate_account_match(account_number, bank_info['account_number'])
-                    if account_valid:
-                        partial_matches.append((bank_info, match_ratio))
-                
-                if partial_matches:
-                    # Sort by match quality (highest first)
-                    partial_matches.sort(key=lambda x: x[1], reverse=True)
-                    best_match, best_ratio = partial_matches[0]
-                    
-                    print_and_log(f"✅ PARTIAL ACCOUNT MATCH found!")
-                    print_and_log(f"   Account: {best_match['account_number']}")
-                    print_and_log(f"   Bank: {best_match['bank_name']}")
-                    print_and_log(f"   Routing: {best_match['routing_number']}")
-                    print_and_log(f"   Match Quality: {best_ratio:.1%}")
-                    
-                    # Validate bank name if available (optional)
+            # Additional fallback: Check table data for bank names
+            if not bank_name and "raw_fields" in parsed_data and "tables" in parsed_data["raw_fields"]:
+                print_and_log("🔍 FALLBACK: Checking table data for bank name...")
+                tables = parsed_data["raw_fields"]["tables"]
+                for table in tables:
+                    if "cells" in table:
+                        for cell in table["cells"]:
+                            cell_content = cell.get("content", "").strip()
+                            if cell_content and any(keyword in cell_content.upper() for keyword in ['BANK', 'FCB', 'FEB']):
+                                print_and_log(f"🔍 FALLBACK: Found potential bank name in table: {cell_content}")
+                                bank_name = extract_bank_name_from_text(cell_content)
+                                if bank_name:
+                                    print_and_log(f"✅ FALLBACK: Extracted bank name from table: {bank_name}")
+                                    break
                     if bank_name:
-                        from bank_info_loader import calculate_similarity
-                        similarity = calculate_similarity(bank_name, best_match['bank_name'])
-                        print_and_log(f"   Bank name validation: {similarity:.1%} similarity")
-                    
-                    return best_match['routing_number'], best_match['account_number']
+                        break
+        
+        # Final check - if still no bank name found
+        if not bank_name:
+            print_and_log("❌ CRITICAL: Bank name not found in Document Intelligence or fallback methods")
+            return None
+        
+        # SUMMARY OF BANK NAME DETECTION
+        print_and_log(f"🏦 BANK NAME DETECTION RESULT:")
+        print_and_log(f"=====================================")
+        print_and_log(f"✅ BANK NAME FOUND: '{bank_name}'")
+        print_and_log(f"=====================================")
+        
+        # Try enhanced bank info matching first
+        if get_bank_info_for_processing and account_number:
+            print_and_log(f"🔍 DEBUG: Attempting enhanced bank info matching...")
+            print_and_log(f"   Bank Name: '{bank_name}'")
+            print_and_log(f"   Account Number: '{account_number}'")
             
-            print_and_log(f"❌ No account match found in WAC Database")
-            print_and_log(f"   Original Account: '{account_number}'")
-            print_and_log(f"   Lookup Account: '{lookup_account}' (extracted digits)")
-            print_and_log(f"   No exact or partial match found in database")
-            print_and_log(f"⚠️ This appears to be a customer account, not a WAC operational account")
-            
-        except Exception as e:
-            print_and_log(f"❌ WAC Database lookup failed: {str(e)}")
-    else:
-        print_and_log(f"❌ No account number available for database lookup")
+            try:
+                result = get_bank_info_for_processing(bank_name, account_number)
+                if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
+                    matched_account, matched_routing, match_type = result
+                    routing_number = matched_routing
+                    print_and_log(f"✅ Enhanced matching found routing number: {routing_number}")
+                    print_and_log(f"   Match Type: {match_type}")
+                    print_and_log(f"   Matched Account: {matched_account}")
+                    # Return both routing number and matched account number
+                    return routing_number, matched_account
+                else:
+                    print_and_log(f"❌ Enhanced matching returned no routing number")
+            except Exception as e:
+                print_and_log(f"⚠️ Enhanced matching failed: {str(e)}")
+        else:
+            if not get_bank_info_for_processing:
+                print_and_log(f"⚠️ Enhanced bank matching not available")
+            if not account_number:
+                print_and_log(f"⚠️ No account number available for enhanced matching")
+        
+        # Fallback to OpenAI lookup if enhanced matching didn't work
+        print_and_log(f"🤖 DEBUG: Attempting OpenAI lookup for bank: {bank_name}")
+        routing_number = lookup_routing_number_by_bank_name(bank_name)
+        if routing_number:
+            print_and_log(f"✅ DEBUG: OpenAI returned routing number: {routing_number}")
+            # Return routing number with no matched account (use original account)
+            return routing_number, None
+        else:
+            print_and_log(f"❌ DEBUG: OpenAI lookup failed for bank: {bank_name}")
     
-    # NO FALLBACKS - Do not extract from statement text or use OpenAI
-    print_and_log("❌ ROUTING NUMBER POLICY ENFORCED: Only WAC operational accounts allowed")
-    print_and_log("❌ Statement does not match any WAC operational account in database")
-    return None, None
+    # No fallback - return None if routing number cannot be determined
+    if not routing_number:
+        print_and_log("❌ CRITICAL: No routing number found and unable to lookup by bank name")
+        return None, None
     
     print_and_log(f"✅ Using routing number: {routing_number}")
     return routing_number
@@ -1438,20 +1441,6 @@ def parse_bankstatement_sdk_result(result):
                             "confidence": getattr(field_data, 'confidence', 0.0)
                         }
                         print_and_log(f"✅ Field '{field_name}': {field_data.content} ({getattr(field_data, 'confidence', 0.0):.2%})")
-                        
-                        # Map Document Intelligence fields to expected names
-                        if field_name == "AccountNumber" and field_data.content:
-                            parsed_data["account_number"] = field_data.content
-                            print_and_log(f"🎯 MAPPED AccountNumber field to account_number: {field_data.content}")
-                        elif field_name == "BankName" and field_data.content:
-                            parsed_data["bank_name"] = field_data.content
-                            print_and_log(f"🎯 MAPPED BankName field to bank_name: {field_data.content}")
-                        elif field_name == "StatementStartDate" and field_data.content:
-                            parsed_data["statement_start_date"] = field_data.content
-                            print_and_log(f"🎯 MAPPED StatementStartDate field: {field_data.content}")
-                        elif field_name == "StatementEndDate" and field_data.content:
-                            parsed_data["statement_end_date"] = field_data.content
-                            print_and_log(f"🎯 MAPPED StatementEndDate field: {field_data.content}")
             
         # Also extract text content for fallback processing
         if result.content:
@@ -2018,6 +2007,10 @@ def extract_fields_with_sdk(file_bytes, filename, endpoint, key):
     try:
         print_and_log(f"🔄 Attempting to extract using bankStatement.us model (SDK) for {filename}...")
         
+        from azure.ai.documentintelligence import DocumentIntelligenceClient
+        from azure.core.credentials import AzureKeyCredential
+        from io import BytesIO
+        
         # Create client with correct SDK
         client = DocumentIntelligenceClient(
             endpoint=endpoint,
@@ -2035,8 +2028,7 @@ def extract_fields_with_sdk(file_bytes, filename, endpoint, key):
             )
             
             print_and_log("⏳ Waiting for bankStatement analysis to complete...")
-            # Add timeout to prevent function timeout (max 8 minutes for 10-minute function timeout)
-            result = poller.result(timeout=480)  # 8 minutes timeout
+            result = poller.result()
             
             if result:
                 print_and_log("✅ bankStatement analysis completed successfully!")
@@ -2119,16 +2111,10 @@ def process_new_file(event: func.EventGridEvent):
         print_and_log(f"[INFO] Ignoring file {name} - not in monitored folder (path: {blob_path})")
         return
     
-    # === THROTTLING: Check if file is already being processed ===
+    # Prevent duplicate processing of the same file
     file_key = f"{blob_path}_{event_data.get('eTag', '')}"
-    if not processing_queue.start_processing(file_key):
-        print_and_log(f"⏸️ File {name} is already being processed - deferring to avoid race condition")
-        return
-    
-    # Prevent duplicate processing with legacy check
     if file_key in _processing_files:
         print_and_log(f"[WARN] File {name} is already being processed - ignoring duplicate event")
-        processing_queue.finish_processing(file_key)
         return
     
     # Add to processing set
@@ -2145,19 +2131,10 @@ def process_new_file(event: func.EventGridEvent):
         
         print_and_log(f"[DEBUG] Downloading blob: container={container_name}, blob={blob_name}")
         
-        # Download the blob data with error handling
-        try:
-            blob_client = blob_service.get_blob_client(container=container_name, blob=blob_name)
-            file_bytes = blob_client.download_blob().readall()
-            file_size = len(file_bytes) if file_bytes else 0
-        except Exception as blob_error:
-            if "BlobNotFound" in str(blob_error):
-                print_and_log(f"[ERROR] Blob not found: {blob_name}")
-                print_and_log(f"   This could indicate a race condition or the file was moved/deleted")
-                print_and_log(f"   Skipping processing for {name}")
-                return  # Exit gracefully instead of throwing error
-            else:
-                raise blob_error  # Re-raise other blob errors
+        # Download the blob data
+        blob_client = blob_service.get_blob_client(container=container_name, blob=blob_name)
+        file_bytes = blob_client.download_blob().readall()
+        file_size = len(file_bytes) if file_bytes else 0
         
         print_and_log("")
         print_and_log("🚀 STARTING BANK STATEMENT PROCESSING")
@@ -2165,15 +2142,6 @@ def process_new_file(event: func.EventGridEvent):
         print_and_log(f"📄 Processing file: {name}")
         print_and_log(f"📊 File size: {file_size:,} bytes")
         print_and_log("")
-        
-        # === THROTTLING: Add random delay to spread out processing load ===
-        import random
-        processing_delay = random.uniform(
-            ThrottlingConfig.INITIAL_PROCESSING_DELAY_MIN, 
-            ThrottlingConfig.INITIAL_PROCESSING_DELAY_MAX
-        )
-        print_and_log(f"⏱️ Adding {processing_delay:.1f}s processing delay to prevent resource contention...")
-        time.sleep(processing_delay)
         
         if file_size == 0:
             raise Exception(f"File {name} is empty or could not be read")
@@ -2247,131 +2215,35 @@ def process_new_file(event: func.EventGridEvent):
                 bank_name = extract_bank_name_from_text(text_for_extraction)
             
             if bank_name and get_bank_info_for_processing:
-                print_and_log(f"🔍 WAC Account Verification...")
+                print_and_log(f"🔍 Pre-BAI2 enhanced matching check...")
                 print_and_log(f"   Bank Name: '{bank_name}'")
                 print_and_log(f"   Statement Account: '{statement_account}'")
                 
                 try:
-                    result = get_bank_info_for_processing(bank_name, statement_account)
-                    if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
-                        enhanced_account_number, enhanced_routing_number, match_type = result
-                        print_and_log(f"✅ WAC OPERATIONAL ACCOUNT VERIFIED!")
-                        print_and_log(f"   Matched Account: {enhanced_account_number}")
-                        print_and_log(f"   Routing Number: {enhanced_routing_number}")
+                    # Try account number lookup first - most accurate method
+                    from bank_info_loader import get_routing_for_account_number
+                    account_result = get_routing_for_account_number(statement_account, bank_name)
+                    if account_result and len(account_result) >= 2 and account_result[1]:
+                        enhanced_account_number, enhanced_routing_number, match_type = account_result
+                        print_and_log(f"✅ Account number lookup successful!")
+                        print_and_log(f"   Account: {enhanced_account_number}")
+                        print_and_log(f"   Routing: {enhanced_routing_number}")
                         print_and_log(f"   Match Type: {match_type}")
                     else:
-                        print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
-                        print_and_log(f"❌ Account '{statement_account}' not found in WAC database")
-                        print_and_log(f"❌ POLICY VIOLATION: Only WAC operational accounts are allowed")
-                        print_and_log(f"❌ Creating ERROR file - customer accounts not permitted")
-                        
-                        # Create error BAI2 file immediately
-                        from datetime import datetime
-                        now = datetime.now()
-                        file_date = now.strftime("%y%m%d")
-                        file_time = now.strftime("%H%M")
-                        
-                        error_bai2 = create_error_bai2_file(
-                            "Account not found in WAC operational database. Only WAC operational accounts are permitted for processing.",
-                            name,
-                            file_date,
-                            file_time
-                        )
-                        
-                        # Save error file and return early
-                        print_and_log("")
-                        print_and_log("💾 STEP 3: Saving ERROR BAI file")
-                        print_and_log("   ➤ Creating error notification file")
-                        
-                        output_container = blob_service.get_container_client("bank-reconciliation")
-                        base_filename = name.split('.')[0]
-                        output_filename = f"bai2-outputs/ERROR_{base_filename}.bai"
-                        
-                        output_container.upload_blob(
-                            name=output_filename, 
-                            data=error_bai2.encode('utf-8'), 
-                            overwrite=True
-                        )
-                        
-                        print_and_log("✅ ERROR BAI2 file uploaded successfully!")
-                        print_and_log(f"📁 Location: bank-reconciliation/{output_filename}")
-                        
-                        # Archive original file
-                        try:
-                            input_container = blob_service.get_container_client(container_name)
-                            source_blob = input_container.get_blob_client(blob_name)
-                            
-                            if source_blob.exists():
-                                archive_container = blob_service.get_container_client(container_name)
-                                archive_blob = archive_container.get_blob_client(f"archive/{name}")
-                                archive_blob.start_copy_from_url(source_blob.url)
-                                source_blob.delete_blob()
-                                print_and_log("✅ Original file archived successfully!")
-                                print_and_log(f"📁 Archive location: archive/{name}")
-                            else:
-                                print_and_log("⚠️ Source file not found (test mode)")
-                        except Exception as archive_error:
-                            print_and_log(f"⚠️ Archive error: {str(archive_error)}")
-                        
-                        # Final summary
-                        print_and_log("")
-                        print_and_log("📊 PROCESSING COMPLETE - FINAL SUMMARY")
-                        print_and_log("=" * 60)
-                        print_and_log(f"📄 Source File: {name}")
-                        print_and_log(f"❌ ERROR BAI Output: bank-reconciliation/{output_filename}")
-                        print_and_log(f"⚠️  BAI file created with error message due to non-WAC account")
-                        print_and_log(f"📁 Archive: bank-reconciliation/archive/{name}")
-                        print_and_log("⚠️ RECONCILIATION STATUS: NOT PERFORMED")
-                        print_and_log("✅ BANK STATEMENT PROCESSING SUCCESSFUL!")
-                        print_and_log("   ➤ Your PDF has been converted to BAI2 format")
-                        print_and_log("   ➤ The file is ready for import into banking systems")
-                        print_and_log("   ➤ Original file has been safely archived")
-                        print_and_log("=" * 60)
-                        
-                        return
-                        
+                        # Fallback to bank name matching if account not found
+                        print_and_log(f"🔄 Account not in database, trying bank name matching...")
+                        from bank_info_loader import get_routing_for_extracted_account
+                        customer_result = get_routing_for_extracted_account(bank_name, statement_account)
+                        if customer_result and len(customer_result) >= 2 and customer_result[1]:
+                            enhanced_account_number, enhanced_routing_number, match_type = customer_result
+                            print_and_log(f"✅ Bank name matching successful!")
+                            print_and_log(f"   Extracted Account: {enhanced_account_number}")
+                            print_and_log(f"   Database Routing: {enhanced_routing_number}")
+                            print_and_log(f"   Processing Type: {match_type}")
+                        else:
+                            print_and_log(f"❌ All matching methods failed - will use statement account only")
                 except Exception as e:
-                    print_and_log(f"⚠️ WAC account verification error: {str(e)}")
-                    print_and_log(f"❌ Creating ERROR file due to verification failure")
-                    
-                    # Create error BAI2 file for verification failure
-                    from datetime import datetime
-                    now = datetime.now()
-                    file_date = now.strftime("%y%m%d")
-                    file_time = now.strftime("%H%M")
-                    
-                    error_bai2 = create_error_bai2_file(
-                        f"WAC account verification failed: {str(e)}",
-                        name,
-                        file_date,
-                        file_time
-                    )
-                    
-                    # Save error file and return early
-                    output_container = blob_service.get_container_client("bank-reconciliation")
-                    base_filename = name.split('.')[0]
-                    output_filename = f"bai2-outputs/ERROR_{base_filename}.bai"
-                    
-                    output_container.upload_blob(
-                        name=output_filename, 
-                        data=error_bai2.encode('utf-8'), 
-                        overwrite=True
-                    )
-                    
-                    # Archive original file
-                    try:
-                        input_container = blob_service.get_container_client(container_name)
-                        source_blob = input_container.get_blob_client(blob_name)
-                        
-                        if source_blob.exists():
-                            archive_container = blob_service.get_container_client(container_name)
-                            archive_blob = archive_container.get_blob_client(f"archive/{name}")
-                            archive_blob.start_copy_from_url(source_blob.url)
-                            source_blob.delete_blob()
-                        print_and_log("✅ Original file archived")
-                    except Exception as archive_error:
-                        print_and_log(f"⚠️ Archive error: {str(archive_error)}")
-                    return
+                    print_and_log(f"⚠️ Enhanced matching error: {str(e)}")
         
         # Generate comprehensive BAI from processed data with enhanced matching results
         bai2 = convert_to_bai2(
@@ -2522,9 +2394,25 @@ def process_new_file(event: func.EventGridEvent):
         
         # Create error BAI2 file for general processing failures
         try:
-            from datetime import datetime  # Ensure datetime is available in error handler
+            # Try to extract statement date even for general errors, fall back to current date if needed
+            statement_date = None
+            try:
+                if 'final_data' in locals():
+                    statement_date = get_statement_date(final_data, name)
+                elif 'parsed_data' in locals():
+                    statement_date = get_statement_date(parsed_data, name)
+            except:
+                pass  # If extraction fails, we'll use current date
+                
             now = datetime.now()
-            file_date = now.strftime("%y%m%d")
+            
+            if statement_date:
+                file_date = statement_date
+                print_and_log(f"✅ Using statement end date for error BAI2: {file_date}")
+            else:
+                file_date = now.strftime("%y%m%d")
+                print_and_log(f"⚠️ No statement date found for error BAI2, using current date: {file_date}")
+                
             file_time = now.strftime("%H%M")
             
             # Determine error code based on exception type or message
@@ -2563,87 +2451,18 @@ def process_new_file(event: func.EventGridEvent):
         
         raise
     finally:
-        # Always remove the file from processing queues when done
+        # Always remove the file from processing set when done
         if 'file_key' in locals():
             _processing_files.discard(file_key)
-            processing_queue.finish_processing(file_key)
-            print_and_log(f"[DEBUG] Removed {name} from processing queues")
+            print_and_log(f"[DEBUG] Removed {name} from processing queue")
 
 def get_statement_date(data, filename=None):
     """Extract statement end date from parsed data for BAI2 headers with enhanced fallback logic"""
+    from datetime import datetime
+    import re
     
     try:
-        # PRIORITY 1: Check Document Intelligence mapped fields first
-        if data and isinstance(data, dict):
-            # Check for Document Intelligence extracted statement end date
-            statement_end_date = data.get("statement_end_date")
-            if statement_end_date:
-                print_and_log(f"🎯 Found Document Intelligence statement end date: {statement_end_date}")
-                try:
-                    # Handle MM/DD/YYYY format (most common from Document Intelligence)
-                    date_obj = datetime.strptime(statement_end_date, "%m/%d/%Y")
-                    result = date_obj.strftime("%y%m%d")
-                    print_and_log(f"✅ Using Document Intelligence statement end date: {statement_end_date} -> {result}")
-                    return result
-                except ValueError:
-                    try:
-                        # Handle MM/DD/YY format (short year)
-                        date_obj = datetime.strptime(statement_end_date, "%m/%d/%y")
-                        result = date_obj.strftime("%y%m%d")
-                        print_and_log(f"✅ Using Document Intelligence statement end date: {statement_end_date} -> {result}")
-                        return result
-                    except ValueError:
-                        try:
-                            # Handle YYYY-MM-DD format
-                            date_obj = datetime.strptime(statement_end_date, "%Y-%m-%d")
-                            result = date_obj.strftime("%y%m%d")
-                            print_and_log(f"✅ Using Document Intelligence statement end date: {statement_end_date} -> {result}")
-                            return result
-                        except ValueError:
-                            try:
-                                # Handle MM-DD-YYYY format
-                                date_obj = datetime.strptime(statement_end_date, "%m-%d-%Y")
-                                result = date_obj.strftime("%y%m%d")
-                                print_and_log(f"✅ Using Document Intelligence statement end date: {statement_end_date} -> {result}")
-                                return result
-                            except ValueError:
-                                print_and_log(f"⚠️ Could not parse Document Intelligence statement end date: {statement_end_date}")
-        
-        # PRIORITY 1.5: Parse statement period from OCR text to find end date
-        if data and isinstance(data, dict) and "ocr_text_lines" in data:
-            print_and_log(f"🔍 Searching OCR text for statement period information...")
-            ocr_text = "\n".join(data["ocr_text_lines"])
-            
-            # Look for patterns like "STATEMENT PERIOD 07/01/25 THROUGH 07/31/25"
-            # or "TOTAL DAYS IN STATEMENT PERIOD 07/01/25 THROUGH 07/31/25"
-            period_patterns = [
-                r'statement\s+period\s+(\d{1,2}/\d{1,2}/\d{2,4})\s+through\s+(\d{1,2}/\d{1,2}/\d{2,4})',
-                r'period\s+(\d{1,2}/\d{1,2}/\d{2,4})\s+through\s+(\d{1,2}/\d{1,2}/\d{2,4})',
-                r'from\s+(\d{1,2}/\d{1,2}/\d{2,4})\s+to\s+(\d{1,2}/\d{1,2}/\d{2,4})',
-                r'(\d{1,2}/\d{1,2}/\d{2,4})\s+through\s+(\d{1,2}/\d{1,2}/\d{2,4})'
-            ]
-            
-            for pattern in period_patterns:
-                match = re.search(pattern, ocr_text.lower())
-                if match:
-                    start_date_str, end_date_str = match.groups()
-                    print_and_log(f"✅ Found statement period: {start_date_str} through {end_date_str}")
-                    
-                    try:
-                        # Parse the end date
-                        if len(end_date_str.split('/')[-1]) == 2:  # 2-digit year
-                            date_obj = datetime.strptime(end_date_str, "%m/%d/%y")
-                        else:  # 4-digit year
-                            date_obj = datetime.strptime(end_date_str, "%m/%d/%Y")
-                        
-                        result = date_obj.strftime("%y%m%d")
-                        print_and_log(f"✅ Using statement period end date: {end_date_str} -> {result}")
-                        return result
-                    except ValueError as e:
-                        print_and_log(f"⚠️ Could not parse statement period end date '{end_date_str}': {e}")
-                        continue
-        
-        # PRIORITY 2: Try to get end date from statement period (legacy OpenAI parsing)
+        # Try to get end date from statement period
         if data and isinstance(data, dict):
             statement_period = data.get("statement_period", {})
             if isinstance(statement_period, dict):
@@ -2687,7 +2506,7 @@ def get_statement_date(data, filename=None):
                         except ValueError:
                             print_and_log(f"⚠️ Could not parse closing balance date: {close_date}")
         
-        # PRIORITY 3: Enhanced fallback - try to extract date from filename
+        # Enhanced fallback: try to extract date from filename
         if filename:
             print_and_log(f"🔍 Attempting to extract date from filename: {filename}")
             
@@ -2746,9 +2565,17 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
         print_and_log(f"❌ CRITICAL: bankStatement extraction failed - {error_msg}")
         print_and_log("🔄 Creating ERROR BAI2 file instead of processing")
         
-        # Use current date/time for error file
+        # Try to get statement date even for error files, fall back to current date if needed
+        statement_date = get_statement_date(data, filename)
         now = datetime.now()
-        file_date = now.strftime("%y%m%d")
+        
+        if statement_date:
+            file_date = statement_date
+            print_and_log(f"✅ Using statement end date for error BAI2: {file_date}")
+        else:
+            file_date = now.strftime("%y%m%d")
+            print_and_log(f"⚠️ No statement date found for error BAI2, using current date: {file_date}")
+        
         file_time = now.strftime("%H%M")
         
         return create_error_bai2_file(f"Document Intelligence bankStatement model failed: {error_msg}", 
@@ -2774,7 +2601,7 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
         # Use matched account number from enhanced matching if available, otherwise extract from statement
         if matched_account_number:
             account_number = matched_account_number
-            print_and_log(f"✅ Using matched account number from WAC data: {account_number}")
+            print_and_log(f"✅ Using matched account number from enhanced matching: {account_number}")
         else:
             # Extract account number from statement (needed for enhanced matching)
             account_number = get_account_number(data)
@@ -2792,17 +2619,17 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
         else:
             # Try to extract routing number from data (now with account number for enhanced matching)
             result = get_routing_number(data, account_number)
-            if result and isinstance(result, tuple) and len(result) >= 2 and result[0] is not None:
+            if result and isinstance(result, tuple) and len(result) >= 2:
                 originator_id, matched_account = result
                 if matched_account and not matched_account_number:
                     # Update account number if we got a match during routing lookup
                     account_number = matched_account
                     print_and_log(f"✅ Updated account number from enhanced matching: {account_number}")
-            elif result and not isinstance(result, tuple) and result is not None:
+            elif result:
                 originator_id = result
             else:
-                print_and_log("❌ CRITICAL: No routing number found in WAC Bank Information database - creating ERROR file")
-                return create_error_bai2_file("No routing number found in WAC Bank Information database for this bank/account combination", filename, file_date, file_time, "ERROR_NO_ROUTING")
+                print_and_log("❌ CRITICAL: No routing number found - creating ERROR file")
+                return create_error_bai2_file("No routing number found on statement", filename, file_date, file_time, "ERROR_NO_ROUTING")
         
         print_and_log(f"🔧 DEBUG: Routing number resolved: {originator_id}")
         
@@ -2856,124 +2683,76 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
             transaction_data_source = data
             extraction_method = data.get('extraction_method', 'unknown')
         
-        bai2_prompt = f"""You are a BAI2 (Bank Administration Institute) file-format expert. Generate a complete, properly formatted BAI2 file from the inputs below. 
-Nothing may be hard-coded. All values must be taken from the inputs or derived per BAI2 rules.
+        bai2_prompt = f"""You are a BAI2 (Bank Administration Institute) file format expert. Generate a complete, properly formatted BAI2 file from the provided transaction data. Return ONLY the final BAI2 file content as plain text. Do not include explanations, code fences, or extra characters.
 
-############################
-## INPUTS (VARIABLE DATA) ##
-############################
-FILE_META (applies to the whole file):
-Bank Name: {bank_name}
-Account Number: {account_number}
-Routing Number: {originator_id}
-Account Type: Business Checking
-Statement Date: {file_date} ({file_time})
-Extraction Method: {extraction_method}
+CRITICAL: Extract the statement ending date from the transaction data and use it for BOTH file_date AND group_date. Look for:
+- statement_period.end_date
+- closing_balance.date
+- Any date field that represents when the statement period ended
+Convert this date to YYMMDD format. If no statement ending date is found, use {file_date}.
 
-EXTRACTED STATEMENT DATA:
+INPUT DATA:
+- originator_id: {originator_id}
+- receiver_id: WORKDAY
+- file_time: {file_time} (HHMM)
+- file_id_sequence: 1
+- record_length_indicator: 2
+- account_number: {account_number}
+- accounts: [{{account_number: {account_number}, account_currency: USD, account_type_code: 010, continuation_code: Z, transactions: [], ending_balance_cents: calculated}}]
+- transactions: [{{type_code: 301 for credits/451 for debits, amount_cents: integer, description: string}}]
+
+RECORD FORMATS (fields must appear exactly as shown, but use the STATEMENT ENDING DATE for both file_date and group_date):
+01,{originator_id},WORKDAY,{{STATEMENT_END_DATE_YYMMDD}},{file_time},1,,,2/
+02,WORKDAY,{originator_id},1,{{STATEMENT_END_DATE_YYMMDD}},,USD,2/
+03,{account_number},USD,010,,,Z/
+16,{{type_code}},{{amount_cents}},Z,{{ref_num}},,{{description}}/
+49,{{ending_balance_cents}},{{N}}/
+98,{{group_control_total}},1,{{group_record_count}}/
+99,{{file_control_total}},1,{{file_record_count}}/
+
+RULES:
+1. All amounts must be integers in cents (no decimals).
+2. Every record must end with a forward slash "/".
+3. No description may contain "/". Replace with "-" or space.
+4. Reference numbers for transactions (REF_NUM) start at 00001 for each account and increment by 1.
+5. 49 (account trailer):
+   - N = number of 16 records for that account
+   - ending_balance_cents must match account ending balance
+6. 98 (group trailer):
+   - group_control_total = sum of all accounts' ending_balance_cents
+   - account_count = number of accounts in this group
+   - group_record_count = 1 (02) + for each account [1 (03) + N (16) + 1 (49)]
+7. 99 (file trailer):
+   - file_control_total = sum of group_control_totals
+   - group_count = number of groups
+   - file_record_count = sum of all group_record_counts
+   - IMPORTANT: After generating the entire file, recount all records from the first 02 through the last 98.
+   - Use this recounted number as the file_record_count in the 99 trailer.
+   - Do NOT include the 99 record itself in the count.
+   - If the computed value differs from your earlier calculation, correct it before returning output.
+
+VALIDATION (must pass before output):
+- Every line ends with "/".
+- All transaction amounts are integers.
+- No descriptions contain "/".
+- REF_NUM sequences are strictly sequential per account.
+- 49 counts equal the number of 16 records.
+- 98 totals, account counts, and record counts are correct.
+- 99 totals, group counts, and record counts are correct after final recount.
+
+OUTPUT ORDER:
+1. 01 (file header)
+2. For each group: 02, then accounts (03, 16s, 49), then 98
+3. 99 (file trailer, using final recounted value)
+
+STATEMENT DATA TO PROCESS:
 {json.dumps(transaction_data_source, indent=2)}
 
-RECONCILIATION DATA (if available):
-{json.dumps(reconciliation_data, indent=2) if reconciliation_data else "None"}
-
-#######################################
-## CRITICAL OCR TEXT PARSING RULES ##
-#######################################
-IMPORTANT: The extracted data above may contain raw OCR text from a bank statement. You MUST parse this intelligently:
-
-1. TRANSACTION IDENTIFICATION:
-   - Look for patterns like "Date Description Amount" in the OCR text
-   - Transactions are usually grouped under sections like "DEBITS" and "CREDITS"  
-   - Ignore header lines, summary lines, and non-transaction text
-   - Each transaction should have: Date, Description, Amount
-
-2. SUMMARY VALIDATION:
-   - Look for summary lines like "Total additions: $X" or "Total subtractions: $Y"
-   - Use these totals to validate your transaction parsing
-   - If your individual transactions don't match the totals, reparse more carefully
-
-3. DUPLICATE AVOIDANCE:
-   - Do NOT create multiple BAI2 records for the same transaction
-   - If you see repeated amounts or descriptions, consolidate appropriately
-   - Focus on actual individual transactions, not summary or duplicate entries
-
-4. TRANSACTION TYPE CLASSIFICATION:
-   - Debits/Withdrawals: Use BAI2 code 451 (ACH withdrawal) or 475 (fees only)
-   - Credits/Deposits: Use BAI2 code 301 (deposit)
-   - Maintenance fees: Use BAI2 code 475
-
-###############################
-## OUTPUT RULES (STRICT BAI2) ##
-###############################
-GLOBAL RULES:
-- Output a valid BAI2 file ONLY — no explanations, no code fences, no extra text.
-- Every record MUST end with a forward slash "/" on its own line.
-- Use only integer amounts in cents (no decimals).
-- Do NOT hard-code any constant like receiver_id, currency, account type, dates, or IDs.
-- All values must come from the inputs or be computed dynamically per BAI2 spec.
-
-SANITIZATION RULES (apply to DESCRIPTION and any free text fields):
-- Replace any "/" with "-" (BAI2 uses "/" as record terminator).
-- Convert to plain ASCII; replace non-ASCII characters with closest ASCII or a space.
-- Remove newlines and control characters.
-- Trim descriptions to <= 80 characters where possible (truncate at word boundary if feasible).
-
-REFERENCE NUMBER RULES (REF_NUM on 16 records):
-- For each account, generate a 5-digit, zero-padded, strictly increasing sequence starting at 00001 and increment by 1.
-- No gaps and no duplicates within the account's transaction block.
-
-#####################################
-## BAI2 RECORD LAYOUTS (NO DEFAULTS) ##
-#####################################
-1) File Header (01)
-   01,{originator_id},WORKDAY,{file_date},{file_time},1,,,2/
-
-2) Group Header (02) — one per group
-   02,WORKDAY,{originator_id},1,{file_date},,USD,2/
-
-3) Account Identifier (03) — one per account
-   03,{account_number},USD,010,,,Z/
-
-4) Transaction Detail (16) — zero or more per account
-   16,TYPE_CODE,AMOUNT_CENTS,Z,REF_NUM,,DESCRIPTION/
-   - TYPE_CODE: 301 (deposit), 451 (ACH withdrawal), 475 (bank fees only)
-   - AMOUNT_CENTS: integer only (no decimals)
-   - REF_NUM: 5-digit sequential per account (00001, 00002, etc.)
-   - DESCRIPTION: sanitized text per rules above
-
-5) Account Trailer (49) — one per account
-   49,ENDING_BALANCE_CENTS,N/
-   - N = number of 16-records (transactions) emitted for this account
-
-6) Group Trailer (98) — one per group
-   98,GROUP_CONTROL_TOTAL,1,GROUP_RECORD_COUNT/
-   - GROUP_CONTROL_TOTAL = ending account balance in cents
-   - GROUP_RECORD_COUNT = total records from Group Header (02) through Account Trailer (49) inclusive
-   - Formula: 1 (02) + 1 (03) + N_transactions (16s) + 1 (49) = N+3
-
-7) File Trailer (99) — once at end of file
-   99,FILE_CONTROL_TOTAL,1,FILE_RECORD_COUNT/
-   - FILE_CONTROL_TOTAL = same as group control total
-   - FILE_RECORD_COUNT = same as group record count when only one group exists
-
-###################################
-## VALIDATION (MUST PASS BEFORE OUTPUT)
-###################################
-Validate BEFORE returning output:
-- Every line ends with "/".
-- All amounts are integers (no decimals).
-- No "/" remains inside descriptions; sanitize non-ASCII and control characters.
-- REF_NUM starts at 00001 and increments by 1 for each 16 record; no gaps or duplicates.
-- Account Trailer (49) N equals the number of 16 records generated for that account.
-- Group record count = 1 + 1 + N_transactions + 1 = N+3
-- File record count = same as group record count when only one group exists.
-
-Return ONLY the final BAI2 content as plain text records, one per line, exactly as specified.
-No explanations, no comments, no code fences."""
+Extract all transactions from the statement data. Use type_code 301 for deposits/credits, 451 for debits/withdrawals. Generate the complete BAI2 file."""
         
-        print_and_log("🔧 DEBUG: About to call Azure OpenAI with throttling...")
+        print_and_log("🔧 DEBUG: About to call Azure OpenAI...")
         
-        # Use Azure OpenAI to generate the complete BAI2 file with throttling
+        # Use Azure OpenAI to generate the complete BAI2 file
         from openai import AzureOpenAI
         openai_client = AzureOpenAI(
             azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
@@ -2983,30 +2762,55 @@ No explanations, no comments, no code fences."""
         
         print_and_log("🔧 DEBUG: OpenAI client created successfully")
         
-        # Use throttled OpenAI call with retry logic
-        def make_openai_call():
-            return openai_client.chat.completions.create(
-                model=os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1"),
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": "You are a BAI2 file format expert. Generate properly formatted BAI2 files that comply with banking standards."
-                    },
-                    {
-                        "role": "user", 
-                        "content": bai2_prompt
-                    }
-                ],
-                temperature=0,  # Use deterministic output for consistent formatting
-                max_tokens=2000
-            )
-        
-        # Execute with throttling and retry logic
-        response = openai_throttler.retry_with_backoff(make_openai_call)
+        response = openai_client.chat.completions.create(
+            model=os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1"),
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a BAI2 file format expert. Generate properly formatted BAI2 files that comply with banking standards."
+                },
+                {
+                    "role": "user", 
+                    "content": bai2_prompt
+                }
+            ],
+            temperature=0,  # Use deterministic output for consistent formatting
+            max_tokens=2000
+        )
         
         print_and_log("🔧 DEBUG: OpenAI response received successfully")
         
         bai2_content = response.choices[0].message.content.strip()
+        
+        # DEBUG: Log the actual response
+        print_and_log("🔍 DEBUG: OpenAI Response Content:")
+        print_and_log(f"Raw response: '{bai2_content[:200]}...'")
+        print_and_log(f"Response length: {len(bai2_content)} characters")
+        
+        # Handle markdown code blocks if present
+        if bai2_content.startswith("```"):
+            print_and_log("🔧 DEBUG: Removing markdown code blocks")
+            # Remove code block markers
+            lines = bai2_content.split('\n')
+            # Remove first line if it's ```
+            if lines[0].strip() == "```" or lines[0].strip().startswith("```"):
+                lines = lines[1:]
+            # Remove last line if it's ```
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            # Find where the actual BAI2 content starts and ends
+            start_idx = 0
+            end_idx = len(lines)
+            for i, line in enumerate(lines):
+                if line.startswith("01,"):
+                    start_idx = i
+                    break
+            for i in range(len(lines)-1, -1, -1):
+                if lines[i].startswith("99,"):
+                    end_idx = i + 1
+                    break
+            bai2_content = '\n'.join(lines[start_idx:end_idx])
+            print_and_log(f"🔧 DEBUG: Cleaned BAI2 content: {len(bai2_content)} chars")
         
         # Validate the generated BAI2 content
         if not bai2_content.startswith("01,"):
@@ -3017,62 +2821,164 @@ No explanations, no comments, no code fences."""
         print_and_log(f"📏 Generated BAI2 length: {len(bai2_content)} characters")
         print_and_log(f"📊 Generated BAI2 lines: {bai2_content.count(chr(10)) + 1}")
         
-        # SECOND PASS: Validate and fix the BAI2 file using bai2_fixer
-        if bai2_fixer:
-            try:
-                print_and_log("🔧 SECOND PASS: Validating and fixing BAI2 file with bai2_fixer")
-                
-                # Use bai2_fixer to parse, validate, and rebuild the BAI2 content
-                file01, groups, audit_dates = bai2_fixer.parse_bai2(bai2_content)
-                rebuilt_lines = bai2_fixer.rebuild_bai2(file01, groups)
-                
-                # Build audit log
-                audit_lines = []
-                if audit_dates["file_date_corrected"]:
-                    audit_lines.append(f"corrected 01 file date -> {file01.file_date}")
-                if audit_dates["group_dates_corrected"]:
-                    audit_lines.append(f"corrected {audit_dates['group_dates_corrected']} group date(s) in 02")
-                
-                # Account-level audits
-                total_ref_renum = 0
-                total_amt_norm = 0
-                total_desc_san = 0
-                ending_bal_fixed = 0
-                for g in groups:
-                    for a in g.accounts:
-                        if a.audit["ref_renumbered"]:
-                            total_ref_renum += 1
-                        total_amt_norm += a.audit["amounts_normalized"]
-                        total_desc_san += a.audit["descriptions_sanitized"]
-                        if a.audit["ending_balance_fixed"]:
-                            ending_bal_fixed += 1
-                
-                if total_ref_renum:
-                    audit_lines.append(f"renumbered REF_NUMs for {total_ref_renum} account(s)")
-                if total_amt_norm:
-                    audit_lines.append(f"normalized {total_amt_norm} amount(s) to integer cents")
-                if total_desc_san:
-                    audit_lines.append(f"sanitized {total_desc_san} description(s)")
-                if ending_bal_fixed:
-                    audit_lines.append(f"fixed non-integer ending balances in {ending_bal_fixed} account(s)")
-                
-                audit_log = "; ".join(audit_lines) if audit_lines else "No fixes needed"
-                final_bai2_content = "\n".join(rebuilt_lines)
-                
-                print_and_log("✅ BAI2 validation and fixing completed successfully")
-                print_and_log(f"📋 Audit log: {audit_log}")
-                print_and_log(f"📏 Final BAI2 length: {len(final_bai2_content)} characters")
-                print_and_log(f"📊 Final BAI2 lines: {final_bai2_content.count(chr(10)) + 1}")
-                
-            except Exception as e:
-                print_and_log(f"❌ BAI2 fixing failed: {e}")
-                print_and_log("⚠️ Using original OpenAI-generated content")
-                final_bai2_content = bai2_content
-        else:
-            print_and_log("⚠️ bai2_fixer not available, using original OpenAI-generated content")
+        # SECOND PASS: Validate and fix the BAI2 file using bai2_fixer.py logic
+        print_and_log("� SECOND PASS: Validating and fixing BAI2 file with bai2_fixer logic")
+        
+        try:
+            fixed_bai2_content, audit_log = fix_bai2_with_bai2_fixer(bai2_content)
+            print_and_log("✅ BAI2 validation and fixing completed successfully")
+            print_and_log(f"📋 Audit log: {audit_log}")
+            final_bai2_content = fixed_bai2_content
+        except Exception as e:
+            print_and_log(f"❌ BAI2 fixing failed: {e}")
+            # Return original content if fixing fails
             final_bai2_content = bai2_content
         
-        print_and_log("🎯 RETURNING validated BAI2 content")
+        print_and_log(f"📏 Final BAI2 length: {len(final_bai2_content)} characters")
+        print_and_log(f"📊 Final BAI2 lines: {final_bai2_content.count(chr(10)) + 1}")
+        print_and_log("🎯 RETURNING validated and corrected BAI2 content")
+        
+        return final_bai2_content
+
+Your job (in this exact order):
+
+1. Parse the BAI2 file.
+
+2. Validate the FILE DATE in the 01 header:
+   • If the file date is a valid YYMMDD calendar date (6 digits, numeric, real date), preserve it exactly.
+   • If the file date is invalid (missing, not 6 digits, non-numeric, or not a real date), replace it with today's date (today's business date in YYMMDD).
+
+3. Validate the GROUP DATE in every 02 record:
+   • If the group date is a valid YYMMDD calendar date, preserve it exactly.
+   • If the group date is invalid (missing, not 6 digits, non-numeric, or not a real date), replace it with today's date.
+
+4. IGNORE all existing 49/98/99 values. Do NOT reuse or "adjust" them. Recalculate from scratch.
+
+5. Rebuild **every single record** (01, 02, 03, 16, 49, 98, 99) from parsed values:
+   • Do not output any raw lines from the source.
+   • Always regenerate the line according to the exact record layouts.
+   • Ensure **every record ends with exactly one "/"**.
+
+6. Correct transaction codes if misused:
+   • Deposits must use type code 301.
+   • Debits must use type code 451.
+   (Fix only when the description clearly indicates misclassification.)
+
+7. Sanitize 16-descriptions: • Replace "/" with "-". • Convert to plain ASCII (replace non-ASCII with space). • Remove newlines and control characters.
+
+8. Renumber REF_NUMs per account sequentially (00001, 00002, …).
+
+9. Rebuild trailers:
+   • For each ACCOUNT (03..49):
+   – N = number of 16 records.
+   – 49,{{ending_balance_cents}},{{N}}/
+   – Keep {{ending_balance_cents}} as-is unless not an integer; if not integer, fix by removing decimals.
+   • For each GROUP (02..98):
+   – group_control_total = sum of all 49 ending_balance_cents in group.
+   – account_count = number of 03 records in group.
+   – group_record_count = 1 (02) + Σ[1 (03) + N (16) + 1 (49)] across accounts.
+   – 98,{{group_control_total}},{{account_count}},{{group_record_count}}/
+   • For the FILE (final 99):
+   – file_control_total = sum of group_control_totals.
+   – group_count = number of 98 records.
+   – file_record_count = count of ALL records from the first 02 through the last 98 (inclusive). Do NOT include the 99 itself.
+   – 99,{{file_control_total}},{{group_count}},{{file_record_count}}/
+
+10. Validation after rebuild:
+    • Every line ends with "/".
+    • All 16 amounts are integer cents.
+    • No "/" remains inside any description.
+    • For each account: 49 N matches actual 16 count.
+    • For each group: 98 totals, account count, and record count are correct.
+    • For the file: 99 totals, group count, and record count are correct.
+
+---
+
+### Output format (strict):
+
+1. First, output ONLY the corrected BAI2 text (every line rebuilt, each ending with "/").
+2. Then a single line: ---AUDIT---
+3. Then a concise audit log of fixes made, e.g.:
+
+   * fixed 49 count (account X in group Y): was 12, now 13
+   * fixed 98 record count (group Y): was 53, now 54
+   * fixed 99 record count: was 21, now 20
+   * sanitized 3 descriptions
+   * renumbered REF_NUMs (account X in group Y): 00001..00010
+   * corrected file date in 01: was ABC123, now 250825
+   * corrected group date in 02: was 200227, now 250825
+   * corrected transaction codes: 2 misclassified 301→451
+
+---
+
+Now process the BAI2 content:
+
+===BEGIN===
+{bai2_content}
+===END==="""
+
+        print_and_log("🔧 DEBUG: About to call Azure OpenAI for validation...")
+        
+        validation_response = openai_client.chat.completions.create(
+            model=os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1"),
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a BAI2 file validator and fixer. Fix any formatting, counting, or validation issues in BAI2 files while preserving all business data."
+                },
+                {
+                    "role": "user", 
+                    "content": validator_prompt
+                }
+            ],
+            temperature=0,  # Use deterministic output for consistent validation
+            max_tokens=3000
+        )
+        
+        print_and_log("🔧 DEBUG: OpenAI validation response received successfully")
+        
+        validated_content = validation_response.choices[0].message.content.strip()
+        
+        # DEBUG: Log the validation response
+        print_and_log("🔍 DEBUG: OpenAI Validation Response:")
+        print_and_log(f"Raw validation response: '{validated_content[:300]}...'")
+        print_and_log(f"Validation response length: {len(validated_content)} characters")
+        
+        # Extract the corrected BAI2 content (before ---AUDIT--- line)
+        if "---AUDIT---" in validated_content:
+            corrected_bai2, audit_info = validated_content.split("---AUDIT---", 1)
+            corrected_bai2 = corrected_bai2.strip()
+            audit_info = audit_info.strip()
+            print_and_log(f"🔍 AUDIT INFO: {audit_info}")
+        else:
+            corrected_bai2 = validated_content
+            print_and_log("⚠️ No audit info found in validation response")
+        
+        # Handle markdown code blocks if present in validation response
+        if corrected_bai2.startswith("```"):
+            print_and_log("🔧 DEBUG: Removing markdown code blocks from validation response")
+            lines = corrected_bai2.split('\n')
+            # Remove first line if it's ```
+            if lines[0].strip() == "```" or lines[0].strip().startswith("```"):
+                lines = lines[1:]
+            # Remove last line if it's ```
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            corrected_bai2 = '\n'.join(lines)
+            print_and_log(f"🔧 DEBUG: Cleaned validated BAI2 content: {len(corrected_bai2)} chars")
+        
+        # Final validation
+        if not corrected_bai2.startswith("01,"):
+            print_and_log("⚠️ Validated BAI2 doesn't start with file header, using original")
+            final_bai2_content = bai2_content
+        else:
+            print_and_log("✅ BAI2 validation and correction completed successfully")
+            final_bai2_content = corrected_bai2
+        
+        print_and_log(f"📏 Final BAI2 length: {len(final_bai2_content)} characters")
+        print_and_log(f"📊 Final BAI2 lines: {final_bai2_content.count(chr(10)) + 1}")
+        print_and_log("🎯 RETURNING validated and corrected BAI2 content")
+        
         return final_bai2_content
         
     except Exception as e:
@@ -3154,54 +3060,4 @@ def setup_containers(req: func.HttpRequest) -> func.HttpResponse:
         
     except Exception as e:
         logging.error(f"Error setting up container structure: {str(e)}")
-        return func.HttpResponse(f"Error: {str(e)}", status_code=500)
-
-@app.function_name("throttling_status")
-@app.route(route="throttling", methods=["GET"])
-def throttling_status(req: func.HttpRequest) -> func.HttpResponse:
-    """HTTP endpoint to check throttling status and configuration"""
-    try:
-        # Get current time and throttling status
-        current_time = time.time()
-        
-        # Get queue status
-        queue_status = processing_queue.get_queue_status()
-        
-        # Get throttler status
-        with openai_throttler._lock:
-            time_since_reset = current_time - openai_throttler._reset_time
-            time_since_last_call = current_time - openai_throttler._last_call_time
-            
-            throttler_status = {
-                'calls_this_minute': openai_throttler._call_count,
-                'max_calls_per_minute': ThrottlingConfig.CALLS_PER_MINUTE,
-                'time_since_reset': f"{time_since_reset:.1f}s",
-                'time_since_last_call': f"{time_since_last_call:.1f}s",
-                'min_delay_between_calls': f"{ThrottlingConfig.MIN_DELAY_BETWEEN_CALLS}s"
-            }
-        
-        # Build response
-        status_info = {
-            'timestamp': datetime.now().isoformat(),
-            'throttling_config': {
-                'calls_per_minute': ThrottlingConfig.CALLS_PER_MINUTE,
-                'min_delay_between_calls': ThrottlingConfig.MIN_DELAY_BETWEEN_CALLS,
-                'retry_delays': ThrottlingConfig.RETRY_DELAYS,
-                'processing_delay_range': f"{ThrottlingConfig.INITIAL_PROCESSING_DELAY_MIN}-{ThrottlingConfig.INITIAL_PROCESSING_DELAY_MAX}s"
-            },
-            'current_throttler_status': throttler_status,
-            'processing_queue': queue_status,
-            'configuration_summary': ThrottlingConfig.get_summary().split('\n')
-        }
-        
-        # Return JSON response
-        import json
-        return func.HttpResponse(
-            json.dumps(status_info, indent=2),
-            status_code=200,
-            headers={'Content-Type': 'application/json'}
-        )
-        
-    except Exception as e:
-        logging.error(f"Error getting throttling status: {str(e)}")
         return func.HttpResponse(f"Error: {str(e)}", status_code=500)

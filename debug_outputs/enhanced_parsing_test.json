@@ -1,0 +1,458 @@
+{
+  "debits": [
+    {
+      "date": "06-02",
+      "type": "debit",
+      "amount": "390.00",
+      "amount_decimal": 390.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250602 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-03",
+      "type": "debit",
+      "amount": "2,564.47",
+      "amount_decimal": 2564.47,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250603 | 0841 SPARTA,TN"
+    },
+    {
+      "date": "06-04",
+      "type": "debit",
+      "amount": "1,724.88",
+      "amount_decimal": 1724.88,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250604 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-05",
+      "type": "debit",
+      "amount": "2,935.17",
+      "amount_decimal": 2935.17,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250605 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-06",
+      "type": "debit",
+      "amount": "525.10",
+      "amount_decimal": 525.1,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250606 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-09",
+      "type": "debit",
+      "amount": "449.15",
+      "amount_decimal": 449.15,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250609 | 0841 SPARTA,TN"
+    },
+    {
+      "date": "06-10",
+      "type": "debit",
+      "amount": "1,437.73",
+      "amount_decimal": 1437.73,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250610 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-10",
+      "type": "fee",
+      "amount": "52.04",
+      "amount_decimal": 52.04,
+      "description": "Maintenance Fee | ANALYSIS LOSS/CHG FOR 05/31/25"
+    },
+    {
+      "date": "06-11",
+      "type": "debit",
+      "amount": "766.00",
+      "amount_decimal": 766.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250611 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-12",
+      "type": "debit",
+      "amount": "463.00",
+      "amount_decimal": 463.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250612 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-13",
+      "type": "debit",
+      "amount": "574.00",
+      "amount_decimal": 574.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250613 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-16",
+      "type": "debit",
+      "amount": "127.50",
+      "amount_decimal": 127.5,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250616 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-17",
+      "type": "debit",
+      "amount": "1,036.00",
+      "amount_decimal": 1036.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250617 | 0841 SPARTA,TN"
+    },
+    {
+      "date": "06-18",
+      "type": "debit",
+      "amount": "1,026.64",
+      "amount_decimal": 1026.64,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250618 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-20",
+      "type": "debit",
+      "amount": "3,716.42",
+      "amount_decimal": 3716.42,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250620 | 0841 SPARTA,TN"
+    },
+    {
+      "date": "06-23",
+      "type": "debit",
+      "amount": "946.75",
+      "amount_decimal": 946.75,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250623 | 0841 SPARTA,TN"
+    },
+    {
+      "date": "06-23",
+      "type": "debit",
+      "amount": "443.77",
+      "amount_decimal": 443.77,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250623 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-24",
+      "type": "debit",
+      "amount": "486.00",
+      "amount_decimal": 486.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250624 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-25",
+      "type": "debit",
+      "amount": "1,357.49",
+      "amount_decimal": 1357.49,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250625 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-26",
+      "type": "debit",
+      "amount": "300.00",
+      "amount_decimal": 300.0,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250626 | 0841 SPARTA,TN"
+    },
+    {
+      "date": "06-27",
+      "type": "debit",
+      "amount": "608.19",
+      "amount_decimal": 608.19,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250627 | 0841 SPARTA, TN"
+    },
+    {
+      "date": "06-30",
+      "type": "debit",
+      "amount": "598.06",
+      "amount_decimal": 598.06,
+      "description": "Preauthorized Wd | WORLD ACCEPTANCE CONC DEBIT 250630 | 0841 SPARTA, TN"
+    }
+  ],
+  "credits": [
+    {
+      "date": "06-02",
+      "type": "credit",
+      "amount": "2,564.47",
+      "amount_decimal": 2564.47,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-03",
+      "type": "credit",
+      "amount": "1,725.88",
+      "amount_decimal": 1725.88,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-04",
+      "type": "credit",
+      "amount": "2,935.17",
+      "amount_decimal": 2935.17,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-05",
+      "type": "credit",
+      "amount": "525.10",
+      "amount_decimal": 525.1,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-06",
+      "type": "credit",
+      "amount": "449.15",
+      "amount_decimal": 449.15,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-09",
+      "type": "credit",
+      "amount": "1,437.73",
+      "amount_decimal": 1437.73,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-10",
+      "type": "credit",
+      "amount": "766.00",
+      "amount_decimal": 766.0,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-11",
+      "type": "credit",
+      "amount": "463.00",
+      "amount_decimal": 463.0,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-12",
+      "type": "credit",
+      "amount": "574.00",
+      "amount_decimal": 574.0,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-13",
+      "type": "credit",
+      "amount": "127.50",
+      "amount_decimal": 127.5,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-16",
+      "type": "credit",
+      "amount": "1,036.00",
+      "amount_decimal": 1036.0,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-17",
+      "type": "credit",
+      "amount": "1,026.64",
+      "amount_decimal": 1026.64,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-18",
+      "type": "credit",
+      "amount": "3,716.42",
+      "amount_decimal": 3716.42,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-20",
+      "type": "credit",
+      "amount": "946.75",
+      "amount_decimal": 946.75,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-20",
+      "type": "credit",
+      "amount": "443.77",
+      "amount_decimal": 443.77,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-23",
+      "type": "credit",
+      "amount": "486.00",
+      "amount_decimal": 486.0,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-24",
+      "type": "credit",
+      "amount": "1,357.49",
+      "amount_decimal": 1357.49,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-25",
+      "type": "credit",
+      "amount": "300.00",
+      "amount_decimal": 300.0,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-26",
+      "type": "credit",
+      "amount": "608.19",
+      "amount_decimal": 608.19,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-27",
+      "type": "credit",
+      "amount": "598.06",
+      "amount_decimal": 598.06,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "06-30",
+      "type": "credit",
+      "amount": "1,120.55",
+      "amount_decimal": 1120.55,
+      "description": "Deposit 841"
+    },
+    {
+      "date": "05-31",
+      "type": "credit",
+      "amount": "1,485.21",
+      "amount_decimal": 1485.21,
+      "description": ""
+    },
+    {
+      "date": "06-10",
+      "type": "credit",
+      "amount": "1,810.17",
+      "amount_decimal": 1810.17,
+      "description": ""
+    },
+    {
+      "date": "06-20",
+      "type": "credit",
+      "amount": "2,434.69",
+      "amount_decimal": 2434.69,
+      "description": ""
+    },
+    {
+      "date": "06-02",
+      "type": "credit",
+      "amount": "3,659.68",
+      "amount_decimal": 3659.68,
+      "description": ""
+    },
+    {
+      "date": "06-11",
+      "type": "credit",
+      "amount": "1,507.17",
+      "amount_decimal": 1507.17,
+      "description": ""
+    },
+    {
+      "date": "06-23",
+      "type": "credit",
+      "amount": "1,530.17",
+      "amount_decimal": 1530.17,
+      "description": ""
+    },
+    {
+      "date": "06-03",
+      "type": "credit",
+      "amount": "2,821.09",
+      "amount_decimal": 2821.09,
+      "description": ""
+    },
+    {
+      "date": "06-12",
+      "type": "credit",
+      "amount": "1,618.17",
+      "amount_decimal": 1618.17,
+      "description": ""
+    },
+    {
+      "date": "06-24",
+      "type": "credit",
+      "amount": "2,401.66",
+      "amount_decimal": 2401.66,
+      "description": ""
+    },
+    {
+      "date": "06-04",
+      "type": "credit",
+      "amount": "4,031.38",
+      "amount_decimal": 4031.38,
+      "description": ""
+    },
+    {
+      "date": "06-13",
+      "type": "credit",
+      "amount": "1,171.67",
+      "amount_decimal": 1171.67,
+      "description": ""
+    },
+    {
+      "date": "06-25",
+      "type": "credit",
+      "amount": "1,344.17",
+      "amount_decimal": 1344.17,
+      "description": ""
+    },
+    {
+      "date": "06-05",
+      "type": "credit",
+      "amount": "1,621.31",
+      "amount_decimal": 1621.31,
+      "description": ""
+    },
+    {
+      "date": "06-16",
+      "type": "credit",
+      "amount": "2,080.17",
+      "amount_decimal": 2080.17,
+      "description": ""
+    },
+    {
+      "date": "06-26",
+      "type": "credit",
+      "amount": "1,652.36",
+      "amount_decimal": 1652.36,
+      "description": ""
+    },
+    {
+      "date": "06-06",
+      "type": "credit",
+      "amount": "1,545.36",
+      "amount_decimal": 1545.36,
+      "description": ""
+    },
+    {
+      "date": "06-17",
+      "type": "credit",
+      "amount": "2,070.81",
+      "amount_decimal": 2070.81,
+      "description": ""
+    },
+    {
+      "date": "06-27",
+      "type": "credit",
+      "amount": "1,642.23",
+      "amount_decimal": 1642.23,
+      "description": ""
+    },
+    {
+      "date": "06-09",
+      "type": "credit",
+      "amount": "2,533.94",
+      "amount_decimal": 2533.94,
+      "description": ""
+    },
+    {
+      "date": "06-18",
+      "type": "credit",
+      "amount": "4,760.59",
+      "amount_decimal": 4760.59,
+      "description": ""
+    },
+    {
+      "date": "06-30",
+      "type": "credit",
+      "amount": "2,164.72",
+      "amount_decimal": 2164.72,
+      "description": ""
+    }
+  ],
+  "total_debits": 22528.36,
+  "total_credits": 69094.59,
+  "count_debits": 22,
+  "count_credits": 42
+}

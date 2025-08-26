@@ -1,32 +1,3578 @@
 [
   {
-    "Bank Name":"Stock Yards Bank and Trust",
-    "Address":"1040 East Main Street, Louisville, KY 40206",
-    "Account Number":2375133,
-    "Routing Number":83000564
+    "Bank Name": "1st LOCKHART NT'L BANK",
+    "Address": "P.O. BOX 600\nLockhart, TX 78644\nUnited States of America",
+    "Account Number": "22594",
+    "Routing Number": "114903213"
   },
   {
-    "Bank Name":"VeraBank",
-    "Address":"201 W. Main St., Henderson, TX 75652",
-    "Account Number":1035012999,
-    "Routing Number":111903151
+    "Bank Name": "1ST NATIONAL BANK",
+    "Address": "P.O. BOX 269\nGIDDINGS, AL 78942\nUnited States of America",
+    "Account Number": "1104298",
+    "Routing Number": "113104712"
   },
   {
-    "Bank Name":"Community Bank and Trust",
-    "Address":"1800 Washington Avenue, Waco, TX 76701",
-    "Account Number":13024211,
-    "Routing Number":111900594
+    "Bank Name": "1ST NATIONAL BANK AND TRUST",
+    "Address": "202 S MAIN STREET\nLONDON, KY 40741\nUnited States of America",
+    "Account Number": "8107483",
+    "Routing Number": "42102270"
   },
   {
-    "Bank Name":"Citizens Bank of Kentucky",
-    "Address":"620 Broadway Avenue, Paintsville, KY 41240",
-    "Account Number":21065594,
-    "Routing Number":42103253
+    "Bank Name": "1ST NATIONAL BANK OF FORT SMITH",
+    "Address": "228 PHOENIX VILLAGE MALL\nFT. SMITH, AR 72901\nUnited States of America",
+    "Account Number": "1977585",
+    "Routing Number": "82900319"
   },
   {
-    "Bank Name":"Prosperity Bank",
-    "Address":"80 Sugar Creek Center Blvd, Sugar Land, TX 77478",
-    "Account Number":6800416452,
-    "Routing Number":113122655
+    "Bank Name": "1ST NEW MEXICO BANK",
+    "Address": "455 LANDERS RD\nANTHONY, NM 88021\nUnited States of America",
+    "Account Number": "501197301",
+    "Routing Number": "112207335"
+  },
+  {
+    "Bank Name": "5/3 Bank",
+    "Address": null,
+    "Account Number": "7474269474",
+    "Routing Number": "53100737"
+  },
+  {
+    "Bank Name": "ACADEMY BANK",
+    "Address": "1700 N 291 HWY\nHARRISONVILLE, MO 64701\nUnited States of America",
+    "Account Number": "7060003014",
+    "Routing Number": "101019482"
+  },
+  {
+    "Bank Name": "ALPINE BANK",
+    "Address": "1425 N STATE ST\nBELVIDERE, IL 61008\nUnited States of America",
+    "Account Number": "70112974",
+    "Routing Number": "71923307"
+  },
+  {
+    "Bank Name": "AMERICAN BANK",
+    "Address": "130 MCGREGOR PLAZA\nPLATTEVILLE, WI 53818\nUnited States of America",
+    "Account Number": "903349",
+    "Routing Number": "75903637"
+  },
+  {
+    "Bank Name": "AMERICAN BANK",
+    "Address": "200 NORTH AUSTIN ST\nSEGUIN, IL 78155\nUnited States of America",
+    "Account Number": "45659",
+    "Routing Number": "114909220"
+  },
+  {
+    "Bank Name": "AMERICAN HERITAGE BANK",
+    "Address": "PO BOX 1408\nSAPULPA, OK 74067\nUnited States of America",
+    "Account Number": "2200209577",
+    "Routing Number": "103100616"
+  },
+  {
+    "Bank Name": "AMERIS BANK",
+    "Address": "735 WEST SECOND STREET\nTIFTON, TX 31793\nUnited States of America",
+    "Account Number": "2048509422",
+    "Routing Number": "61201754"
+  },
+  {
+    "Bank Name": "AMERIS BANK",
+    "Address": "300 SOUTH ERWIN AVE\nOCILLA, TX 31750\nUnited States of America",
+    "Account Number": "2048517078",
+    "Routing Number": "61201754"
+  },
+  {
+    "Bank Name": "AMERIS BANK",
+    "Address": "225 S MAIN STREET\nMOULTRIE, GA 31768\nUnited States of America",
+    "Account Number": "10028819",
+    "Routing Number": "61201754"
+  },
+  {
+    "Bank Name": "AMERIS BANK",
+    "Address": "735 WEST SECOND STREET\nTIFTON, TX 31793\nUnited States of America",
+    "Account Number": "2048509414",
+    "Routing Number": "61201754"
+  },
+  {
+    "Bank Name": "ANNA JONESBORO NATIONAL BANK",
+    "Address": "151 LEIGH AVE\nANNA, IL 62906\nUnited States of America",
+    "Account Number": "5088032",
+    "Routing Number": "81205264"
+  },
+  {
+    "Bank Name": "APEX",
+    "Address": null,
+    "Account Number": "11523638",
+    "Routing Number": "84307761"
+  },
+  {
+    "Bank Name": "ARMSTRONG",
+    "Address": "P.O. BOX 188\nMUSKOGEE, OK 74402\nUnited States of America",
+    "Account Number": "3126765",
+    "Routing Number": "103104528"
+  },
+  {
+    "Bank Name": "ARMSTRONG",
+    "Address": "1500 WEST HIGHWAY 51\nWAGONER, OK 74467\nUnited States of America",
+    "Account Number": "60193522",
+    "Routing Number": "103104528"
+  },
+  {
+    "Bank Name": "ARMSTRONG",
+    "Address": "1111 WEST GENTRY\nCHECOTAH, OK 74426\nUnited States of America",
+    "Account Number": "60256842",
+    "Routing Number": "103104528"
+  },
+  {
+    "Bank Name": "ARMSTRONG",
+    "Address": "PO BOX 788\nTAHLEQUAH, OK 74464\nUnited States of America",
+    "Account Number": "60142197",
+    "Routing Number": "103104528"
+  },
+  {
+    "Bank Name": "ARMSTRONG",
+    "Address": "P.O. BOX 506\nSTILWELL, OK 74960\nUnited States of America",
+    "Account Number": "60009233",
+    "Routing Number": "103104528"
+  },
+  {
+    "Bank Name": "ARMSTRONG",
+    "Address": "PO BOX 788\nTAHLEQUAH, OK 74464\nUnited States of America",
+    "Account Number": "7487355",
+    "Routing Number": "103104528"
+  },
+  {
+    "Bank Name": "ARTHUR STATE BANK",
+    "Address": "P.O. Box 769\nUNION, SC 29379\nUnited States of America",
+    "Account Number": "95137634",
+    "Routing Number": "53201034"
+  },
+  {
+    "Bank Name": "ARVEST BANK",
+    "Address": null,
+    "Account Number": "36275029",
+    "Routing Number": "82900872"
+  },
+  {
+    "Bank Name": "ARVEST BANK",
+    "Address": null,
+    "Account Number": "36274664",
+    "Routing Number": "82900872"
+  },
+  {
+    "Bank Name": "ARVEST BANK",
+    "Address": "824 SE 4TH ST\nMOORE, OK 73160\nUnited States of America",
+    "Account Number": "86580984",
+    "Routing Number": "82900872"
+  },
+  {
+    "Bank Name": "ATHENS FIRST BANK & TRUST",
+    "Address": null,
+    "Account Number": "110973",
+    "Routing Number": "261170931"
+  },
+  {
+    "Bank Name": "ATLANTIC SOUTH BANK",
+    "Address": "1409 BELLEVUE AVENUE\nDUBLIN, GA 31040\nUnited States of America",
+    "Account Number": "37001781",
+    "Routing Number": "61212170"
+  },
+  {
+    "Bank Name": "AUSTIN BANK",
+    "Address": "2609 GILMER ROAD\nLONGVIEW, TX 75604\nUnited States of America",
+    "Account Number": "3509003592",
+    "Routing Number": "113103276"
+  },
+  {
+    "Bank Name": "AUSTIN BANK",
+    "Address": "1208 N WOOD ST\nGILMER, TX 75644\nUnited States of America",
+    "Account Number": "2300018898",
+    "Routing Number": "113103276"
+  },
+  {
+    "Bank Name": "AUSTIN BANK",
+    "Address": "200 E. COMMERCE\nJACKSONVILLE, TX 75766\nUnited States of America",
+    "Account Number": "1086219",
+    "Routing Number": "113103276"
+  },
+  {
+    "Bank Name": "AUSTIN BANK",
+    "Address": "2609 GILMER ROAD\nLONGVIEW, TX 75604\nUnited States of America",
+    "Account Number": "2410037044",
+    "Routing Number": "113103276"
+  },
+  {
+    "Bank Name": "B1 Bank",
+    "Address": null,
+    "Account Number": "15023724",
+    "Routing Number": "65405420"
+  },
+  {
+    "Bank Name": "B1 Bank",
+    "Address": "201 WEST 4TH STREET\nDEQUINCY, LA 70633\nUnited States of America",
+    "Account Number": "15023732",
+    "Routing Number": "65204184"
+  },
+  {
+    "Bank Name": "B1 Bank",
+    "Address": "3881 GERSTNER MEMORIAL DR\nLAKE CHARLES, LA 70607\nUnited States of America",
+    "Account Number": "15023716",
+    "Routing Number": "65204184"
+  },
+  {
+    "Bank Name": "BANCFIRST",
+    "Address": "1001 MANVEL AVE\nCHANDLER, OK 78434\nUnited States of America",
+    "Account Number": "532001267",
+    "Routing Number": "103003632"
+  },
+  {
+    "Bank Name": "BANCFIRST",
+    "Address": null,
+    "Account Number": "5204018476",
+    "Routing Number": "103003632"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": null,
+    "Account Number": "80341118",
+    "Routing Number": "84201278"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "802 HWY 12 WEST\nSTARKVILLE, MS 39759\nUnited States of America",
+    "Account Number": "759079872",
+    "Routing Number": "84201278"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "600 AZALEA DR\nWAYNESBORO, MS 39367\nUnited States of America",
+    "Account Number": "76497262",
+    "Routing Number": "84201278"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "PO BOX 667\nCONVINGTON, TN 38019\nUnited States of America",
+    "Account Number": "17233479",
+    "Routing Number": "84300603"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "1500 E. MAIN ST.\nHUMBOLDT, TN 38343\nUnited States of America",
+    "Account Number": "17280991",
+    "Routing Number": "84300603"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "1434 S HIGHLAND AVE\nJACKSON, TN 38301\nUnited States of America",
+    "Account Number": "17222357",
+    "Routing Number": "84300603"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "1434 S HIGHLAND AVE\nJACKSON, TN 38301\nUnited States of America",
+    "Account Number": "17282138",
+    "Routing Number": "84300603"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "8146 HWY 51 NORTH\nMILLINGTON, TN 38053\nUnited States of America",
+    "Account Number": "17280199",
+    "Routing Number": "84300603"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "2450 MOODY PARKWAY\nMOODY, AL 35004\nUnited States of America",
+    "Account Number": "74980467",
+    "Routing Number": "84201278"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": null,
+    "Account Number": "1121373201",
+    "Routing Number": "84201278"
+  },
+  {
+    "Bank Name": "BANCORP SOUTH BANK",
+    "Address": "PO BOX 127\nTRENTON, TN 38382\nUnited States of America",
+    "Account Number": "17247107",
+    "Routing Number": "84300603"
+  },
+  {
+    "Bank Name": "BANK LIBERTY",
+    "Address": "PO BOX 287\nPLATTE CITY, MO 64079\nUnited States of America",
+    "Account Number": "613562",
+    "Routing Number": "301071712"
+  },
+  {
+    "Bank Name": "BANK MIDWEST",
+    "Address": "1304 N WALNUT ST\nCAMERON, MO 64429\nUnited States of America",
+    "Account Number": "2960002425",
+    "Routing Number": "101006699"
+  },
+  {
+    "Bank Name": "BANK MIDWEST",
+    "Address": "134 CROWN HILL ROAD\nEXCELSIOR SPRINGS, MO 64024\nUnited States of America",
+    "Account Number": "1705403855",
+    "Routing Number": "101006699"
+  },
+  {
+    "Bank Name": "BANK MIDWEST",
+    "Address": "402 NORTH MAIN STREET\nMARYVILLE, MO 64468\nUnited States of America",
+    "Account Number": "1565979066",
+    "Routing Number": "101006699"
+  },
+  {
+    "Bank Name": "BANK OF AMERICA",
+    "Address": null,
+    "Account Number": "354008054364",
+    "Routing Number": "81000032"
+  },
+  {
+    "Bank Name": "BANK OF AMERICA",
+    "Address": "5330 US 78\nSTONE MOUNTAIN, TX 30087\nUnited States of America",
+    "Account Number": "223015346837",
+    "Routing Number": "53904483"
+  },
+  {
+    "Bank Name": "BANK OF AMERICA",
+    "Address": "185 ASYLUM STREET, 35TH FL\nHARTFORD, MN 6103\nUnited States of America",
+    "Account Number": "1631102169",
+    "Routing Number": "26009593"
+  },
+  {
+    "Bank Name": "BANK OF DADE",
+    "Address": "P.O. DRAWER 9\nTRENTON, GA 30752\nUnited States of America",
+    "Account Number": "28860",
+    "Routing Number": "61113101"
+  },
+  {
+    "Bank Name": "BANK OF FENTRESS COUNTY",
+    "Address": "416 E CENTRAL AVE\nJAMESTOWN, TN 38556\nUnited States of America",
+    "Account Number": "13027581",
+    "Routing Number": "64104311"
+  },
+  {
+    "Bank Name": "BANK OF FRANKEWING",
+    "Address": "1200 N LOCUST ST\nLAWRENCEBURG, TN 38464\nUnited States of America",
+    "Account Number": "114383",
+    "Routing Number": "64106775"
+  },
+  {
+    "Bank Name": "BANK OF FRANKEWING",
+    "Address": "P.O. BOX 636\nPULASKI, TN 38478\nUnited States of America",
+    "Account Number": "7242",
+    "Routing Number": "64106775"
+  },
+  {
+    "Bank Name": "BANK OF KIRKSVILLE",
+    "Address": "PO BOX 787\nKIRKSVILLE, MO 63501\nUnited States of America",
+    "Account Number": "844942",
+    "Routing Number": "81501340"
+  },
+  {
+    "Bank Name": "BANK OF KIRKSVILLE",
+    "Address": "1512 N MISSOURI ST\nMACON, MO 63552\nUnited States of America",
+    "Account Number": "9555",
+    "Routing Number": "81501340"
+  },
+  {
+    "Bank Name": "BANK OF MAYSVILLE",
+    "Address": "20 WEST SECOND STREET\nMAYSVILLE, KY 41056\nUnited States of America",
+    "Account Number": "59021375",
+    "Routing Number": "42101006"
+  },
+  {
+    "Bank Name": "BANK OF MOBERLY",
+    "Address": "1324 EAST HWY 24\nMOBERLY, MO 65270\nUnited States of America",
+    "Account Number": "9547",
+    "Routing Number": "81501340"
+  },
+  {
+    "Bank Name": "BANK OF RANTOUL",
+    "Address": "PO BOX 67\nRANTOUL, IL 61866\nUnited States of America",
+    "Account Number": "119482",
+    "Routing Number": "71119289"
+  },
+  {
+    "Bank Name": "BANK OF TENNESSEE",
+    "Address": "1223 VOLUNTEER PARKWAY\nBRISTOL, TN 37620\nUnited States of America",
+    "Account Number": "130516",
+    "Routing Number": "64202705"
+  },
+  {
+    "Bank Name": "BANK OF TENNESSEE",
+    "Address": "200 BEMBERG ROAD\nELIZABETHTON, TN 37643\nUnited States of America",
+    "Account Number": "73024",
+    "Routing Number": "64208013"
+  },
+  {
+    "Bank Name": "BANK OF TENNESSEE",
+    "Address": "1230 N MAIN ST\nERWIN, TN 37650\nUnited States of America",
+    "Account Number": "149918",
+    "Routing Number": "64202705"
+  },
+  {
+    "Bank Name": "BANK OF TENNESSEE",
+    "Address": "P.O. BOX 4980\nJOHNSON CITY, TN 37602\nUnited States of America",
+    "Account Number": "108464",
+    "Routing Number": "64202705"
+  },
+  {
+    "Bank Name": "BANK OF THE MOUNTAINS",
+    "Address": "PO BOX 309\nWEST LIBERTY, KY 41472\nUnited States of America",
+    "Account Number": "3031411",
+    "Routing Number": "42101750"
+  },
+  {
+    "Bank Name": "BANK OF THE OZARKS",
+    "Address": "5 MAIN STREET\nAUBURN, GA 30011\nUnited States of America",
+    "Account Number": "9035429",
+    "Routing Number": "61112458"
+  },
+  {
+    "Bank Name": "BANK OF THE PANHANDLE",
+    "Address": "1223 NORTH MAIN ST\nGUYMON, OK 73942\nUnited States of America",
+    "Account Number": "136220",
+    "Routing Number": "103103244"
+  },
+  {
+    "Bank Name": "BANK OF THE SOUTHWEST",
+    "Address": "320 W MAIN ST\nFARMINGTON, NM 87401\nUnited States of America",
+    "Account Number": "3121142",
+    "Routing Number": "112206297"
+  },
+  {
+    "Bank Name": "BANK OF THE SOUTHWEST",
+    "Address": "2 CR 6500\nKIRTLAND, NM 87417\nUnited States of America",
+    "Account Number": "3119470",
+    "Routing Number": "112206297"
+  },
+  {
+    "Bank Name": "BANK OF THE WEST",
+    "Address": "2400 W IRVING BLVD\nIRVING, TX 75060\nUnited States of America",
+    "Account Number": "51987",
+    "Routing Number": "111916724"
+  },
+  {
+    "Bank Name": "BANK OF WASHINGTON",
+    "Address": null,
+    "Account Number": "1115419",
+    "Routing Number": "81902198"
+  },
+  {
+    "Bank Name": "BANK OF WINNFIELD",
+    "Address": "PO BOX 350\nWINNFIELD, LA 71483\nUnited States of America",
+    "Account Number": "143715",
+    "Routing Number": "111100844"
+  },
+  {
+    "Bank Name": "BANK STAR OF THE BOOTHEEL",
+    "Address": "PO BOX 171\nCARUTHERSVILLE, MO 63830\nUnited States of America",
+    "Account Number": "114454",
+    "Routing Number": "81512106"
+  },
+  {
+    "Bank Name": "BANTERRA BANK",
+    "Address": "101 WEST EIGHTH STREET\nMETROPOLIS, IL 62960\nUnited States of America",
+    "Account Number": "40066983",
+    "Routing Number": "81222593"
+  },
+  {
+    "Bank Name": "BB&T",
+    "Address": "5130 PARKWAY PLAZA BLVD\nCHARLOTTE, LA 28217\nUnited States of America",
+    "Account Number": "1410016505223",
+    "Routing Number": "53201607"
+  },
+  {
+    "Bank Name": "BB&T",
+    "Address": null,
+    "Account Number": "1410013530871",
+    "Routing Number": "53201607"
+  },
+  {
+    "Bank Name": "BBVA",
+    "Address": null,
+    "Account Number": "6728542418",
+    "Routing Number": "113010547"
+  },
+  {
+    "Bank Name": "BBVA",
+    "Address": "5342 AIRLINE DRIVE\nHOUSTON, TX 77022\nUnited States of America",
+    "Account Number": "6768542439",
+    "Routing Number": "113010547"
+  },
+  {
+    "Bank Name": "BBVA Bancomer",
+    "Address": null,
+    "Account Number": "111111111111111111",
+    "Routing Number": null
+  },
+  {
+    "Bank Name": "BBVA Bancomer",
+    "Address": null,
+    "Account Number": "000000000199132325",
+    "Routing Number": null
+  },
+  {
+    "Bank Name": "BBVA Bancomer",
+    "Address": null,
+    "Account Number": "000000000199394613",
+    "Routing Number": null
+  },
+  {
+    "Bank Name": "BBVA COMPASS BANK",
+    "Address": "2009C BELTLINE RD SW\nDECATUR, AL 35603\nUnited States of America",
+    "Account Number": "2522007202",
+    "Routing Number": "62001186"
+  },
+  {
+    "Bank Name": "BLUE RIDGE BANK AND TRUST",
+    "Address": "129 SE STATE ROUTE 291\nLEE'S SUMMIT, MO 64063\nUnited States of America",
+    "Account Number": "300809182",
+    "Routing Number": "101001364"
+  },
+  {
+    "Bank Name": "BLUE RIDGE BANK AND TRUST",
+    "Address": "6202 RAYTOWN TRAFFIC WAY\nRAYTOWN, MO 64133\nUnited States of America",
+    "Account Number": "400806940",
+    "Routing Number": "101001364"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4426284",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4442125",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4442133",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4442117",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4442141",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4442158",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BMO HARRIS",
+    "Address": null,
+    "Account Number": "4442166",
+    "Routing Number": "71000288"
+  },
+  {
+    "Bank Name": "BUSEY BANK",
+    "Address": "33 S. FOURTH ST.\nPEKIN, IL 61554\nUnited States of America",
+    "Account Number": "55093",
+    "Routing Number": "71102322"
+  },
+  {
+    "Bank Name": "BUSEY BANK",
+    "Address": "200 W MAIN STEET\nSHELBYVILLE, IL 62565\nUnited States of America",
+    "Account Number": "400480240",
+    "Routing Number": "71102568"
+  },
+  {
+    "Bank Name": "CADENCE BANK",
+    "Address": null,
+    "Account Number": "90263",
+    "Routing Number": "61104123"
+  },
+  {
+    "Bank Name": "CADENCE BANK",
+    "Address": null,
+    "Account Number": "7100016612",
+    "Routing Number": "62206295"
+  },
+  {
+    "Bank Name": "CADENCE BANK",
+    "Address": "608 2ND AVE EAST\nONEONTA, AL 35121\nUnited States of America",
+    "Account Number": "5000526581",
+    "Routing Number": "62206295"
+  },
+  {
+    "Bank Name": "Capital One Bank",
+    "Address": null,
+    "Account Number": "1234567",
+    "Routing Number": "65000090"
+  },
+  {
+    "Bank Name": "Capital One Bank",
+    "Address": null,
+    "Account Number": "111111111",
+    "Routing Number": "65000090"
+  },
+  {
+    "Bank Name": "CARLINVILLE NATIONAL BANK",
+    "Address": "643 WEST WASHINGTON\nPITTSFIELD, IL 62363\nUnited States of America",
+    "Account Number": "229982",
+    "Routing Number": "81904662"
+  },
+  {
+    "Bank Name": "CAROLINA BANK",
+    "Address": "P.O. BOX 350\nCHERAW, TN 29520\nUnited States of America",
+    "Account Number": "900617150",
+    "Routing Number": "53207216"
+  },
+  {
+    "Bank Name": "CENTIER BANK",
+    "Address": null,
+    "Account Number": "103444696",
+    "Routing Number": "71902878"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "170 EAST HIGHWAY 54\nCAMDENTON, MO 65020\nUnited States of America",
+    "Account Number": "000122324",
+    "Routing Number": "81509070"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "410 MARKET STREET\nFULTON, MO 65251\nUnited States of America",
+    "Account Number": "1066382",
+    "Routing Number": "86500634"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "1197 SPUR DR\nMARSHFIELD, MO 65706\nUnited States of America",
+    "Account Number": "139512855",
+    "Routing Number": "81518634"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "1916 PARIS ROAD\nCOLUMBIA, MO 65201\nUnited States of America",
+    "Account Number": "750110800",
+    "Routing Number": "81500859"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "P.O. BOX 779\nJEFFERSON CITY, MO 65102\nUnited States of America",
+    "Account Number": "1028456",
+    "Routing Number": "86500634"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "485 WAYNE ROAD\nSAVANNAH, TN 38372\nUnited States of America",
+    "Account Number": "10510402",
+    "Routing Number": "284373838"
+  },
+  {
+    "Bank Name": "CENTRAL BANK",
+    "Address": "PO BOX 3397\nSPRINGFIELD, MO 65808\nUnited States of America",
+    "Account Number": "139453751",
+    "Routing Number": "86518477"
+  },
+  {
+    "Bank Name": "CENTRUE BANK",
+    "Address": "208 E VETERANS PARKWAY\nYORKVILLE, IL 60560\nUnited States of America",
+    "Account Number": "1001095634",
+    "Routing Number": "71918561"
+  },
+  {
+    "Bank Name": "CENTRUE BANK",
+    "Address": "122 W. MADISON ST\nOTTAWA, IL 61350\nUnited States of America",
+    "Account Number": "3000000588491",
+    "Routing Number": "71901837"
+  },
+  {
+    "Bank Name": "CIERA BANK",
+    "Address": "623 ELM STREET\nGRAHAM, TX 76450\nUnited States of America",
+    "Account Number": "1086103",
+    "Routing Number": "111905227"
+  },
+  {
+    "Bank Name": "CITIZENS BANK & TRUST COMPANY",
+    "Address": "106 SOUTH MAIN STREET\nSPRINGHILL, LA 71075\nUnited States of America",
+    "Account Number": "90271",
+    "Routing Number": "111103524"
+  },
+  {
+    "Bank Name": "CITIZENS BANK & TRUST COMPANY OF JACKSON",
+    "Address": "57 MAIN STREET\nBEATTYVILLE, KY 41311\nUnited States of America",
+    "Account Number": "30228",
+    "Routing Number": "42108122"
+  },
+  {
+    "Bank Name": "CITIZENS BANK INDIANA",
+    "Address": "1098 STATE ROAD 39\nMARTINSVILLE, IN 46151\nUnited States of America",
+    "Account Number": "8581175",
+    "Routing Number": "74905225"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF AMSTERDAM",
+    "Address": "19 S ORNAGE STREET\nBUTLER, MO 64730\nUnited States of America",
+    "Account Number": "518271",
+    "Routing Number": "101217514"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF ARDMORE",
+    "Address": "P.O. BOX 1689\nARDMORE, OK 73402\nUnited States of America",
+    "Account Number": "679801",
+    "Routing Number": "103102274"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF BROHEAD",
+    "Address": "PO BOX 697\nMCKEE, KY 40447\nUnited States of America",
+    "Account Number": "8016283",
+    "Routing Number": "42104469"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF BROHEAD",
+    "Address": "P.O. BOX 127\nBRODHEAD, KY 40409\nUnited States of America",
+    "Account Number": "8013640",
+    "Routing Number": "42104469"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF CUMBERLAND COUNTY",
+    "Address": "P.O. BOX 810\nBURKESVILLE, NM 42717\nUnited States of America",
+    "Account Number": "2000830",
+    "Routing Number": "83908307"
+  },
+  {
+    "Bank Name": "Citizens Bank of Kentucky, Inc.",
+    "Address": null,
+    "Account Number": "21065594",
+    "Routing Number": "42103253"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF KILGORE",
+    "Address": "P.O. BOX 1700\nKILGORE, IN 75662\nUnited States of America",
+    "Account Number": "1048473",
+    "Routing Number": "111922624"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF LAS CRUCES",
+    "Address": "425 S TELSHORE BLVD\nLAS CRUCES, NM 88011\nUnited States of America",
+    "Account Number": "3253201",
+    "Routing Number": "112201289"
+  },
+  {
+    "Bank Name": "CITIZENS BANK OF LAS CRUCES",
+    "Address": "425 S TELSHORE BLVD\nLAS CRUCES, NM 88011\nUnited States of America",
+    "Account Number": "3481801",
+    "Routing Number": "112201289"
+  },
+  {
+    "Bank Name": "CITIZENS COMMUNITY BANK",
+    "Address": "500 JACKSON RD\nBOONEVILLE, MO 65233\nUnited States of America",
+    "Account Number": "100005649",
+    "Routing Number": "101914286"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK",
+    "Address": null,
+    "Account Number": "85995",
+    "Routing Number": "111103524"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF KENTUCKY",
+    "Address": "167 CAROL MALONE BLVD\nGRAYSON, KY 41129\nUnited States of America",
+    "Account Number": "20102670",
+    "Routing Number": "42103253"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF KENTUCKY",
+    "Address": "620 BROADWAY ST\nPAINTSVILLE, KY 41240\nUnited States of America",
+    "Account Number": "20327698",
+    "Routing Number": "42103253"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF KENTUCKY",
+    "Address": "50 FRANKLIN COR\nPRESTONBURG, KY 41653\nUnited States of America",
+    "Account Number": "20135142",
+    "Routing Number": "42103253"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF KENTUCKY",
+    "Address": "615 MOUNTAIN PARKWAY\nSALYERSVILLE, KY 41465\nUnited States of America",
+    "Account Number": "20473559",
+    "Routing Number": "42103253"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF SOMERSET",
+    "Address": "P.O. BOX 760\nSOMERSET, KY 42502\nUnited States of America",
+    "Account Number": "75088529",
+    "Routing Number": "42101446"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF TEXAS",
+    "Address": "P.O. BOX 1009\nHENDERSON, TX 75653\nUnited States of America",
+    "Account Number": "1047078",
+    "Routing Number": "111903151"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF TEXAS",
+    "Address": "1708 E END BLVD. N.\nMARSHALL, TX 75671\nUnited States of America",
+    "Account Number": "1101415506",
+    "Routing Number": "111903151"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF TEXAS",
+    "Address": "P.O. BOX 770\nPALESTINE, TX 75801\nUnited States of America",
+    "Account Number": "1231037994",
+    "Routing Number": "111903151"
+  },
+  {
+    "Bank Name": "CITIZENS NATIONAL BANK OF TEXAS",
+    "Address": "PO BOX 4610\nSEVIERVILLE, TN 37864\nUnited States of America",
+    "Account Number": "256381",
+    "Routing Number": "64202255"
+  },
+  {
+    "Bank Name": "CITIZENS STATE BANK",
+    "Address": "101 LIVE OAK\nMARLIN, TX 76661\nUnited States of America",
+    "Account Number": "2001038439",
+    "Routing Number": "113119105"
+  },
+  {
+    "Bank Name": "CITIZENS TRI COUNTY BANK",
+    "Address": "4765 MAIN STREET\nJASPER, TN 37347\nUnited States of America",
+    "Account Number": "800058018",
+    "Routing Number": "64101291"
+  },
+  {
+    "Bank Name": "CITY NATIONAL BANK",
+    "Address": "200 N PACIFIC ST\nMINEOLA, KY 75773\nUnited States of America",
+    "Account Number": "68346",
+    "Routing Number": "111901946"
+  },
+  {
+    "Bank Name": "City National Bank Of Taylor",
+    "Address": "P.O. BOX 1099\nTAYLOR, KY 76574\nUnited States of America",
+    "Account Number": "1104306",
+    "Routing Number": "114901859"
+  },
+  {
+    "Bank Name": "COFFE COUNTY BANK",
+    "Address": "PO BOX 1109\nMANCHESTER, TN 37349\nUnited States of America",
+    "Account Number": "26922",
+    "Routing Number": "64102902"
+  },
+  {
+    "Bank Name": "COLONY BANK",
+    "Address": "5510 OAK ST.\nEASTMAN, SC 31023\nUnited States of America",
+    "Account Number": "50057967",
+    "Routing Number": "61202672"
+  },
+  {
+    "Bank Name": "Columbus State Bank",
+    "Address": null,
+    "Account Number": "7814615",
+    "Routing Number": "113118630"
+  },
+  {
+    "Bank Name": "COMMERCIAL BANK",
+    "Address": "1701 E MAIN ST\nCUMBERLAND, KY 40823\nUnited States of America",
+    "Account Number": "111096",
+    "Routing Number": "64202983"
+  },
+  {
+    "Bank Name": "COMMERCIAL BANK",
+    "Address": "603 KNOX STREET\nBARBOURVILLE, KY 40906\nUnited States of America",
+    "Account Number": "105789801",
+    "Routing Number": "64202983"
+  },
+  {
+    "Bank Name": "COMMERCIAL BANK",
+    "Address": "262 EAST BROADWAY STREET\nNEWPORT, TN 37821\nUnited States of America",
+    "Account Number": "1438320",
+    "Routing Number": "64202983"
+  },
+  {
+    "Bank Name": "COMMERCIAL BANK OF OAK GROVE",
+    "Address": "1114 BROADWAY\nOAK GROVE, MO 64075\nUnited States of America",
+    "Account Number": "28452",
+    "Routing Number": "101206389"
+  },
+  {
+    "Bank Name": "COMMERCIAL STATE BANK",
+    "Address": "200 SOUTH MAIN ST.\nANDREWS, KY 79714\nUnited States of America",
+    "Account Number": "603260",
+    "Routing Number": "112323086"
+  },
+  {
+    "Bank Name": "COMMUNITY BANK",
+    "Address": "637 S. WHEELER ST.\nJASPER, TX 75951\nUnited States of America",
+    "Account Number": "4102652",
+    "Routing Number": "113111983"
+  },
+  {
+    "Bank Name": "COMMUNITY BANK & TRUST",
+    "Address": "1409 WOODED ACRES\nWACO, TX 76710\nUnited States of America",
+    "Account Number": "13024211",
+    "Routing Number": "111900594"
+  },
+  {
+    "Bank Name": "COMMUNITY BANK & TRUST",
+    "Address": "PO BOX 2303\nHEWITT, TX 76643\nUnited States of America",
+    "Account Number": "13025705",
+    "Routing Number": "111900594"
+  },
+  {
+    "Bank Name": "COMMUNITY BANK & TRUST",
+    "Address": "1409 WOODED ACRES\nWACO, TX 76710\nUnited States of America",
+    "Account Number": "13024005",
+    "Routing Number": "111900594"
+  },
+  {
+    "Bank Name": "COMMUNITY BANK & TRUST",
+    "Address": "1409 WOODED ACRES\nWACO, TX 76710\nUnited States of America",
+    "Account Number": "13996723",
+    "Routing Number": "111900594"
+  },
+  {
+    "Bank Name": "COMMUNITY BANK OF LOUISIANA",
+    "Address": "118 JEFFERSON\nMANSFIELD, LA 71052\nUnited States of America",
+    "Account Number": "109428",
+    "Routing Number": "111104581"
+  },
+  {
+    "Bank Name": "COMMUNITY FIRST BANK AND TRUST",
+    "Address": "5200 Hwy 100\nLYLES, TN 37098\nUnited States of America",
+    "Account Number": "34789",
+    "Routing Number": "64108485"
+  },
+  {
+    "Bank Name": "Community First Bank of Indiana",
+    "Address": null,
+    "Account Number": "5522582",
+    "Routing Number": "74914407"
+  },
+  {
+    "Bank Name": "COMMUNITY NATIONAL BANK",
+    "Address": "1271 MARKET ST.\nDAYTON, TN 37321\nUnited States of America",
+    "Account Number": "1316702",
+    "Routing Number": "64201120"
+  },
+  {
+    "Bank Name": "COMMUNITY NATIONAL BANK",
+    "Address": "316 CHICKAMAUGA AVE\nROSSVILLE, SC 30741\nUnited States of America",
+    "Account Number": "2027332",
+    "Routing Number": "64201120"
+  },
+  {
+    "Bank Name": "COMMUNITY NATIONAL BANK OF HONDO",
+    "Address": "150 AVENUE M\nHONDO, TX 78861\nUnited States of America",
+    "Account Number": "23965",
+    "Routing Number": "114909165"
+  },
+  {
+    "Bank Name": "COMMUNITY NATIONAL BANK OF MIDLAND TX",
+    "Address": "P.O. BOX 3903\nMIDLAND, MS 79702\nUnited States of America",
+    "Account Number": "10168599",
+    "Routing Number": "116312873"
+  },
+  {
+    "Bank Name": "COMMUNITY NATIONAL BANK OF MIDLAND TX",
+    "Address": "P.O. BOX 3903\nMIDLAND, MS 79702\nUnited States of America",
+    "Account Number": "1066141",
+    "Routing Number": "116312873"
+  },
+  {
+    "Bank Name": "COMMUNITY NATIONAL BANK OF MIDLAND TX",
+    "Address": "P.O. BOX 3903\nMIDLAND, MS 79702\nUnited States of America",
+    "Account Number": "1066346",
+    "Routing Number": "116312873"
+  },
+  {
+    "Bank Name": "COMMUNITY TRUST BANK, INC.",
+    "Address": "101 EAST 2ND AVENUE\nWILLIAMSON, KY 25661\nUnited States of America",
+    "Account Number": "4000824015",
+    "Routing Number": "42102694"
+  },
+  {
+    "Bank Name": "Continental Bank",
+    "Address": "15 W South Temple, Ste 300\nSalt Lake City, UT 84101\nUnited States of America",
+    "Account Number": "19008203",
+    "Routing Number": "124003077"
+  },
+  {
+    "Bank Name": "Continental Bank",
+    "Address": "15 W South Temple, Ste 300\nSalt Lake City, UT 84101\nUnited States of America",
+    "Account Number": "0174079285",
+    "Routing Number": "124003077"
+  },
+  {
+    "Bank Name": "Continental Bank",
+    "Address": "15 W South Temple, Ste 300\nSalt Lake City, UT 84101\nUnited States of America",
+    "Account Number": "19008205",
+    "Routing Number": "124003077"
+  },
+  {
+    "Bank Name": "Continental Bank",
+    "Address": "15 W South Temple, Ste 300\nSalt Lake City, UT 84101\nUnited States of America",
+    "Account Number": "19008204",
+    "Routing Number": "124003077"
+  },
+  {
+    "Bank Name": "CUMBERLAND VALLEY NATIONAL BANK AND TRUST",
+    "Address": "P.O. BOX 600\nCORBIN, KY 40701\nUnited States of America",
+    "Account Number": "4018591",
+    "Routing Number": "42104825"
+  },
+  {
+    "Bank Name": "Do not Use - Regions Holding Account (for licensing)",
+    "Address": null,
+    "Account Number": "0184806001",
+    "Routing Number": "62000019"
+  },
+  {
+    "Bank Name": "Do not Use - Regions Holding Account (for licensing)",
+    "Address": null,
+    "Account Number": "184805463",
+    "Routing Number": "62000019"
+  },
+  {
+    "Bank Name": "ELSA STATE BANK",
+    "Address": "300 WEST EDINBURG\nELSA, AL 78543\nUnited States of America",
+    "Account Number": "2022001",
+    "Routing Number": "114915447"
+  },
+  {
+    "Bank Name": "ENNIS STATE BANK",
+    "Address": "815 WEST ENNIS AVE\nENNIS, TX 75120\nUnited States of America",
+    "Account Number": "36723",
+    "Routing Number": "111920312"
+  },
+  {
+    "Bank Name": "ENTEGRA BANK",
+    "Address": "PO BOX 188\nCHESNEE, TN 29323\nUnited States of America",
+    "Account Number": "95667358",
+    "Routing Number": "253170486"
+  },
+  {
+    "Bank Name": "ENTERPRISE BANK AND TRUST",
+    "Address": "3944 VOGEL ROAD\nARNOLD, MO 63010\nUnited States of America",
+    "Account Number": "1089226",
+    "Routing Number": "81012952"
+  },
+  {
+    "Bank Name": "ENTERPRISE BANK OF SC",
+    "Address": "227 MAIN ST\nBLACKVILLE, IL 29817\nUnited States of America",
+    "Account Number": "221101132",
+    "Routing Number": "53202871"
+  },
+  {
+    "Bank Name": "EVA BANK",
+    "Address": null,
+    "Account Number": "8181233",
+    "Routing Number": "62203719"
+  },
+  {
+    "Bank Name": "EXTRACO BANKS",
+    "Address": "PO BOX 6101\nTEMPLE, TX 76503\nUnited States of America",
+    "Account Number": "20200396198",
+    "Routing Number": "111900581"
+  },
+  {
+    "Bank Name": "FARMERS AND MERCHANTS BANK",
+    "Address": "978 VALDOSTA HWY\nHOMERVILLE, GA 31634\nUnited States of America",
+    "Account Number": "203910505",
+    "Routing Number": "61203642"
+  },
+  {
+    "Bank Name": "FARMERS AND MERCHANTS BANK",
+    "Address": "P.O. BOX 187\nLAKELAND, TX 31635\nUnited States of America",
+    "Account Number": "407923201",
+    "Routing Number": "61203642"
+  },
+  {
+    "Bank Name": "FARMERS AND MERCHANTS BANK",
+    "Address": "202 W WASHINGTON ST\nNASHVILLE, GA 31639\nUnited States of America",
+    "Account Number": "119891",
+    "Routing Number": "61203642"
+  },
+  {
+    "Bank Name": "FARMERS BANK AND TRUST MARION",
+    "Address": "201 S MAIN ST\nMARION, KY 42064\nUnited States of America",
+    "Account Number": "2026252",
+    "Routing Number": "83902316"
+  },
+  {
+    "Bank Name": "FARMERS MERCHANTS BANK",
+    "Address": "100 S. MADISON AVE\nEATONTON, GA 31024\nUnited States of America",
+    "Account Number": "772270",
+    "Routing Number": "61110557"
+  },
+  {
+    "Bank Name": "FARMERS STATE BANK",
+    "Address": "P.O. BOX 352\nCENTER, TX 75935\nUnited States of America",
+    "Account Number": "13623901",
+    "Routing Number": "113105070"
+  },
+  {
+    "Bank Name": "FCB BANK",
+    "Address": "21 E OFALLON DRIVE\nCASEYVILLE, IL 62232\nUnited States of America",
+    "Account Number": "1331619201",
+    "Routing Number": "81025198"
+  },
+  {
+    "Bank Name": "FCB BANK",
+    "Address": "2729 MARYVILLE ROAD\nMARYVILLE, IL 62062\nUnited States of America",
+    "Account Number": "620322101",
+    "Routing Number": "81025198"
+  },
+  {
+    "Bank Name": "FIDELITY BANK",
+    "Address": "415 GRAYSON HWY\nLAWRENCEVILLE, GA 30045\nUnited States of America",
+    "Account Number": "140007763",
+    "Routing Number": "61102400"
+  },
+  {
+    "Bank Name": "FIRST & FARMERS NATIONAL BANK",
+    "Address": null,
+    "Account Number": "50002511",
+    "Routing Number": "83901236"
+  },
+  {
+    "Bank Name": "FIRST & FARMERS NATIONAL BANK",
+    "Address": "224 SOUTH PUBLIC SQUARE\nCOLUMBIA, KY 42728\nUnited States of America",
+    "Account Number": "17191",
+    "Routing Number": "83903108"
+  },
+  {
+    "Bank Name": "FIRST AMERICAN BANK",
+    "Address": "288 MAIN STREET\nBOURBONNAIS, IL 60914\nUnited States of America",
+    "Account Number": "18074431301",
+    "Routing Number": "71922777"
+  },
+  {
+    "Bank Name": "FIRST AMERICAN BANK",
+    "Address": "101 MEADOWVIEW CENTER\nKANKAKEE, IL 60901\nUnited States of America",
+    "Account Number": "18074249901",
+    "Routing Number": "71922777"
+  },
+  {
+    "Bank Name": "FIRST AMERICAN BANK",
+    "Address": "65 EAST MAY STREET\nWINDER, GA 30680\nUnited States of America",
+    "Account Number": "124095",
+    "Routing Number": "61111255"
+  },
+  {
+    "Bank Name": "FIRST BANK",
+    "Address": "117 SOUTH STATE STREET\nJERSEYVILLE, IL 62052\nUnited States of America",
+    "Account Number": "9954112304",
+    "Routing Number": "81009428"
+  },
+  {
+    "Bank Name": "FIRST BANK & TRUST CO.",
+    "Address": "1108 E. STONE DR.\nKINGSPORT, TN 37660\nUnited States of America",
+    "Account Number": "2040001653",
+    "Routing Number": "51404464"
+  },
+  {
+    "Bank Name": "FIRST BANK & TRUST CO.",
+    "Address": "923 MAIN STREET\nDUNCAN, OK 73534\nUnited States of America",
+    "Account Number": "195146",
+    "Routing Number": "103102106"
+  },
+  {
+    "Bank Name": "FIRST BANK AND TRUST CHILDRESS",
+    "Address": "301 MAIN STREET\nCHILDRESS, TX 79201\nUnited States of America",
+    "Account Number": "171424449",
+    "Routing Number": "111310294"
+  },
+  {
+    "Bank Name": "FIRST BANK CORP",
+    "Address": "100 E LEITNER ST\nLATTA, IL 29565\nUnited States of America",
+    "Account Number": "801001382",
+    "Routing Number": "53104568"
+  },
+  {
+    "Bank Name": "FIRST BANK OF TN",
+    "Address": "P.O. BOX 263\nHARRIMAN, TN 37748\nUnited States of America",
+    "Account Number": "39446",
+    "Routing Number": "64204703"
+  },
+  {
+    "Bank Name": "FIRST BANKERS TRUST CO",
+    "Address": "440 NORTH LAFOLLETTE ST.\nMACOMB, IL 61455\nUnited States of America",
+    "Account Number": "255825101",
+    "Routing Number": "81200586"
+  },
+  {
+    "Bank Name": "FIRST BANKERS TRUST CO",
+    "Address": "P.O. BOX 3566\nQUINCY, IL 62305\nUnited States of America",
+    "Account Number": "911848401",
+    "Routing Number": "81200586"
+  },
+  {
+    "Bank Name": "FIRST CENTURY BANK",
+    "Address": "2969 MAYNARDVILLE HWY\nMAYNARDVILLE, TN 37807\nUnited States of America",
+    "Account Number": "38644",
+    "Routing Number": "64204774"
+  },
+  {
+    "Bank Name": "FIRST CITIZENS",
+    "Address": "6340 SUGARLOAF PARKWAY SUITE 100\nLAWRENCEVILLE, SC 30043\nUnited States of America",
+    "Account Number": "800083558001",
+    "Routing Number": "61107816"
+  },
+  {
+    "Bank Name": "FIRST CITIZENS",
+    "Address": "800 EAST NORTH STREET\nGREENVILLE, SC 29601\nUnited States of America",
+    "Account Number": "480008453701",
+    "Routing Number": "53100300"
+  },
+  {
+    "Bank Name": "FIRST CITIZENS NATIONAL BANK",
+    "Address": "PO BOX 370\nDYERSBURG, TN 38025-9982\nUnited States of America",
+    "Account Number": "2574446",
+    "Routing Number": "84301042"
+  },
+  {
+    "Bank Name": "FIRST CITIZENS NATIONAL BANK",
+    "Address": "100 WASHINGTON AVE\nUNION CITY, TN 38261\nUnited States of America",
+    "Account Number": "2307219",
+    "Routing Number": "84301042"
+  },
+  {
+    "Bank Name": "FIRST COMMUNITY BANK",
+    "Address": "806 SOUTH 77 SUNSHINE STRIP\nHARLINGEN, ID 78550\nUnited States of America",
+    "Account Number": "61476",
+    "Routing Number": "114908289"
+  },
+  {
+    "Bank Name": "FIRST COMMUNITY BANK",
+    "Address": "205 E OCEAN BLVD\nLOS FRESNOS, IL 78566\nUnited States of America",
+    "Account Number": "38857",
+    "Routing Number": "114908289"
+  },
+  {
+    "Bank Name": "FIRST COMMUNITY BANK",
+    "Address": "1151 W HWY 77\nSAN BENITO, TX 78586\nUnited States of America",
+    "Account Number": "55972",
+    "Routing Number": "114908289"
+  },
+  {
+    "Bank Name": "FIRST COMMUNITY BANK OF EAST TENNESSEE",
+    "Address": "809 WEST MAIN STREET\nROGERSVILLE, TN 37857\nUnited States of America",
+    "Account Number": "11019239",
+    "Routing Number": "64204075"
+  },
+  {
+    "Bank Name": "First Community Bank of MO",
+    "Address": null,
+    "Account Number": "100010547",
+    "Routing Number": "82908573"
+  },
+  {
+    "Bank Name": "FIRST COMMUNITY BANK OF SC",
+    "Address": "45 FARRS BRIDGE RD\nGREENVILLE, SC 29617\nUnited States of America",
+    "Account Number": "7054",
+    "Routing Number": "53207999"
+  },
+  {
+    "Bank Name": "FIRST FARMERS AND MERCHANTS BANK",
+    "Address": "260 N ELLINGTON PARKWAY\nLEWISBURG, TN 37091\nUnited States of America",
+    "Account Number": "8255245",
+    "Routing Number": "64108113"
+  },
+  {
+    "Bank Name": "FIRST FARMERS BANK AND TRUST",
+    "Address": "3910 E MARKET ST\nLOGANSPORT, IN 46947\nUnited States of America",
+    "Account Number": "1897535",
+    "Routing Number": "74911578"
+  },
+  {
+    "Bank Name": "First Federal Savings and Loan Assoc. of Central IL",
+    "Address": null,
+    "Account Number": "1812172552",
+    "Routing Number": "271173368"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL",
+    "Address": null,
+    "Account Number": "5313399445",
+    "Routing Number": "42200910"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL BANK",
+    "Address": "1900 SW WILSHIRE BLVD\nBURLESON, TX 76028\nUnited States of America",
+    "Account Number": "21110084197",
+    "Routing Number": "111301122"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL BANK",
+    "Address": "212 EAST 3RD\nHEREFORD, TX 79045\nUnited States of America",
+    "Account Number": "21110007156",
+    "Routing Number": "111322457"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL BANK",
+    "Address": "1900 E. HUBBARD\nMINERAL WELLS, KY 76057\nUnited States of America",
+    "Account Number": "71000129062",
+    "Routing Number": "111919433"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL BANK",
+    "Address": "101 COLLEGE PARK DRIVE\nWEATHERFORD, TX 76086\nUnited States of America",
+    "Account Number": "84110100264",
+    "Routing Number": "111919433"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL BANK",
+    "Address": "2007 E HWY 377\nGRANBURY, AL 76049\nUnited States of America",
+    "Account Number": "DNU - 99999",
+    "Routing Number": "111301122"
+  },
+  {
+    "Bank Name": "FIRST FINANCIAL BANK",
+    "Address": "201 ELM ST\nSWEETWATER, KY 79556\nUnited States of America",
+    "Account Number": "10063138801",
+    "Routing Number": "111301122"
+  },
+  {
+    "Bank Name": "FIRST GUARANTY BANK",
+    "Address": "102 EAST LOUISIANA AVE\nVIVIAN, LA 71082\nUnited States of America",
+    "Account Number": "500041482",
+    "Routing Number": "65404340"
+  },
+  {
+    "Bank Name": "FIRST GUARANTY BANK",
+    "Address": "799 WEST SUMMERS DRIVE\nABBEVILLE, LA 70510\nUnited States of America",
+    "Account Number": "6636292",
+    "Routing Number": "65404340"
+  },
+  {
+    "Bank Name": "FIRST HORIZON",
+    "Address": null,
+    "Account Number": "179375701",
+    "Routing Number": "84303749"
+  },
+  {
+    "Bank Name": "FIRST KENTUCKY BANK",
+    "Address": "223 SOUTH 6TH STREET\nMAYFIELD, KY 42066\nUnited States of America",
+    "Account Number": "2051761",
+    "Routing Number": "83901113"
+  },
+  {
+    "Bank Name": "FIRST MECHANTS BANK",
+    "Address": "2350 MARKET PLACE BLVD\nSHLEBYVILLE, IN 46176\nUnited States of America",
+    "Account Number": "9001783022",
+    "Routing Number": "74900657"
+  },
+  {
+    "Bank Name": "FIRST METRO BANK",
+    "Address": "2708 HOUGH ROAD\nFLORENCE, AL 35630\nUnited States of America",
+    "Account Number": "70459",
+    "Routing Number": "62203955"
+  },
+  {
+    "Bank Name": "FIRST METRO BANK",
+    "Address": "406 AVALON AVE\nMUSCLE SHAOLS, AL 35661\nUnited States of America",
+    "Account Number": "61743",
+    "Routing Number": "62203955"
+  },
+  {
+    "Bank Name": "FIRST METRO BANK",
+    "Address": "PO BOX 596\nRUSSELLVILLE, AL 35653\nUnited States of America",
+    "Account Number": "56901",
+    "Routing Number": "62203955"
+  },
+  {
+    "Bank Name": "First Mid-Illinois Bank & Trust",
+    "Address": "701 6TH ST\nCharleston, IL 61920\nUnited States of America",
+    "Account Number": "9434473",
+    "Routing Number": "71102076"
+  },
+  {
+    "Bank Name": "First Mid-Illinois Bank & Trust",
+    "Address": "333 BROADWAY EAST\nMATTOON, IL 61938\nUnited States of America",
+    "Account Number": "1805995",
+    "Routing Number": "71102076"
+  },
+  {
+    "Bank Name": "FIRST MIDWEST BANK",
+    "Address": "4000 NORTHPOINT BLVD\nWAUKEGAN, IL 60085\nUnited States of America",
+    "Account Number": "8100293151",
+    "Routing Number": "71901604"
+  },
+  {
+    "Bank Name": "FIRST MIDWEST BANK",
+    "Address": "1301 LARKIN AVE\nJULIET, IL 60435\nUnited States of America",
+    "Account Number": "8100271271",
+    "Routing Number": "71901604"
+  },
+  {
+    "Bank Name": "FIRST MIDWEST BANK",
+    "Address": "100 N GILBERT ST\nDANVILLE, IL 61832\nUnited States of America",
+    "Account Number": "8100050197",
+    "Routing Number": "71901604"
+  },
+  {
+    "Bank Name": "FIRST MIDWEST BANK",
+    "Address": "302 E. MAIN STREET\nGALESBURG, IL 61402\nUnited States of America",
+    "Account Number": "8100074569",
+    "Routing Number": "71901604"
+  },
+  {
+    "Bank Name": "FIRST MIDWEST BANK",
+    "Address": "230 WEST DATE ST\nSYCAMORE, IL 60178\nUnited States of America",
+    "Account Number": "620544841",
+    "Routing Number": "71904517"
+  },
+  {
+    "Bank Name": "First Midwest Bank Of Poplar Bluff",
+    "Address": "PO BOX 160\nPOPLAR BLUFF, MO 63902\nUnited States of America",
+    "Account Number": "196746",
+    "Routing Number": "81501227"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL / FIRST CONVENIENCE BANK TEXAS",
+    "Address": "P.O.BOX 2428\nCONROE, TX 77305\nUnited States of America",
+    "Account Number": "310039713",
+    "Routing Number": "113010217"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK",
+    "Address": "P.O. BOX 659\nHUNTSVILLE, TX 77342\nUnited States of America",
+    "Account Number": "77156",
+    "Routing Number": "113104000"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK & TRUST",
+    "Address": "PO BOX 610\nHENRYETTA, OK 74437\nUnited States of America",
+    "Account Number": "66308",
+    "Routing Number": "103101107"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK & TRUST CO",
+    "Address": null,
+    "Account Number": "155101",
+    "Routing Number": "103101822"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK AND TRUST",
+    "Address": "235 E CHOCTAW\nMCALESTER, OK 74501\nUnited States of America",
+    "Account Number": "1096443",
+    "Routing Number": "103100218"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK AND TRUST COMPANY",
+    "Address": "1625 10TH STREET\nMONROE, WI 53566\nUnited States of America",
+    "Account Number": "1237499",
+    "Routing Number": "75900973"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK BASTROP",
+    "Address": "489 HWY 71 WEST\nBASTROP, TX 78602\nUnited States of America",
+    "Account Number": "233767",
+    "Routing Number": "114904953"
+  },
+  {
+    "Bank Name": "First National Bank of Cairo",
+    "Address": "600 North Broad Street\nCairo, GA 69828\nUnited States of America",
+    "Account Number": "2014157",
+    "Routing Number": "61220418"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF CARROLLTON",
+    "Address": "604 HIGHLAND AVE.\nCARROLLTON, KY 41008\nUnited States of America",
+    "Account Number": "110426",
+    "Routing Number": "83902196"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF CENTRAL TEXAS",
+    "Address": "300 E ELM ST.\nHILLSBORO, MS 76645\nUnited States of America",
+    "Account Number": "1719010694",
+    "Routing Number": "111903245"
+  },
+  {
+    "Bank Name": "First National Bank of Decatur",
+    "Address": null,
+    "Account Number": "2019008",
+    "Routing Number": "61220418"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF FALFURRIAS",
+    "Address": "PO BOX 678\nFALFURRIAS, TX 78355\nUnited States of America",
+    "Account Number": "29661",
+    "Routing Number": "114919676"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF JACKSON",
+    "Address": "P.O. DRAWER 640\nJACKSON, KY 41339\nUnited States of America",
+    "Account Number": "1022660",
+    "Routing Number": "42102571"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF LOUISIANA",
+    "Address": "P.O. BOX 267\nCROWLEY, LA 70527\nUnited States of America",
+    "Account Number": "136195",
+    "Routing Number": "65200515"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF MANCHESTER",
+    "Address": "120 TOWN SUARE\nMANCHESTER, KY 40962\nUnited States of America",
+    "Account Number": "27433",
+    "Routing Number": "42105442"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF ONEIDA",
+    "Address": "18418 ALBERTA STREET\nONEIDA, TN 37841\nUnited States of America",
+    "Account Number": "731455",
+    "Routing Number": "64204444"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF SC",
+    "Address": "P.O. BOX 38\nHOLLY HILL, TN 29059\nUnited States of America",
+    "Account Number": "810023499",
+    "Routing Number": "53203210"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF TENNESSEE",
+    "Address": "214 EAST MAIN ST\nLIVINGSTON, TN 38570\nUnited States of America",
+    "Account Number": "5056643",
+    "Routing Number": "64101233"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK OF TENNESSEE",
+    "Address": "130 SAM WALTON DRIVE\nSPARTA, TN 38583\nUnited States of America",
+    "Account Number": "5183942",
+    "Routing Number": "64101233"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK WATERLOO",
+    "Address": "744 N MARKET STREET\nWATERLOO, IL 62298\nUnited States of America",
+    "Account Number": "2832316901",
+    "Routing Number": "81017478"
+  },
+  {
+    "Bank Name": "FIRST NATIONAL BANK WAYNESBORO",
+    "Address": "626 LIBERTY STREET\nWAYNESBORO, GA 30830\nUnited States of America",
+    "Account Number": "538883",
+    "Routing Number": "61202245"
+  },
+  {
+    "Bank Name": "FIRST PEOPLES BANK",
+    "Address": "105 CHIPLEY ST\nPINE MOUNTAIN, TX 31822\nUnited States of America",
+    "Account Number": "152900",
+    "Routing Number": "61103849"
+  },
+  {
+    "Bank Name": "FIRST SAVINGS BANK",
+    "Address": "P.O. BOX 1678\nDEMING, NM 88031\nUnited States of America",
+    "Account Number": "10095277",
+    "Routing Number": "91406833"
+  },
+  {
+    "Bank Name": "FIRST SAVINGS BANK",
+    "Address": "915 N. DATE ST.\nTRUTH OR CONSEQUENCES, NM 87901\nUnited States of America",
+    "Account Number": "30081104",
+    "Routing Number": "91406833"
+  },
+  {
+    "Bank Name": "FIRST SOUTHERN BANK",
+    "Address": "PO BOX 580\nMARION, IL 62959\nUnited States of America",
+    "Account Number": "5034407",
+    "Routing Number": "81222797"
+  },
+  {
+    "Bank Name": "FIRST SOUTHERN BANK",
+    "Address": "PO BOX 580\nMARION, IL 62959\nUnited States of America",
+    "Account Number": "7034691",
+    "Routing Number": "81203208"
+  },
+  {
+    "Bank Name": "FIRST SOUTHERN NATIONAL BANK",
+    "Address": "P.O. BOX 389\nCENTRAL CITY, KY 42330\nUnited States of America",
+    "Account Number": "136867",
+    "Routing Number": "83901935"
+  },
+  {
+    "Bank Name": "FIRST SOUTHERN NATIONAL BANK",
+    "Address": "101 WEST WASHINGTON STREET\nPRINCETON, KY 42445\nUnited States of America",
+    "Account Number": "8000059479",
+    "Routing Number": "42102403"
+  },
+  {
+    "Bank Name": "FIRST SOUTHERN STATE BANK",
+    "Address": "1820 GLENN BLVD SW\nFORT PAYNE, AL 35968\nUnited States of America",
+    "Account Number": "82180101",
+    "Routing Number": "62202477"
+  },
+  {
+    "Bank Name": "FIRST STATE BANK",
+    "Address": "E CALIFORNIA ST\nGAINESVILLE, TX 76240\nUnited States of America",
+    "Account Number": "1057723",
+    "Routing Number": "111901467"
+  },
+  {
+    "Bank Name": "FIRST STATE BANK & TRUST",
+    "Address": "P.O. BOX 579\nCARTHAGE, TX 75633\nUnited States of America",
+    "Account Number": "130087",
+    "Routing Number": "111904150"
+  },
+  {
+    "Bank Name": "FIRST STATE BANK & TRUST",
+    "Address": "P.O. BOX 680\nDUMAS, NM 79029\nUnited States of America",
+    "Account Number": "433896",
+    "Routing Number": "111308633"
+  },
+  {
+    "Bank Name": "FIRST STATE BANK ANADARKO",
+    "Address": "102 W. MAIN ST.\nANADARKO, OK 73005\nUnited States of America",
+    "Account Number": "1016443",
+    "Routing Number": "103101505"
+  },
+  {
+    "Bank Name": "FIRST STATE BANK OF ATHENS",
+    "Address": "130 E CORSICANA\nATHENS, TX 75751\nUnited States of America",
+    "Account Number": "1045229",
+    "Routing Number": "111921777"
+  },
+  {
+    "Bank Name": "FIRST STATE BANK OF UVALDE",
+    "Address": null,
+    "Account Number": "9427006",
+    "Routing Number": "114902405"
+  },
+  {
+    "Bank Name": "FIRST TENNESSEE",
+    "Address": "7741 ASHEVILLE HIGHWAY\nKNOXVILLE, TN 37924\nUnited States of America",
+    "Account Number": "172975601",
+    "Routing Number": "64207195"
+  },
+  {
+    "Bank Name": "FIRST TENNESSEE",
+    "Address": null,
+    "Account Number": "17937501",
+    "Routing Number": "64201560"
+  },
+  {
+    "Bank Name": "FIRST TENNESSEE",
+    "Address": "5401 RINGOLD ROAD\nCHATTANOOGA, TN 37412\nUnited States of America",
+    "Account Number": "183755573",
+    "Routing Number": "84000026"
+  },
+  {
+    "Bank Name": "FIRST TENNESSEE",
+    "Address": "5401 RINGOLD ROAD\nCHATTANOOGA, TN 37412\nUnited States of America",
+    "Account Number": "102858943",
+    "Routing Number": "61300367"
+  },
+  {
+    "Bank Name": "FIRST TEXAS BANK",
+    "Address": "P.O. BOX 930\nCOPPERAS COVE, ID 76522\nUnited States of America",
+    "Account Number": "1100599",
+    "Routing Number": "111923937"
+  },
+  {
+    "Bank Name": "FIRST TEXAS BANK",
+    "Address": "P.O. BOX 609\nKILLEEN, TX 76540\nUnited States of America",
+    "Account Number": "1045970",
+    "Routing Number": "111923937"
+  },
+  {
+    "Bank Name": "FIRST UNITED BANK",
+    "Address": "102 EAST MAIN STREET\nHOLDENVILLE, OK 74848\nUnited States of America",
+    "Account Number": "2633671",
+    "Routing Number": "103100881"
+  },
+  {
+    "Bank Name": "FIRST UNITED BANK",
+    "Address": "1900 SE 34TH AVE\nAmarillo, TX 79118\nUnited States of America",
+    "Account Number": "121008781",
+    "Routing Number": "111310294"
+  },
+  {
+    "Bank Name": "FIRST UNITED BANK AND TRUST",
+    "Address": "PO BOX 130\nDURANT, OK 74702\nUnited States of America",
+    "Account Number": "2843439",
+    "Routing Number": "103100881"
+  },
+  {
+    "Bank Name": "FIRST UNITED BANK AND TRUST COMPANY",
+    "Address": "P.O. BOX 307\nBEAVER DAM, KY 42320\nUnited States of America",
+    "Account Number": "9148",
+    "Routing Number": "83907382"
+  },
+  {
+    "Bank Name": "FIRSTBANK",
+    "Address": "701 SOUTH MISSISSIPPI\nATOKA, OK 74525\nUnited States of America",
+    "Account Number": "2037477",
+    "Routing Number": "103103396"
+  },
+  {
+    "Bank Name": "FIRSTBANK SOUTHWEST",
+    "Address": "300 WEST KINGSMILL\nPAMPA, AL 79065\nUnited States of America",
+    "Account Number": "400488953",
+    "Routing Number": "111308057"
+  },
+  {
+    "Bank Name": "FIRSTNATIONAL BANK & TRUST CO OF WEATHERFORD",
+    "Address": "P.O. BOX 311\nWEATHERFORD, OK 73096\nUnited States of America",
+    "Account Number": "632441",
+    "Routing Number": "103101204"
+  },
+  {
+    "Bank Name": "FIST NATIONAL BANK IN DERIDDER",
+    "Address": "1003 N PINE ST\nDERIDDER, LA 70634\nUnited States of America",
+    "Account Number": "1062972",
+    "Routing Number": "65200997"
+  },
+  {
+    "Bank Name": "FNB Bank",
+    "Address": null,
+    "Account Number": "5779293",
+    "Routing Number": "83901087"
+  },
+  {
+    "Bank Name": "FNB CHATSWORTH",
+    "Address": "701 N THIRD AVE\nCHATSWORTH, TX 30705\nUnited States of America",
+    "Account Number": "75034744",
+    "Routing Number": "61102594"
+  },
+  {
+    "Bank Name": "FNB COMMUNITY BANK",
+    "Address": "2911 S AIR DEPOT\nMIDWEST CITY, OK 73110\nUnited States of America",
+    "Account Number": "106856",
+    "Routing Number": "103012843"
+  },
+  {
+    "Bank Name": "FNB RUSSEL SPRINGS",
+    "Address": "530 MAIN STREET\nRUSSELL SPRINGS, KY 42642\nUnited States of America",
+    "Account Number": "47074",
+    "Routing Number": "83905892"
+  },
+  {
+    "Bank Name": "FNB SOUTH",
+    "Address": "423 WEST 12TH ST\nALMA, TX 31510\nUnited States of America",
+    "Account Number": "1100070580",
+    "Routing Number": "61212866"
+  },
+  {
+    "Bank Name": "FNB SOUTH",
+    "Address": "300 N SECOND ST\nFOLKSTON, TX 31537\nUnited States of America",
+    "Account Number": "66003381",
+    "Routing Number": "61212866"
+  },
+  {
+    "Bank Name": "FRANKLIN BANK & TRUST",
+    "Address": "1042 FAIRVIEW AVE\nBOWLING GREE, KY 42101\nUnited States of America",
+    "Account Number": "157155",
+    "Routing Number": "83908048"
+  },
+  {
+    "Bank Name": "FRAZER BANK",
+    "Address": "110 EAST BROADWAY\nALTUS, OK 73521\nUnited States of America",
+    "Account Number": "2054529",
+    "Routing Number": "103100959"
+  },
+  {
+    "Bank Name": "FROST BANK",
+    "Address": "533 NORTH ALAMO ROAD\nALAMO, KY 78516\nUnited States of America",
+    "Account Number": "369002162",
+    "Routing Number": "114000093"
+  },
+  {
+    "Bank Name": "FROST BANK",
+    "Address": "508 W WALL ST\nODESSA, IN 79701\nUnited States of America",
+    "Account Number": "572708308",
+    "Routing Number": "114000093"
+  },
+  {
+    "Bank Name": "FROST BANK",
+    "Address": "508 W WALL ST\nODESSA, IN 79701\nUnited States of America",
+    "Account Number": "579905795",
+    "Routing Number": "114000093"
+  },
+  {
+    "Bank Name": "FROST BANK",
+    "Address": "PO BOX 179\nGALVESTON, MO 77553\nUnited States of America",
+    "Account Number": "740086096",
+    "Routing Number": "114000093"
+  },
+  {
+    "Bank Name": "GIBSLAND BANK &TRUST",
+    "Address": "813 WEST MAIN\nHOMER, LA 71040\nUnited States of America",
+    "Account Number": "1212402",
+    "Routing Number": "111104617"
+  },
+  {
+    "Bank Name": "GREAT PLAINS NATIONAL BANK",
+    "Address": "2220 OKLAHOMA AVE\nWOODWARD, OK 73801\nUnited States of America",
+    "Account Number": "1077518196",
+    "Routing Number": "103103985"
+  },
+  {
+    "Bank Name": "GRUNDY BANK",
+    "Address": "P.O. BOX 520\nMORRIS, IL 60450\nUnited States of America",
+    "Account Number": "85669",
+    "Routing Number": "71904290"
+  },
+  {
+    "Bank Name": "GUARANTY BANK",
+    "Address": "209 WEST MAIN STREET\nATLANTA, TX 75551\nUnited States of America",
+    "Account Number": "12738191",
+    "Routing Number": "111915327"
+  },
+  {
+    "Bank Name": "GUARANTY BANK",
+    "Address": "2202 ST MICHAELS DRIVE\nTEXARKANA, TX 75503\nUnited States of America",
+    "Account Number": "12738183",
+    "Routing Number": "111915327"
+  },
+  {
+    "Bank Name": "GUARANTY BANK",
+    "Address": "P.O. BOX 1158\nMT PLEASANT, MO 75455\nUnited States of America",
+    "Account Number": "1785583",
+    "Routing Number": "111915327"
+  },
+  {
+    "Bank Name": "GUARANTY BANK",
+    "Address": "3250 LAMAR AVE\nPARIS, TX 75460\nUnited States of America",
+    "Account Number": "12739975",
+    "Routing Number": "111915327"
+  },
+  {
+    "Bank Name": "HAMILTON STATE BANK",
+    "Address": "210 SOUTH OAK STREET\nJACKSON, GA 30233\nUnited States of America",
+    "Account Number": "103723",
+    "Routing Number": "61101126"
+  },
+  {
+    "Bank Name": "HANCOCK BANK",
+    "Address": "2020 US - 90\nGAUTIER, MS 39553\nUnited States of America",
+    "Account Number": "48181101",
+    "Routing Number": "65503681"
+  },
+  {
+    "Bank Name": "HANCOCK BANK",
+    "Address": "602 SOUTH MAIN STREET\nPOPLARVILLE, MS 39470\nUnited States of America",
+    "Account Number": "48174334",
+    "Routing Number": "65503681"
+  },
+  {
+    "Bank Name": "HANCOCK BANK",
+    "Address": null,
+    "Account Number": "62706709",
+    "Routing Number": "65400153"
+  },
+  {
+    "Bank Name": "HAPPY STATE BANK",
+    "Address": null,
+    "Account Number": "6017008902",
+    "Routing Number": "111310870"
+  },
+  {
+    "Bank Name": "HEARTLAND BANK & TRUST",
+    "Address": "130 S MAIN ST\nWASHINGTON, IL 61571\nUnited States of America",
+    "Account Number": "80375136",
+    "Routing Number": "71112066"
+  },
+  {
+    "Bank Name": "HERITAGE BANK",
+    "Address": "P.O. BOX 935\nJONESBORO, GA 30237\nUnited States of America",
+    "Account Number": "19059832",
+    "Routing Number": "261170533"
+  },
+  {
+    "Bank Name": "HERITAGE BANK",
+    "Address": "822 MAIN STREET\nFOREST PARK, SC 30297\nUnited States of America",
+    "Account Number": "29025534",
+    "Routing Number": "261170533"
+  },
+  {
+    "Bank Name": "HERITAGE BANK USA",
+    "Address": "108 CUMBERLAND STREET\nASHLAND CITY, TX 37015\nUnited States of America",
+    "Account Number": "2500369030",
+    "Routing Number": "283972230"
+  },
+  {
+    "Bank Name": "HNB BANKS",
+    "Address": "2903 PALMYRA ROAD\nHANNIBAL, MO 63401\nUnited States of America",
+    "Account Number": "110015138",
+    "Routing Number": "81500480"
+  },
+  {
+    "Bank Name": "HOLCOMB STATE BANK",
+    "Address": "PO BOX 355\nROCHELLE, IL 61068\nUnited States of America",
+    "Account Number": "70002918",
+    "Routing Number": "71913566"
+  },
+  {
+    "Bank Name": "HOME FEDERAL BANK",
+    "Address": "520 FIFTH AVE\nNEW TAZWELL, TN 37825\nUnited States of America",
+    "Account Number": "431085792",
+    "Routing Number": "242170426"
+  },
+  {
+    "Bank Name": "HOMEBANK TEXAS",
+    "Address": "601 US 175 FRONTAGE ROAD\nSEAGOVILLE, TX 75159\nUnited States of America",
+    "Account Number": "4034260",
+    "Routing Number": "111922776"
+  },
+  {
+    "Bank Name": "HOMETOWN NATIONAL BANK",
+    "Address": "4141 VENTURE DR\nPERU, IL 61354\nUnited States of America",
+    "Account Number": "105895",
+    "Routing Number": "71902030"
+  },
+  {
+    "Bank Name": "HYDEN CITIZENS BANK INC",
+    "Address": "P.O. BOX 948\nHYDEN, KY 41749\nUnited States of America",
+    "Account Number": "3027341",
+    "Routing Number": "42105170"
+  },
+  {
+    "Bank Name": "IBC",
+    "Address": "215 E MILE 3 ROAD\nPALMHURST, TX 78574\nUnited States of America",
+    "Account Number": "1605732346",
+    "Routing Number": "303072793"
+  },
+  {
+    "Bank Name": "IDABEL NATIONAL BANK",
+    "Address": "1201 SE WASHINGTON ST\nIDABEL, OK 74745\nUnited States of America",
+    "Account Number": "989289",
+    "Routing Number": "103111744"
+  },
+  {
+    "Bank Name": "INDEPENDENT BANK",
+    "Address": "104 NORTH NOLAN RIVER ROAD\nCLEBURNE, TX 76033\nUnited States of America",
+    "Account Number": "800012619",
+    "Routing Number": "111916326"
+  },
+  {
+    "Bank Name": "INDEPENDENT BANK",
+    "Address": "300 E TAYLOR\nSHERMAN, MO 75092\nUnited States of America",
+    "Account Number": "1000017853",
+    "Routing Number": "111916326"
+  },
+  {
+    "Bank Name": "INDEPENDENT BANK",
+    "Address": "300 E TAYLOR\nSHERMAN, MO 75092\nUnited States of America",
+    "Account Number": "1000017846",
+    "Routing Number": "111916326"
+  },
+  {
+    "Bank Name": "INTERBANK",
+    "Address": "2409 SOUTH COUNTRY CLUB RD.\nEL RENO, OK 73036\nUnited States of America",
+    "Account Number": "608467",
+    "Routing Number": "103013062"
+  },
+  {
+    "Bank Name": "JACKSON COUNTY BANK",
+    "Address": "1200 E TIPTON ST\nSEYMOUR, IN 47274\nUnited States of America",
+    "Account Number": "4169443",
+    "Routing Number": "83902992"
+  },
+  {
+    "Bank Name": "JACKSON PARISH BANK",
+    "Address": "201 JIMMIE DAVIS BLVD\nJONESBORO, LA 71251\nUnited States of America",
+    "Account Number": "8020310",
+    "Routing Number": "111101128"
+  },
+  {
+    "Bank Name": "JACKSONVILLE SAVINGS BANK",
+    "Address": "501 NORTH STATE ST\nLITCHFIELD, IL 62056\nUnited States of America",
+    "Account Number": "9660002024",
+    "Routing Number": "281271137"
+  },
+  {
+    "Bank Name": "KLEBERG BANK",
+    "Address": "PO BOX 911\nCorpus Christi, TX 78415\nUnited States of America",
+    "Account Number": "103499",
+    "Routing Number": "114912686"
+  },
+  {
+    "Bank Name": "KLEBERG BANK",
+    "Address": "PO BOX 911\nCorpus Christi, TX 78415\nUnited States of America",
+    "Account Number": "107425",
+    "Routing Number": "114912686"
+  },
+  {
+    "Bank Name": "KLEBERG BANK",
+    "Address": "100 E KLEBERG\nKINSVILLE, MO 78363\nUnited States of America",
+    "Account Number": "270504",
+    "Routing Number": "114912686"
+  },
+  {
+    "Bank Name": "LEA COUNTY STATE BANK",
+    "Address": "P.O. BOX 400\nHOBBS, NM 88241\nUnited States of America",
+    "Account Number": "5628997",
+    "Routing Number": "112201836"
+  },
+  {
+    "Bank Name": "LEA COUNTY STATE BANK",
+    "Address": "PO BOX 1477\nLOVINGTON, NM 88260\nUnited States of America",
+    "Account Number": "202634372",
+    "Routing Number": "112201836"
+  },
+  {
+    "Bank Name": "LEGENCE BANK",
+    "Address": "P.O. BOX 297\nHARRISBURG, IL 62946\nUnited States of America",
+    "Account Number": "8051003",
+    "Routing Number": "81204867"
+  },
+  {
+    "Bank Name": "LEGEND BANK",
+    "Address": "P.O. BOX 609\nBONHAM, TX 75418\nUnited States of America",
+    "Account Number": "3030520",
+    "Routing Number": "111903290"
+  },
+  {
+    "Bank Name": "LINCOLN NATIONAL BANK",
+    "Address": "P.O. BOX 846\nBARDSTOWN, KY 40004\nUnited States of America",
+    "Account Number": "74002792",
+    "Routing Number": "83903386"
+  },
+  {
+    "Bank Name": "LOUISA COMMUNITY BANK",
+    "Address": "4393 HWY 2565\nLOUISA, KY 41230\nUnited States of America",
+    "Account Number": "2000131",
+    "Routing Number": "42108520"
+  },
+  {
+    "Bank Name": "MABREY BANK",
+    "Address": "P.O. BOX  1117\nOKMULGEE, OK 74447\nUnited States of America",
+    "Account Number": "22748",
+    "Routing Number": "103112112"
+  },
+  {
+    "Bank Name": "MACON BANK",
+    "Address": "PO BOX 10\nLAFAYETTE, TN 37083\nUnited States of America",
+    "Account Number": "3006875",
+    "Routing Number": "64101204"
+  },
+  {
+    "Bank Name": "Magnolia State Bank",
+    "Address": null,
+    "Account Number": "310007757",
+    "Routing Number": "61202533"
+  },
+  {
+    "Bank Name": "MAINLAND BANK OF TEXAS CITY",
+    "Address": "P.O. BOX 3057\nTEXAS CITY, TX 77590\nUnited States of America",
+    "Account Number": "49395",
+    "Routing Number": "113102073"
+  },
+  {
+    "Bank Name": "MBC BANK",
+    "Address": "3653 S. HWY 27\nSOMERSET, KY 42501\nUnited States of America",
+    "Account Number": "449008",
+    "Routing Number": "83902581"
+  },
+  {
+    "Bank Name": "MBC BANK",
+    "Address": "P.O. BOX 919\nHARLAN, KY 40831\nUnited States of America",
+    "Account Number": "101114270",
+    "Routing Number": "42107806"
+  },
+  {
+    "Bank Name": "MBC BANK",
+    "Address": "611 N WALLACE WILKINSON BLVD\nLIBERTY, KY 42539\nUnited States of America",
+    "Account Number": "557617",
+    "Routing Number": "83902581"
+  },
+  {
+    "Bank Name": "MBC BANK",
+    "Address": "P.O. BOX 421\nMONTICELLO, KY 42633\nUnited States of America",
+    "Account Number": "89699",
+    "Routing Number": "83902581"
+  },
+  {
+    "Bank Name": "MERCHANTS BANK OF ALABAMA",
+    "Address": "1096 N. BRINDLEE MTN PKWY\nARAB, AL 35016\nUnited States of America",
+    "Account Number": "3048349",
+    "Routing Number": "62203078"
+  },
+  {
+    "Bank Name": "MID AMERICA NATIONAL BANK",
+    "Address": "100 WEST ELM ST\nCANTON, IL 61520\nUnited States of America",
+    "Account Number": "57512",
+    "Routing Number": "71102238"
+  },
+  {
+    "Bank Name": "MID MISSOURI BANK",
+    "Address": "2275 SOUTH SPRINGFIELD AVE\nBOLIVAR, MO 65613\nUnited States of America",
+    "Account Number": "261144464",
+    "Routing Number": "86503424"
+  },
+  {
+    "Bank Name": "MID MISSOURI BANK",
+    "Address": "118 US 54\nEL DORADO SPRINGS, MO 64744\nUnited States of America",
+    "Account Number": "261137107",
+    "Routing Number": "86503424"
+  },
+  {
+    "Bank Name": "MIDLAND STATES BANK",
+    "Address": "1753 S WEST AVE\nFREEPORT, IL 61032\nUnited States of America",
+    "Account Number": "1000386260",
+    "Routing Number": "81204540"
+  },
+  {
+    "Bank Name": "MIDLAND STATES BANK",
+    "Address": "302 IST AVE\nSTERLING, IL 61081\nUnited States of America",
+    "Account Number": "1000388611",
+    "Routing Number": "81204540"
+  },
+  {
+    "Bank Name": "MIDLAND STATES BANK",
+    "Address": "302 IST AVE\nSTERLING, IL 61081\nUnited States of America",
+    "Account Number": "1000388603",
+    "Routing Number": "81204540"
+  },
+  {
+    "Bank Name": "MIDLAND STATES BANK",
+    "Address": "101 INDEPENDENCE CT\nDIXON, IL 61021\nUnited States of America",
+    "Account Number": "1000388638",
+    "Routing Number": "81204540"
+  },
+  {
+    "Bank Name": "MIDLAND STATES BANK",
+    "Address": "133 W JEFFERSON ST\nEFFINGHAM, IL 62401\nUnited States of America",
+    "Account Number": "84514",
+    "Routing Number": "81204540"
+  },
+  {
+    "Bank Name": "MIDSOUTH BANK",
+    "Address": "3300 JOE RAMSEY BLVD\nGREENVILLE, TX 75401\nUnited States of America",
+    "Account Number": "1246860",
+    "Routing Number": "65203431"
+  },
+  {
+    "Bank Name": "MIDSOUTH BANK",
+    "Address": "1110 N MAIN ST\nJENNINGS, LA 70546\nUnited States of America",
+    "Account Number": "1314297",
+    "Routing Number": "65203431"
+  },
+  {
+    "Bank Name": "MIDSOUTH BANK",
+    "Address": "485 E MILLS AVE\nBREAUX BRIDGE, LA 70517\nUnited States of America",
+    "Account Number": "1130919",
+    "Routing Number": "65203431"
+  },
+  {
+    "Bank Name": "MIDSOUTH BANK",
+    "Address": "PO BOX 3295\nMORGAN CITY, LA 70381\nUnited States of America",
+    "Account Number": "1148702",
+    "Routing Number": "65203431"
+  },
+  {
+    "Bank Name": "MIDSOUTH BANK",
+    "Address": "3730 AMBASSADOR LANE\nLAFAYETTE, LA 70503\nUnited States of America",
+    "Account Number": "1153196",
+    "Routing Number": "65203431"
+  },
+  {
+    "Bank Name": "Midwest BankCentre",
+    "Address": null,
+    "Account Number": "123456789",
+    "Routing Number": "81000676"
+  },
+  {
+    "Bank Name": "MONROE COUNTY BANK",
+    "Address": "P.O. BOX 1\nFORSYTH, TX 31029\nUnited States of America",
+    "Account Number": "214429",
+    "Routing Number": "61102617"
+  },
+  {
+    "Bank Name": "MONTICELLO BANKING COMPANY",
+    "Address": null,
+    "Account Number": "830755",
+    "Routing Number": "83902581"
+  },
+  {
+    "Bank Name": "MORGANTOWN BANK AND TRUST",
+    "Address": "201 N MAIN STREET\nMORGANTOWN, KY 42261\nUnited States of America",
+    "Account Number": "203734301",
+    "Routing Number": "83903742"
+  },
+  {
+    "Bank Name": "NATIONAL BANK OF SALLISAW",
+    "Address": "P.O. BOX 549\nSALLISAW, OK 74955\nUnited States of America",
+    "Account Number": "1100382",
+    "Routing Number": "103112345"
+  },
+  {
+    "Bank Name": "NATIONAL BANK OF SALLISAW",
+    "Address": null,
+    "Account Number": "1200770",
+    "Routing Number": "103112345"
+  },
+  {
+    "Bank Name": "NATIONAL BANK OF SALLISAW",
+    "Address": "PO BOX 1599\nROLAND, OK 74954\nUnited States of America",
+    "Account Number": "1200764",
+    "Routing Number": "103112345"
+  },
+  {
+    "Bank Name": "NATIONAL BANK OF SALLISAW",
+    "Address": "P.O. BOX 549\nSALLISAW, OK 74955\nUnited States of America",
+    "Account Number": "12902",
+    "Routing Number": "103112345"
+  },
+  {
+    "Bank Name": "NATIONAL UNITED",
+    "Address": "905 MAIN ST\nGATESVILLE, TX 76528\nUnited States of America",
+    "Account Number": "2003583",
+    "Routing Number": "111904419"
+  },
+  {
+    "Bank Name": "NATIONAL UNITED",
+    "Address": "905 MAIN ST\nGATESVILLE, TX 76528\nUnited States of America",
+    "Account Number": "636191",
+    "Routing Number": "111904419"
+  },
+  {
+    "Bank Name": "NEW FIRST BANK",
+    "Address": "P.O. BOX 470\nEL CAMPO, KY 77437\nUnited States of America",
+    "Account Number": "152862",
+    "Routing Number": "113104796"
+  },
+  {
+    "Bank Name": "NEW MEXICO BANK AND TRUST",
+    "Address": "P.O. BOX 730\nCLOVIS, NM 88102\nUnited States of America",
+    "Account Number": "661011189",
+    "Routing Number": "107006541"
+  },
+  {
+    "Bank Name": "NOBLE BANK & TRUST",
+    "Address": "PO BOX 998\nANNISTON, AL 36202\nUnited States of America",
+    "Account Number": "40001414",
+    "Routing Number": "62206541"
+  },
+  {
+    "Bank Name": "NOBLE BANK AND TRUST",
+    "Address": "1868 US HIGHWAY 78E\nOXFORD, AL 36203\nUnited States of America",
+    "Account Number": "40016610",
+    "Routing Number": "62206541"
+  },
+  {
+    "Bank Name": "NORTH GEORGIA NATIONAL BANK",
+    "Address": "P.O. BOX 965\nCALHOUN, TX 30703\nUnited States of America",
+    "Account Number": "10080103",
+    "Routing Number": "61119642"
+  },
+  {
+    "Bank Name": "OLD NATIONAL BANK",
+    "Address": "311 SE 21ST ST\nWASHINGTON, IN 47501\nUnited States of America",
+    "Account Number": "122890357",
+    "Routing Number": "86300012"
+  },
+  {
+    "Bank Name": "ORIGIN BANK",
+    "Address": "2211 NORTH 7TH STREET\nWEST MONROE, LA 71295\nUnited States of America",
+    "Account Number": "20598506",
+    "Routing Number": "111102758"
+  },
+  {
+    "Bank Name": "ORIGIN BANK",
+    "Address": null,
+    "Account Number": "248983925",
+    "Routing Number": "111102758"
+  },
+  {
+    "Bank Name": "ORIGIN BANK",
+    "Address": "617 E MADISON AVE\nBASTROP, LA 71220\nUnited States of America",
+    "Account Number": "2216345",
+    "Routing Number": "111102758"
+  },
+  {
+    "Bank Name": "ORIGIN BANK",
+    "Address": "929 STERLING HWY\nFARMERVILLE, LA 71241\nUnited States of America",
+    "Account Number": "2158221",
+    "Routing Number": "111102758"
+  },
+  {
+    "Bank Name": "ORIGIN BANK",
+    "Address": "301 W. ALABAMA AVE\nRUSTON, LA 71270\nUnited States of America",
+    "Account Number": "2044463",
+    "Routing Number": "111102758"
+  },
+  {
+    "Bank Name": "PALMETTO STATE BANK",
+    "Address": null,
+    "Account Number": "83010142",
+    "Routing Number": "53202596"
+  },
+  {
+    "Bank Name": "PALMETTO STATE BANK",
+    "Address": "P.O. BOX 158\nHAMPTON, TN 29924\nUnited States of America",
+    "Account Number": "69014518",
+    "Routing Number": "53202596"
+  },
+  {
+    "Bank Name": "PECOS COUNTY STATE BANK",
+    "Address": "P.O. BOX 1527\nFORT STOCKTON, AL 79735\nUnited States of America",
+    "Account Number": "228355",
+    "Routing Number": "112321318"
+  },
+  {
+    "Bank Name": "PEOPLES BANK",
+    "Address": "112 SOUTH SERVCIE ROAD WEST\nSULLIVAN, MO 63080\nUnited States of America",
+    "Account Number": "53600",
+    "Routing Number": "81506552"
+  },
+  {
+    "Bank Name": "PEOPLES BANK AND TRUST",
+    "Address": "1221 WEST SPRINGFIELD ROAD\nTAYLORVILLE, IL 62568\nUnited States of America",
+    "Account Number": "769737",
+    "Routing Number": "71122535"
+  },
+  {
+    "Bank Name": "PEOPLES EXCHANGE BANK",
+    "Address": "560 INDIAN MOUND DR\nMT STERLING, KY 40353\nUnited States of America",
+    "Account Number": "1049739",
+    "Routing Number": "42106580"
+  },
+  {
+    "Bank Name": "PEOPLES SAVINGS BANK",
+    "Address": "1005 S STURGEON\nMONTGOMERY CITY, MO 63361\nUnited States of America",
+    "Account Number": "5816061",
+    "Routing Number": "81508466"
+  },
+  {
+    "Bank Name": "PEOPLES STATE BANK",
+    "Address": "1714 WEST GONE\nLAWTON, OK 73501\nUnited States of America",
+    "Account Number": "30897",
+    "Routing Number": "103112743"
+  },
+  {
+    "Bank Name": "PEOPLES STATE BANK",
+    "Address": "2700 HWY 190 WEST\nLIVINGSTON, TX 77351\nUnited States of America",
+    "Account Number": "24791",
+    "Routing Number": "113120291"
+  },
+  {
+    "Bank Name": "PEOPLES STATE BANK",
+    "Address": "102 CROSS CREEK BLVD\nSALEM, IL 62881\nUnited States of America",
+    "Account Number": "1112429287",
+    "Routing Number": "81009428"
+  },
+  {
+    "Bank Name": "PHELPS COMMUNITY BANK",
+    "Address": "718 N PINE STREET\nROLLA, MO 65401\nUnited States of America",
+    "Account Number": "1074539",
+    "Routing Number": "81501049"
+  },
+  {
+    "Bank Name": "PINELAND BANK",
+    "Address": "201 EAST KING STREET\nKINGSLAND, TX 31548\nUnited States of America",
+    "Account Number": "123943",
+    "Routing Number": "61212824"
+  },
+  {
+    "Bank Name": "PINNACLE BANK",
+    "Address": "P.O. BOX 430\nELBERTON, GA 30635\nUnited States of America",
+    "Account Number": "7732",
+    "Routing Number": "61101294"
+  },
+  {
+    "Bank Name": "PIONEER BANK",
+    "Address": "P.O. BOX 5\nCARLSBAD, NM 88221\nUnited States of America",
+    "Account Number": "503353385",
+    "Routing Number": "312270463"
+  },
+  {
+    "Bank Name": "PIONEER BANK",
+    "Address": "1020 TENTH ST.\nALAMOGORDO, NM 88310\nUnited States of America",
+    "Account Number": "333020261",
+    "Routing Number": "312270463"
+  },
+  {
+    "Bank Name": "PIONEER BANK",
+    "Address": "PO BOX 130\nROSWELL, NM 88202\nUnited States of America",
+    "Account Number": "103126431",
+    "Routing Number": "312270463"
+  },
+  {
+    "Bank Name": "PLAINSCAPITAL BANK",
+    "Address": "4401 GRIGGS ROAD\nHOUSTON, TX 77021\nUnited States of America",
+    "Account Number": "20006187",
+    "Routing Number": "111322994"
+  },
+  {
+    "Bank Name": "PLAINSCAPITAL BANK",
+    "Address": "100 WEST CANO STREET\nEDINBURG, TX 78539\nUnited States of America",
+    "Account Number": "20002211",
+    "Routing Number": "111322994"
+  },
+  {
+    "Bank Name": "PLAINSCAPITAL BANK",
+    "Address": "1709 N CONWAY\nMISSION, TX 78572\nUnited States of America",
+    "Account Number": "20002238",
+    "Routing Number": "111322994"
+  },
+  {
+    "Bank Name": "PNC BANK, NA",
+    "Address": "101 WEST MAIN STREET\nCRAWFORDSVILLE, IN 47933\nUnited States of America",
+    "Account Number": "5332498856",
+    "Routing Number": "54000030"
+  },
+  {
+    "Bank Name": "PROSPECT BANK",
+    "Address": null,
+    "Account Number": "123456789",
+    "Routing Number": "71102827"
+  },
+  {
+    "Bank Name": "PROSPECT BANK",
+    "Address": null,
+    "Account Number": "2142125",
+    "Routing Number": "71102827"
+  },
+  {
+    "Bank Name": "PROSPERITY BANK",
+    "Address": "4002 SARATOGA BLVD\nCORPUS CHRISTI, TX 78413\nUnited States of America",
+    "Account Number": "6800416452",
+    "Routing Number": "113122655"
+  },
+  {
+    "Bank Name": "QUEENSBOROUGH NATIONAL BANK",
+    "Address": "5049 WRIGHTSBORO ROAD\nGROVETOWN, SC 30813\nUnited States of America",
+    "Account Number": "3058565",
+    "Routing Number": "61103975"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "P.O. BOX 189\nCLAREMORE, OK 74018\nUnited States of America",
+    "Account Number": "900936",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "2901 NORTH 14TH ST\nPONCA CITY, OK 74601\nUnited States of America",
+    "Account Number": "104051",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "P. O. BOX 1988\nSTILLWATER, OK 74076\nUnited States of America",
+    "Account Number": "111229582",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "1300 EAST KENOSHA ST\nBROKEN ARROW, OK 74012\nUnited States of America",
+    "Account Number": "9755280",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "12200 EAST 96TH ST NORTH\nOWASSO, OK 74055\nUnited States of America",
+    "Account Number": "110203172",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "222 SOUTHEAST 1ST ST\nPRYOR, OK 74361\nUnited States of America",
+    "Account Number": "110165277",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RCB BANK",
+    "Address": "1001 WEST ROGERS BLVD\nSKIATOOK, OK 74070\nUnited States of America",
+    "Account Number": "110672806",
+    "Routing Number": "103112594"
+  },
+  {
+    "Bank Name": "RED RIVER BANK",
+    "Address": "447 EAST TUNICA DRIVE\nMARKSVILLE, LA 71351\nUnited States of America",
+    "Account Number": "8696000404",
+    "Routing Number": "65000090"
+  },
+  {
+    "Bank Name": "RED RIVER BANK",
+    "Address": "345 TUNICA DRIVE E\nMARKSVILLE, LA 71351\nUnited States of America",
+    "Account Number": "3031663",
+    "Routing Number": "65205264"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": null,
+    "Account Number": "184806001",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "2155 LOWES DRIVE\nCLARKSVILLE, TN 37040\nUnited States of America",
+    "Account Number": "53596749",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53595912",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "8210122613",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "6820106792",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53595947",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53596005",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53596110",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53595920",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "176484807",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53595939",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53596021",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "REGIONS",
+    "Address": "1180 WEST PEACHTREE STREET NW, STE 900\nATLANTA, GA 30309\nUnited States of America",
+    "Account Number": "53595955",
+    "Routing Number": "61101375"
+  },
+  {
+    "Bank Name": "RENASANT BANK",
+    "Address": null,
+    "Account Number": "8014709233",
+    "Routing Number": "84201294"
+  },
+  {
+    "Bank Name": "RENASANT BANK",
+    "Address": "375 FOB JAMES DR\nVALLEY, AL 36854\nUnited States of America",
+    "Account Number": "3650986701",
+    "Routing Number": "63100688"
+  },
+  {
+    "Bank Name": "RENASANT BANK",
+    "Address": "104 GREENVILLE ST\nLAGRANGE, GA 30240\nUnited States of America",
+    "Account Number": "141902801",
+    "Routing Number": "261271115"
+  },
+  {
+    "Bank Name": "RIO BANK",
+    "Address": "P.O. BOX 4169\nMCALLEN, TX 78502\nUnited States of America",
+    "Account Number": "1248723",
+    "Routing Number": "114915447"
+  },
+  {
+    "Bank Name": "RIO BANK",
+    "Address": "401 W FM 495\nSAN JUAN, TX 78589\nUnited States of America",
+    "Account Number": "1319698",
+    "Routing Number": "114915447"
+  },
+  {
+    "Bank Name": "ROUND TOP STATE BANK",
+    "Address": "PO BOX 805\nLA GRANGE, TX 78945\nUnited States of America",
+    "Account Number": "3106330",
+    "Routing Number": "113114896"
+  },
+  {
+    "Bank Name": "SABINE STATE BANK & TRUST COMPANY",
+    "Address": "PO BOX 450\nCOUSHATTA, LA 71019\nUnited States of America",
+    "Account Number": "413002233",
+    "Routing Number": "111102059"
+  },
+  {
+    "Bank Name": "SABINE STATE BANK & TRUST COMPANY",
+    "Address": "P. O. BOX 3811\nFORT POLK, LA 71459\nUnited States of America",
+    "Account Number": "9007636",
+    "Routing Number": "111102059"
+  },
+  {
+    "Bank Name": "SABINE STATE BANK & TRUST COMPANY",
+    "Address": "PO BOX 670\nMANY, LA 71449\nUnited States of America",
+    "Account Number": "30988",
+    "Routing Number": "111102059"
+  },
+  {
+    "Bank Name": "SABINE STATE BANK & TRUST COMPANY",
+    "Address": "737 KEYSER AVE.\nNATCHITOCHES, LA 71457\nUnited States of America",
+    "Account Number": "413000966",
+    "Routing Number": "111102059"
+  },
+  {
+    "Bank Name": "SABINE STATE BANK & TRUST COMPANY",
+    "Address": "401 EAST 5TH AVE\nOAKDALE, LA 71463\nUnited States of America",
+    "Account Number": "620007056",
+    "Routing Number": "111102059"
+  },
+  {
+    "Bank Name": "Santander",
+    "Address": null,
+    "Account Number": "000000065502176875",
+    "Routing Number": null
+  },
+  {
+    "Bank Name": "Santander",
+    "Address": null,
+    "Account Number": "000000065502176892",
+    "Routing Number": null
+  },
+  {
+    "Bank Name": "Santander",
+    "Address": null,
+    "Account Number": "000000065502177992",
+    "Routing Number": null
+  },
+  {
+    "Bank Name": "SECURITY BANK",
+    "Address": "307 SOUTH MAIN AVE\nMONAHANS, KY 79756\nUnited States of America",
+    "Account Number": "689955",
+    "Routing Number": "111321270"
+  },
+  {
+    "Bank Name": "SECURITY FEDERAL BANK",
+    "Address": null,
+    "Account Number": "508014701",
+    "Routing Number": "253271822"
+  },
+  {
+    "Bank Name": "SECURITY FIRST NATIONAL BANK",
+    "Address": "100 SOUTH BROADWAY STREET\nHUGO, OK 74743\nUnited States of America",
+    "Account Number": "954014",
+    "Routing Number": "103112426"
+  },
+  {
+    "Bank Name": "SECURITY NATIONAL BANK",
+    "Address": "201 WEST BROADWAY\nENID, OK 73702\nUnited States of America",
+    "Account Number": "3983403",
+    "Routing Number": "103100179"
+  },
+  {
+    "Bank Name": "SECURITY STATE BANK",
+    "Address": "1000 N. OAK ST\nPEARSALL, TX 78061\nUnited States of America",
+    "Account Number": "3068552",
+    "Routing Number": "114904775"
+  },
+  {
+    "Bank Name": "Security State Bank & Trust",
+    "Address": null,
+    "Account Number": "1234632",
+    "Routing Number": "114921949"
+  },
+  {
+    "Bank Name": "SIMMONS BANK",
+    "Address": "1002 SOUTH MT OLIVE\nSILOAM SPRINGS, AR 72761\nUnited States of America",
+    "Account Number": "5087864",
+    "Routing Number": "82901855"
+  },
+  {
+    "Bank Name": "SIMMONS BANK",
+    "Address": "308 WEST MAIN ST\nBROWNSVILLE, TN 38012\nUnited States of America",
+    "Account Number": "1218026",
+    "Routing Number": "84302342"
+  },
+  {
+    "Bank Name": "SIMMONS BANK",
+    "Address": null,
+    "Account Number": "134803231",
+    "Routing Number": "82900432"
+  },
+  {
+    "Bank Name": "SIMMONS BANK",
+    "Address": "818 THOMPSON RAOD\nSEDALIA, MO 65301\nUnited States of America",
+    "Account Number": "12982623",
+    "Routing Number": "82900432"
+  },
+  {
+    "Bank Name": "SOLUTRAN",
+    "Address": "3600 HOLLY LANE #60\nMINEAPOILIS, NC 55447\nUnited States of America",
+    "Account Number": "454619-F",
+    "Routing Number": "91911153"
+  },
+  {
+    "Bank Name": "SOUTH CENTRAL BANK",
+    "Address": "414 EAST MAIN STREET\nSCOTTSVILLE, KY 42164\nUnited States of America",
+    "Account Number": "4700001131",
+    "Routing Number": "83905012"
+  },
+  {
+    "Bank Name": "SOUTH CENTRAL BANK",
+    "Address": "615 HAPPY VALLEY ROAD\nGLASGOW, KY 42141\nUnited States of America",
+    "Account Number": "4700001347",
+    "Routing Number": "83905012"
+  },
+  {
+    "Bank Name": "SOUTH CREST BANK",
+    "Address": "406 W MAIN STREET\nMANCHESTER, GA 31816\nUnited States of America",
+    "Account Number": "2205424",
+    "Routing Number": "61112966"
+  },
+  {
+    "Bank Name": "SOUTH GEORGIA BANKING CO",
+    "Address": null,
+    "Account Number": "114868",
+    "Routing Number": "61211870"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": "950 JOHN C. CALHOUN DR.\nORANGEBURG, TX 29115\nUnited States of America",
+    "Account Number": "1010009890",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": "P.O. BOX 59\nBAMBERG, TN 29003\nUnited States of America",
+    "Account Number": "70085113",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": "P.O. BOX 518\nST GEORGE, SC 29477\nUnited States of America",
+    "Account Number": "880019708",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": "950 JOHN C. CALHOUN DR.\nORANGEBURG, TX 29115\nUnited States of America",
+    "Account Number": "1010010500",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": "P.O. BOX 240\nELLOREE, IL 29047\nUnited States of America",
+    "Account Number": "1190000099",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": "520 N JEFFREYS BLVD\nWALTERBORO, LA 29488\nUnited States of America",
+    "Account Number": "890005309",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": null,
+    "Account Number": "8010001585621",
+    "Routing Number": "53200983"
+  },
+  {
+    "Bank Name": "SOUTH STATE BANK",
+    "Address": null,
+    "Account Number": "8010001183702",
+    "Routing Number": "63114030"
+  },
+  {
+    "Bank Name": "SOUTHERN BANK",
+    "Address": "960 PREACHER ROA BOULEVARD\nWEST PLAINS, MO 65775\nUnited States of America",
+    "Account Number": "200204386",
+    "Routing Number": "81503911"
+  },
+  {
+    "Bank Name": "SOUTHSIDE BANK",
+    "Address": "200 EAST CROCKETT\nCLEVELAND, TX 77328\nUnited States of America",
+    "Account Number": "600158461",
+    "Routing Number": "113122804"
+  },
+  {
+    "Bank Name": "SOUTHSIDE BANK",
+    "Address": "541 S TIMBERLAND DRIVE\nLUFKIN, IL 75901\nUnited States of America",
+    "Account Number": "8776340",
+    "Routing Number": "113122804"
+  },
+  {
+    "Bank Name": "SOUTHSIDE BANK",
+    "Address": "1009 NORTH UNIVERSITY DR\nNACOGDOCHES, IL 75961\nUnited States of America",
+    "Account Number": "500007187",
+    "Routing Number": "113122804"
+  },
+  {
+    "Bank Name": "SOUTHSIDE BANK",
+    "Address": "PO BOX 1079\nTYLER, AL 75710\nUnited States of America",
+    "Account Number": "1525778",
+    "Routing Number": "111923607"
+  },
+  {
+    "Bank Name": "SouthTrust Bank",
+    "Address": null,
+    "Account Number": "10089600",
+    "Routing Number": "114917908"
+  },
+  {
+    "Bank Name": "ST LANDRY BANK & TRUST CO.",
+    "Address": "101 2ND ST\nEUNICE, LA 70535\nUnited States of America",
+    "Account Number": "1074555",
+    "Routing Number": "65200612"
+  },
+  {
+    "Bank Name": "ST. LANDRY BANK & TRUST CO.",
+    "Address": "171 E LANDRY ST\nOPELOUSAS, LA 70570\nUnited States of America",
+    "Account Number": "1042602",
+    "Routing Number": "65200612"
+  },
+  {
+    "Bank Name": "STATE BANK",
+    "Address": null,
+    "Account Number": "37567",
+    "Routing Number": "111907089"
+  },
+  {
+    "Bank Name": "STATE BANK AND TRUST",
+    "Address": "119 SOUTH HOUSTON LAKE ROAD\nWARNER ROBINS, SC 31088\nUnited States of America",
+    "Account Number": "1000050656",
+    "Routing Number": "61104123"
+  },
+  {
+    "Bank Name": "STATE BANK AND TRUST",
+    "Address": "119 SOUTH HOUSTON LAKE ROAD\nWARNER ROBINS, SC 31088\nUnited States of America",
+    "Account Number": "1000050458",
+    "Routing Number": "61104123"
+  },
+  {
+    "Bank Name": "STATE BANK OF FREEPORT",
+    "Address": null,
+    "Account Number": "189795",
+    "Routing Number": "71125914"
+  },
+  {
+    "Bank Name": "STATE BANK OF GRAYMONT",
+    "Address": "1100 W HOWARD ST.\nPONTIAC, IL 61764\nUnited States of America",
+    "Account Number": "862409",
+    "Routing Number": "71118222"
+  },
+  {
+    "Bank Name": "STATE BANK OF LINCOLN",
+    "Address": "508 BROADWAY\nLINCOLN, IL 62656\nUnited States of America",
+    "Account Number": "155144",
+    "Routing Number": "71102173"
+  },
+  {
+    "Bank Name": "State Bank of Southern Utah",
+    "Address": null,
+    "Account Number": "5117288",
+    "Routing Number": "124301779"
+  },
+  {
+    "Bank Name": "STATE BANK OF TOULON",
+    "Address": "PO BOX 408\nKEWANEE, IL 61443\nUnited States of America",
+    "Account Number": "7000001455",
+    "Routing Number": "71107987"
+  },
+  {
+    "Bank Name": "STATE NATIONAL BANK",
+    "Address": "801 N 4TH\nLA MESA, TX 79331\nUnited States of America",
+    "Account Number": "27219",
+    "Routing Number": "111302370"
+  },
+  {
+    "Bank Name": "STATE NATIONAL BANK",
+    "Address": "P.O. BOX 1271\nBIG SPRINGS, TN 79721\nUnited States of America",
+    "Account Number": "9383581",
+    "Routing Number": "111302370"
+  },
+  {
+    "Bank Name": "Stillwater National Bank",
+    "Address": null,
+    "Account Number": "881478",
+    "Routing Number": "103101437"
+  },
+  {
+    "Bank Name": "STOCKYARDS BANK AND TRUST",
+    "Address": "515 SOUTH FIRST ST\nLAGRANGE, KY 40031\nUnited States of America",
+    "Account Number": "2039419",
+    "Routing Number": "83000564"
+  },
+  {
+    "Bank Name": "STOCKYARDS BANK AND TRUST",
+    "Address": null,
+    "Account Number": "2375133",
+    "Routing Number": "83000564"
+  },
+  {
+    "Bank Name": "Streator National Bank",
+    "Address": null,
+    "Account Number": "151881",
+    "Routing Number": "71902399"
+  },
+  {
+    "Bank Name": "SUNDOWN STATE BANK",
+    "Address": "101 S 1ST STREET\nBROWNFIELD, TX 79316\nUnited States of America",
+    "Account Number": "393674",
+    "Routing Number": "111301436"
+  },
+  {
+    "Bank Name": "SUNDOWN STATE BANK",
+    "Address": "PO BOX 1621\nLEVELLAND, TX 79336\nUnited States of America",
+    "Account Number": "294896",
+    "Routing Number": "111301436"
+  },
+  {
+    "Bank Name": "SUNTRUST",
+    "Address": "P.O. BOX 927\nAUGUSTA, SC 30903\nUnited States of America",
+    "Account Number": "1000033761866",
+    "Routing Number": "61000104"
+  },
+  {
+    "Bank Name": "SUNTRUST",
+    "Address": "24 SOUTH MAIN STREET\nINMAN, IL 29349\nUnited States of America",
+    "Account Number": "1000139201908",
+    "Routing Number": "61000104"
+  },
+  {
+    "Bank Name": "SUNTRUST",
+    "Address": "1807 KNIGHT AVE\nWAYCROSS, GA 31501\nUnited States of America",
+    "Account Number": "1000071144538",
+    "Routing Number": "61000104"
+  },
+  {
+    "Bank Name": "SUNTRUST",
+    "Address": "P.O. BOX 927\nAUGUSTA, SC 30903\nUnited States of America",
+    "Account Number": "1000018934884",
+    "Routing Number": "61000104"
+  },
+  {
+    "Bank Name": "SUNTRUST",
+    "Address": "P.O. BOX 927\nAUGUSTA, SC 30903\nUnited States of America",
+    "Account Number": "1000033761825",
+    "Routing Number": "61000104"
+  },
+  {
+    "Bank Name": "SYNOVUS",
+    "Address": "P.O. BOX 2127\nCARROLLTON, GA 30117\nUnited States of America",
+    "Account Number": "6080177857",
+    "Routing Number": "261170290"
+  },
+  {
+    "Bank Name": "SYNOVUS",
+    "Address": "510 ANDREWS AVE\nOZARK, AL 36360\nUnited States of America",
+    "Account Number": "5213398",
+    "Routing Number": "62102441"
+  },
+  {
+    "Bank Name": "SYNOVUS",
+    "Address": "285 JONESBORO ROAD\nMCDONOUGH, SC 30253\nUnited States of America",
+    "Account Number": "1011787999",
+    "Routing Number": "61100606"
+  },
+  {
+    "Bank Name": "TD Bank",
+    "Address": null,
+    "Account Number": "45S045018",
+    "Routing Number": "31101266"
+  },
+  {
+    "Bank Name": "Texas Capital Bank",
+    "Address": null,
+    "Account Number": "1411030776",
+    "Routing Number": "111017979"
+  },
+  {
+    "Bank Name": "Texas Capital Bank",
+    "Address": null,
+    "Account Number": "1418000392",
+    "Routing Number": "111017979"
+  },
+  {
+    "Bank Name": "TEXASBANK",
+    "Address": "P.O.BOX 1429\nBROWNWOOD, KY 76804\nUnited States of America",
+    "Account Number": "190985",
+    "Routing Number": "111902424"
+  },
+  {
+    "Bank Name": "TEXASBANK",
+    "Address": "P.O. BOX 998\nSTEPHENVILLE, AL 76401\nUnited States of America",
+    "Account Number": "609552",
+    "Routing Number": "111902424"
+  },
+  {
+    "Bank Name": "THE CECILIAN BANK",
+    "Address": "227 WEST DIXIE HWY\nELIZABETHTOWN, KY 42701\nUnited States of America",
+    "Account Number": "423688",
+    "Routing Number": "83904631"
+  },
+  {
+    "Bank Name": "THE CECILIAN BANK",
+    "Address": "PO BOX 231\nHARDINSBURG, KY 40143\nUnited States of America",
+    "Account Number": "5010977",
+    "Routing Number": "83903454"
+  },
+  {
+    "Bank Name": "THE CECILIAN BANK",
+    "Address": "76 PUBLIC SQUARE\nLEITCHFIELD, KY 42755\nUnited States of America",
+    "Account Number": "45089606",
+    "Routing Number": "83904631"
+  },
+  {
+    "Bank Name": "THE CITIZENS BANK",
+    "Address": "101 H HUTCHINSON AVENUE\nADEL, TX 31620\nUnited States of America",
+    "Account Number": "16534901",
+    "Routing Number": "61212057"
+  },
+  {
+    "Bank Name": "THE CITIZENS BANK",
+    "Address": "P.O. BOX 8\nJOHNSONVILLE, IL 29555\nUnited States of America",
+    "Account Number": "3020327",
+    "Routing Number": "53207164"
+  },
+  {
+    "Bank Name": "THE CITIZENS BANK - CARTHAGE",
+    "Address": null,
+    "Account Number": "02634624",
+    "Routing Number": "65302154"
+  },
+  {
+    "Bank Name": "THE CITIZENS BANK OF TAYLOR COUNTY",
+    "Address": "P.O. BOX 277\nREYNOLDS, TX 31076\nUnited States of America",
+    "Account Number": "117143",
+    "Routing Number": "61210541"
+  },
+  {
+    "Bank Name": "THE CITY NATIONAL BANK",
+    "Address": "P.O. BOX 495\nSULPHUR SPRINGS, MO 75482\nUnited States of America",
+    "Account Number": "10090",
+    "Routing Number": "111901946"
+  },
+  {
+    "Bank Name": "THE COMMERCIAL NATIONAL BANK",
+    "Address": "105 EAST 2ND STREET\nBRADY, TX 76825\nUnited States of America",
+    "Account Number": "411272",
+    "Routing Number": "111303489"
+  },
+  {
+    "Bank Name": "THE FARMERS BANK",
+    "Address": "2304 NORTH LEBANON STREET\nLEBANON, IN 46052\nUnited States of America",
+    "Account Number": "15700813",
+    "Routing Number": "74902503"
+  },
+  {
+    "Bank Name": "THE FIRST NATIONAL BANK",
+    "Address": "PO BOX 40\nVANDALIA, IL 62471\nUnited States of America",
+    "Account Number": "4558601",
+    "Routing Number": "81205112"
+  },
+  {
+    "Bank Name": "THE FIRST NATIONAL BANK AND TRUST CO.",
+    "Address": "P.O. BOX 1130\nCHICKASHA, OK 73023\nUnited States of America",
+    "Account Number": "391010",
+    "Routing Number": "103100467"
+  },
+  {
+    "Bank Name": "THE HERRING NATIONAL BANK",
+    "Address": "P.O. BOX 2040\nVERNON, AL 76385\nUnited States of America",
+    "Account Number": "7020228",
+    "Routing Number": "111302846"
+  },
+  {
+    "Bank Name": "TIMBERWOOD BANK",
+    "Address": "PO BOX 880\nTOMAH, WI 54660\nUnited States of America",
+    "Account Number": "1000043395",
+    "Routing Number": "75918130"
+  },
+  {
+    "Bank Name": "TN BANK",
+    "Address": "401 S ILLINOIS AVE\nOAK RIDGE, TN 37830\nUnited States of America",
+    "Account Number": "1025600",
+    "Routing Number": "64204253"
+  },
+  {
+    "Bank Name": "TOWN AND COUNTRY BANK",
+    "Address": "1604 WEST MORTON AVE\nJACKSONVILLE, IL 62650\nUnited States of America",
+    "Account Number": "2311280",
+    "Routing Number": "71123262"
+  },
+  {
+    "Bank Name": "TOWN AND COUNTRY BANK",
+    "Address": "910 NORTH MAIN STREET\nMOUNTAIN GROVE, MO 65711\nUnited States of America",
+    "Account Number": "210727901",
+    "Routing Number": "81503704"
+  },
+  {
+    "Bank Name": "TROY BANK & TRUST CO.",
+    "Address": "PO BOX 967\nTROY, AL 36081\nUnited States of America",
+    "Account Number": "4065603",
+    "Routing Number": "62101031"
+  },
+  {
+    "Bank Name": "TRUSTMARK",
+    "Address": "114 S PEARL STREET\nCARTHAGE, MS 39051\nUnited States of America",
+    "Account Number": "5700005199",
+    "Routing Number": "65300279"
+  },
+  {
+    "Bank Name": "TRUSTMARK",
+    "Address": "103 PINOLA DRIVE\nMAGEE, MS 39111\nUnited States of America",
+    "Account Number": "4300072785",
+    "Routing Number": "65300279"
+  },
+  {
+    "Bank Name": "TRUSTMARK",
+    "Address": "218-220 E. BROAD ST.\nEUFAULA, AL 36027\nUnited States of America",
+    "Account Number": "3503062207",
+    "Routing Number": "65300279"
+  },
+  {
+    "Bank Name": "TRUSTMARK",
+    "Address": "P.O. BOX 680100\nPRATTVILLE, AL 36068\nUnited States of America",
+    "Account Number": "3501038746",
+    "Routing Number": "65300279"
+  },
+  {
+    "Bank Name": "UCB BANK",
+    "Address": "617 BRUNS LANE\nSPRINGFIELD, IL 62702\nUnited States of America",
+    "Account Number": "1125490",
+    "Routing Number": "71108407"
+  },
+  {
+    "Bank Name": "UMB BANK, NA",
+    "Address": "707 WALNUT STREET\nWARSAW, MO 65355\nUnited States of America",
+    "Account Number": "9846094050",
+    "Routing Number": "101000695"
+  },
+  {
+    "Bank Name": "UNICO BANK",
+    "Address": "1115 INDEPENDENCE AVE\nKENNETT, MO 63857\nUnited States of America",
+    "Account Number": "15056562",
+    "Routing Number": "81910436"
+  },
+  {
+    "Bank Name": "UNICO BANK PARK HILLS",
+    "Address": null,
+    "Account Number": "1160002789",
+    "Routing Number": "81910436"
+  },
+  {
+    "Bank Name": "UNION STATE BANK",
+    "Address": "355 EAST FM 2410\nHARKER HEIGHTS, TX 76548\nUnited States of America",
+    "Account Number": "67001980",
+    "Routing Number": "114910565"
+  },
+  {
+    "Bank Name": "UNION STATE BANK",
+    "Address": "3957 RALEIGH DR\nTEMPLE, TX 76502\nUnited States of America",
+    "Account Number": "77000277",
+    "Routing Number": "114910565"
+  },
+  {
+    "Bank Name": "UNION STATE BANK",
+    "Address": "PO BOX 790\nKILLEEN, TX 76540\nUnited States of America",
+    "Account Number": "1035012999",
+    "Routing Number": "111903151"
+  },
+  {
+    "Bank Name": "UNITED CITIZENS BANK OF SOUTHERN KENTUCKY",
+    "Address": "294 CAMPBELLSVILLE BYP\nCAMPBELLSVILLE, KY 42719\nUnited States of America",
+    "Account Number": "16097801",
+    "Routing Number": "83908433"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "311 S LIMESTONE ST\nGAFFNEY, TX 29340\nUnited States of America",
+    "Account Number": "51110695",
+    "Routing Number": "53201186"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "5009 BROAD ST\nLORIS, TN 29569\nUnited States of America",
+    "Account Number": "113022328",
+    "Routing Number": "53201982"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "71 BULLSBORO DRIVE\nNEWNAN, GA 30265\nUnited States of America",
+    "Account Number": "2095119398",
+    "Routing Number": "61112843"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": null,
+    "Account Number": "1211931",
+    "Routing Number": "71108407"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "65 WASHINGTON ST\nFAIRBURN, SC 30213\nUnited States of America",
+    "Account Number": "2094102288",
+    "Routing Number": "61112843"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "27 BULL STREET\nSAVANNAH, GA 31401\nUnited States of America",
+    "Account Number": "4014373",
+    "Routing Number": "61120534"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "4510 ALTMA AVE\nBRUNSWICK, SC 31520\nUnited States of America",
+    "Account Number": "24202649",
+    "Routing Number": "261290361"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "1627 CHURCH STREET\nCONWAY, LA 29526\nUnited States of America",
+    "Account Number": "613011147",
+    "Routing Number": "53201982"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": "27 BULL STREET\nSAVANNAH, GA 31401\nUnited States of America",
+    "Account Number": "2089100867",
+    "Routing Number": "261290361"
+  },
+  {
+    "Bank Name": "UNITED COMMUNITY BANK",
+    "Address": null,
+    "Account Number": "2461113454",
+    "Routing Number": "61112843"
+  },
+  {
+    "Bank Name": "UNITED CUMBERLAND BANK",
+    "Address": "P.O. BOX 160\nWHITLEY CITY, KY 42653\nUnited States of America",
+    "Account Number": "76201",
+    "Routing Number": "42105785"
+  },
+  {
+    "Bank Name": "Vantage Bank Texas",
+    "Address": "125 SHADOW MOUNTAIN DRIVE\nEL PASO, TX 79912\nUnited States of America",
+    "Account Number": "8057281",
+    "Routing Number": "114915272"
+  },
+  {
+    "Bank Name": "VISION BANK",
+    "Address": "PO BOX 61\nSULPHUR, OK 73086\nUnited States of America",
+    "Account Number": "495059",
+    "Routing Number": "103101026"
+  },
+  {
+    "Bank Name": "VISION BANK",
+    "Address": "P.O. BOX 669\nADA, OK 74820\nUnited States of America",
+    "Account Number": "1130166",
+    "Routing Number": "103101026"
+  },
+  {
+    "Bank Name": "VOLUNTEER STATE BANK",
+    "Address": "615 NASHVILLE PIKE\nGALLATIN, TN 37066\nUnited States of America",
+    "Account Number": "219290",
+    "Routing Number": "64102999"
+  },
+  {
+    "Bank Name": "VOLUNTEER STATE BANK",
+    "Address": "PO BOX 368\nPORTLAND, TN 37148\nUnited States of America",
+    "Account Number": "505501",
+    "Routing Number": "64102999"
+  },
+  {
+    "Bank Name": "VOLUNTEER STATE BANK",
+    "Address": "2920 HIGHWAY 31 WEST\nWHITE HOUSE, TN 37188\nUnited States of America",
+    "Account Number": "713260",
+    "Routing Number": "64102999"
+  },
+  {
+    "Bank Name": "WASHINGTON FEDERAL",
+    "Address": "398 SUDDERTH DR\nRUIDOSO, NM 88345\nUnited States of America",
+    "Account Number": "1867041418",
+    "Routing Number": "325070980"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "8018016512",
+    "Routing Number": "53101561"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "8018016520",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "430126349",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "8018017940",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4128675642",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4120870316",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4124811795",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4148828361",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4123522500",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4146847603",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4776383895",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4121823249",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4149818106",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4123522492",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4121866032",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": null,
+    "Account Number": "4613061910",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "15 S MAIN STREET, ST 140\nGreenville, SC 29601\nUnited States of America",
+    "Account Number": "4124814773",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WELLS FARGO",
+    "Address": "3201 MACON ROAD\nCOLUMBUS, GA 31906\nUnited States of America",
+    "Account Number": "2000002926669",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "7600",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4301263497",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4808060164",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4688291749",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4318",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "8018632441",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4943636035",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4128675659",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "Wells Fargo, N.A.",
+    "Address": null,
+    "Account Number": "4089250021",
+    "Routing Number": "121000248"
+  },
+  {
+    "Bank Name": "WEST CENTRAL GEORGIA BANK",
+    "Address": "P.O. BOX 1188\nTHOMASTON, SC 30286\nUnited States of America",
+    "Account Number": "15040",
+    "Routing Number": "61102523"
+  },
+  {
+    "Bank Name": "WEST STAR",
+    "Address": "12101 MONTWOOD DR\nEL PASO, TX 79936\nUnited States of America",
+    "Account Number": "700003142",
+    "Routing Number": "112017619"
+  },
+  {
+    "Bank Name": "WEST STAR",
+    "Address": "12101 MONTWOOD DR\nEL PASO, TX 79936\nUnited States of America",
+    "Account Number": "700004092",
+    "Routing Number": "112017619"
+  },
+  {
+    "Bank Name": "WEST STAR",
+    "Address": "12101 MONTWOOD DR\nEL PASO, TX 79936\nUnited States of America",
+    "Account Number": "700003878",
+    "Routing Number": "112017619"
+  },
+  {
+    "Bank Name": "WEST STAR",
+    "Address": "12101 MONTWOOD DR\nEL PASO, TX 79936\nUnited States of America",
+    "Account Number": "700003361",
+    "Routing Number": "112017619"
+  },
+  {
+    "Bank Name": "WEST STAR",
+    "Address": "12101 MONTWOOD DR\nEL PASO, TX 79936\nUnited States of America",
+    "Account Number": "151534926",
+    "Routing Number": "112017619"
+  },
+  {
+    "Bank Name": "WEST TEXAS STATE BANK",
+    "Address": "P.O. BOX 1396\nSNYDER, AL 79550\nUnited States of America",
+    "Account Number": "350595201",
+    "Routing Number": "111322664"
+  },
+  {
+    "Bank Name": "WEST TN BANK",
+    "Address": "1007 US HWY 45 NORTH\nHENDERSON, TN 38340\nUnited States of America",
+    "Account Number": "371327",
+    "Routing Number": "84303639"
+  },
+  {
+    "Bank Name": "WHITAKER BANK",
+    "Address": "PO BOX 219\nBEREA, KY 40403\nUnited States of America",
+    "Account Number": "25082014",
+    "Routing Number": "42101268"
+  },
+  {
+    "Bank Name": "WHITAKER BANK",
+    "Address": null,
+    "Account Number": "56710271",
+    "Routing Number": "42104168"
+  },
+  {
+    "Bank Name": "WHITNEY BANK",
+    "Address": "3033 RAY WEILAND DRIVE\nBAKER, LA 70714\nUnited States of America",
+    "Account Number": "47476639",
+    "Routing Number": "65400153"
+  },
+  {
+    "Bank Name": "WHITNEY BANK",
+    "Address": "300 AUSTIN STREET\nBOGALUSA, LA 70427\nUnited States of America",
+    "Account Number": "46047270",
+    "Routing Number": "65400153"
+  },
+  {
+    "Bank Name": "WHITNEY BANK",
+    "Address": "1011 EAST ADMIRAL DOYLE\nNEW IBERIA, LA 70560\nUnited States of America",
+    "Account Number": "46079059",
+    "Routing Number": "65400153"
+  },
+  {
+    "Bank Name": "WILSONS BANK AND TRUST",
+    "Address": "1300 MAIN STREET NORTH\nCARTHAGE, TN 37030\nUnited States of America",
+    "Account Number": "143354",
+    "Routing Number": "64103529"
+  },
+  {
+    "Bank Name": "WINNSBORO STATE BANK",
+    "Address": "3465 FRONT ST\nWINNSBORO, LA 71295\nUnited States of America",
+    "Account Number": "1028413",
+    "Routing Number": "111101306"
+  },
+  {
+    "Bank Name": "WOOD AND HUSTON",
+    "Address": "1921 N MAIN STREET\nHIGGINSVILLE, MO 64037\nUnited States of America",
+    "Account Number": "9000056284",
+    "Routing Number": "101901833"
+  },
+  {
+    "Bank Name": "YNB",
+    "Address": "401 ELM\nYUKON, OK 73099\nUnited States of America",
+    "Account Number": "700534330",
+    "Routing Number": "103009571"
+  },
+  {
+    "Bank Name": "YNB",
+    "Address": "401 ELM\nYUKON, OK 73099\nUnited States of America",
+    "Account Number": "700341410",
+    "Routing Number": "103009571"
   }
 ]
