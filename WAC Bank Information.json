@@ -1,0 +1,32 @@
+[
+  {
+    "Bank Name":"Stock Yards Bank and Trust",
+    "Address":"1040 East Main Street, Louisville, KY 40206",
+    "Account Number":2375133,
+    "Routing Number":83000564
+  },
+  {
+    "Bank Name":"VeraBank",
+    "Address":"201 W. Main St., Henderson, TX 75652",
+    "Account Number":1035012999,
+    "Routing Number":111903151
+  },
+  {
+    "Bank Name":"Community Bank and Trust",
+    "Address":"1800 Washington Avenue, Waco, TX 76701",
+    "Account Number":13024211,
+    "Routing Number":111900594
+  },
+  {
+    "Bank Name":"Citizens Bank of Kentucky",
+    "Address":"620 Broadway Avenue, Paintsville, KY 41240",
+    "Account Number":21065594,
+    "Routing Number":42103253
+  },
+  {
+    "Bank Name":"Prosperity Bank",
+    "Address":"80 Sugar Creek Center Blvd, Sugar Land, TX 77478",
+    "Account Number":6800416452,
+    "Routing Number":113122655
+  }
+]

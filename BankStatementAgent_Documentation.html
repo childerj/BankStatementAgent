@@ -164,7 +164,6 @@
 <li><a href="#system-architecture">System Architecture</a></li>
 <li><a href="#ai-agent-components">AI Agent Components</a></li>
 <li><a href="#data-flow">Data Flow</a></li>
-<li><a href="#recent-enhancements">Recent Enhancements</a></li>
 <li><a href="#deployment-guide">Deployment Guide</a></li>
 <li><a href="#monitoring--logging">Monitoring &amp; Logging</a></li>
 <li><a href="#api-reference">API Reference</a></li>
@@ -178,20 +177,24 @@
 <h3 id="key-features"><a class="toclink" href="#key-features">Key Features</a><a class="anchor-link" href="#key-features" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Autonomous Processing</strong>: EventGrid-triggered processing for real-time file detection</li>
-<li><strong>AI-Powered Extraction</strong>: Uses Azure Document Intelligence with OpenAI routing number extraction</li>
+<li><strong>Advanced AI Extraction</strong>: Enhanced Azure Document Intelligence with intelligent pattern recognition</li>
+<li><strong>Smart Account Detection</strong>: Prioritized numeric pattern extraction for accurate account identification</li>
+<li><strong>Robust Date Processing</strong>: Multi-layer statement date extraction with filename fallback</li>
 <li><strong>Format Conversion</strong>: Converts bank statements to industry-standard BAI2 format with full transaction descriptions</li>
 <li><strong>Error Resilience</strong>: Handles various document formats with multiple fallback strategies</li>
 <li><strong>Production-Ready</strong>: Timestamp-based unique references for multi-bank, high-volume processing</li>
 <li><strong>Complete Audit Trail</strong>: Comprehensive logging with ASCII-only output and "Working Copy" labels</li>
 <li><strong>Real-time Monitoring</strong>: Application Insights integration for system oversight</li>
 <li><strong>Reconciliation Logic</strong>: Built-in transaction reconciliation and summary reporting</li>
+<li><strong>Workday Integration</strong>: Enhanced BAI2 compliance for seamless financial system integration</li>
 </ul>
 <h3 id="system-specifications"><a class="toclink" href="#system-specifications">System Specifications</a><a class="anchor-link" href="#system-specifications" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Platform</strong>: Azure Functions (Python 3.10.4, Linux Consumption Plan)</li>
 <li><strong>Trigger</strong>: EventGrid for real-time blob storage events</li>
 <li><strong>Primary AI</strong>: Azure Document Intelligence prebuilt-bankStatement.us model</li>
-<li><strong>Routing AI</strong>: OpenAI GPT-4 for intelligent routing number extraction</li>
+<li><strong>Enhanced Processing</strong>: Intelligent pattern recognition with numeric prioritization</li>
+<li><strong>Bank Data Integration</strong>: Dynamic bank info loading from Azure Blob Storage</li>
 <li><strong>Fallback AI</strong>: Azure Document Intelligence layout model for OCR</li>
 <li><strong>Storage</strong>: Azure Blob Storage with organized folder structure</li>
 <li><strong>Monitoring</strong>: Application Insights for comprehensive logging and analytics</li>
@@ -438,100 +441,6 @@ print_and_log(f&quot;[WORKING COPY] File processed: {filename}&quot;)
 </code></pre>
 
 <hr />
-<h2 id="recent-enhancements"><a class="toclink" href="#recent-enhancements">Recent Enhancements</a><a class="anchor-link" href="#recent-enhancements" title="Permanent link">&para;</a></h2>
-<h3 id="august-19-2025-repository-management-production-readiness"><a class="toclink" href="#august-19-2025-repository-management-production-readiness">August 19, 2025 Repository Management &amp; Production Readiness</a><a class="anchor-link" href="#august-19-2025-repository-management-production-readiness" title="Permanent link">&para;</a></h3>
-<h4 id="repository-cleanup-and-security-hardening"><a class="toclink" href="#repository-cleanup-and-security-hardening"><strong>🧹 Repository Cleanup and Security Hardening</strong></a><a class="anchor-link" href="#repository-cleanup-and-security-hardening" title="Permanent link">&para;</a></h4>
-<p><strong>Complete Test Script Removal</strong>
-- <strong>Issue Addressed</strong>: Repository contained 200+ test scripts, debug files, and development artifacts
-- <strong>Solution Implemented</strong>: Comprehensive cleanup removing all non-production files
-- <strong>Security Enhancement</strong>: Eliminated all sensitive data including .bai files, sample bank statements, and test outputs</p>
-<p><strong>Files Removed from GitHub:</strong>
-- All <code>test_*.py</code> files (120+ files)
-- All <code>analyze_*.py</code>, <code>debug_*.py</code>, <code>verify_*.py</code>, <code>validate_*.py</code> files
-- All <code>check_*.py</code>, <code>compare_*.py</code>, <code>convert_*.py</code> development scripts
-- All PowerShell monitoring scripts (<code>.ps1</code> files)
-- Complete <code>Test Docs/</code> folder with sample PDFs and specifications
-- All <code>.bai</code> and <code>.bai2</code> output files and sample data
-- Development artifacts and temporary files</p>
-<p><strong>Enhanced .gitignore Protection</strong></p>
-<pre class="codehilite"><code class="language-gitignore"># Test files - exclude all testing scripts and development files
-test_*.py, *_test.py, *test*.py
-analyze_*.py, debug_*.py, verify_*.py, validate_*.py
-check_*.py, monitor_*.py, compare_*.py, convert_*.py
-show_*.py, list_*.py, create_local_*.py, deep_*.py
-
-# BAI files - exclude all bank statement files
-*.bai
-*.bai2
-
-# PowerShell scripts - exclude all monitoring and diagnostic scripts
-*.ps1
-</code></pre>
-
-<p><strong>Production-Ready Repository Structure</strong>
-- <strong>Core Files</strong>: Only <code>function_app.py</code>, <code>host.json</code>, <code>requirements.txt</code>, and documentation remain
-- <strong>Configuration</strong>: VS Code settings, Azure Function configuration, and deployment templates
-- <strong>Documentation</strong>: Comprehensive guides and implementation documentation
-- <strong>Security</strong>: No sensitive data, secrets, or test artifacts in version control</p>
-<p><strong>Git Tagging and Version Control</strong>
-- <strong>Tagged Release</strong>: <code>Final-Phase-1-Working-Copy</code> marking clean, production-ready state
-- <strong>Permanent Milestone</strong>: Specific version reference for deployment and documentation
-- <strong>GitHub Integration</strong>: Tag visible in repository releases and tags sections</p>
-<h3 id="august-2025-production-optimizations"><a class="toclink" href="#august-2025-production-optimizations">August 2025 Production Optimizations</a><a class="anchor-link" href="#august-2025-production-optimizations" title="Permanent link">&para;</a></h3>
-<h4 id="multi-bank-scalability-improvements"><a class="toclink" href="#multi-bank-scalability-improvements"><strong>🎯 Multi-Bank Scalability Improvements</strong></a><a class="anchor-link" href="#multi-bank-scalability-improvements" title="Permanent link">&para;</a></h4>
-<p><strong>Timestamp-Based Reference System</strong>
-- <strong>Issue Resolved</strong>: Hardcoded bank reference numbers (<code>1470</code>) could cause conflicts across multiple banks
-- <strong>Solution Implemented</strong>: Dynamic timestamp-based reference generation
-- <strong>Impact</strong>: Function now supports hundreds of files from hundreds of banks simultaneously without reference conflicts</p>
-<pre class="codehilite"><code class="language-python"># Before: Hardcoded references
-bank_ref = f&quot;0000{1470 + i:06d}&quot;
-
-# After: Dynamic timestamp-based references  
-import time
-base_ref = int(time.time()) % 100000
-bank_ref = f&quot;0000{base_ref + i:06d}&quot;
-</code></pre>
-
-<p><strong>Full Transaction Description Preservation</strong>
-- <strong>Issue Resolved</strong>: Transaction descriptions were truncated to 50 characters
-- <strong>Solution Implemented</strong>: Complete description preservation for full audit trails
-- <strong>Impact</strong>: Enhanced reconciliation capabilities and detailed transaction tracking</p>
-<pre class="codehilite"><code class="language-python"># Before: Truncated descriptions
-text_desc = original_description[:50] if original_description else &quot;&quot;
-
-# After: Full descriptions preserved
-text_desc = original_description if original_description else &quot;&quot;
-</code></pre>
-
-<h4 id="openai-routing-number-enhancement"><a class="toclink" href="#openai-routing-number-enhancement"><strong>🔍 OpenAI Routing Number Enhancement</strong></a><a class="anchor-link" href="#openai-routing-number-enhancement" title="Permanent link">&para;</a></h4>
-<p><strong>Intelligent Routing Number Extraction</strong>
-- <strong>Integration</strong>: OpenAI GPT-4 for advanced pattern recognition
-- <strong>Fallback Logic</strong>: Multiple extraction strategies ensure 99%+ success rate
-- <strong>Bank Name Correlation</strong>: Smart bank name extraction linked to routing numbers</p>
-<pre class="codehilite"><code class="language-python"># OpenAI-powered routing extraction
-def extract_routing_with_openai(bank_name, statement_text):
-    prompt = f&quot;&quot;&quot;
-    Extract the routing number for {bank_name} from this bank statement text.
-    Look for 9-digit routing numbers in standard formats...
-    &quot;&quot;&quot;
-    response = openai_client.chat.completions.create(...)
-</code></pre>
-
-<h4 id="bai2-record-counting-precision"><a class="toclink" href="#bai2-record-counting-precision"><strong>📊 BAI2 Record Counting Precision</strong></a><a class="anchor-link" href="#bai2-record-counting-precision" title="Permanent link">&para;</a></h4>
-<p><strong>Mathematical Accuracy Verification</strong>
-- <strong>Fixed</strong>: Record counting logic to ensure perfect BAI2 compliance
-- <strong>Validated</strong>: All output files now have mathematically correct record counts
-- <strong>Tested</strong>: Comprehensive verification across multiple bank statement formats</p>
-<h4 id="production-architecture-readiness"><a class="toclink" href="#production-architecture-readiness"><strong>🏗️ Production Architecture Readiness</strong></a><a class="anchor-link" href="#production-architecture-readiness" title="Permanent link">&para;</a></h4>
-<p><strong>EventGrid Trigger Optimization</strong>
-- <strong>Upgraded</strong>: From blob trigger to EventGrid for faster, more reliable processing
-- <strong>Reduced Latency</strong>: Processing now begins within 1-3 minutes of file upload
-- <strong>Enhanced Reliability</strong>: Better handling of high-volume concurrent uploads</p>
-<p><strong>Comprehensive Error Handling</strong>
-- <strong>Multi-layer Fallbacks</strong>: Document Intelligence → OpenAI → OCR → Manual parsing
-- <strong>Detailed Logging</strong>: ASCII-only logs with full audit trails
-- <strong>Recovery Mechanisms</strong>: Automatic retry logic for transient failures</p>
-<hr />
 <h2 id="deployment-guide"><a class="toclink" href="#deployment-guide">Deployment Guide</a><a class="anchor-link" href="#deployment-guide" title="Permanent link">&para;</a></h2>
 <h3 id="prerequisites"><a class="toclink" href="#prerequisites">Prerequisites</a><a class="anchor-link" href="#prerequisites" title="Permanent link">&para;</a></h3>
 <ul>
@@ -611,19 +520,40 @@ az eventgrid event-subscription create \
 <pre class="codehilite"><code class="language-bash"># Deploy function to Azure
 func azure functionapp publish BankStatementAgent --python
 
-# Configure environment variables
-az functionapp config appsettings set \
+# Verify deployment
+curl &quot;https://bankstatementagent.azurewebsites.net/api/setup&quot;
+</code></pre>
+
+<h4 id="latest-deployment-status-august-21-2025"><a class="toclink" href="#latest-deployment-status-august-21-2025"><strong>Latest Deployment Status (August 21, 2025)</strong></a><a class="anchor-link" href="#latest-deployment-status-august-21-2025" title="Permanent link">&para;</a></h4>
+<p><strong>Successfully Deployed Features:</strong>
+- ✅ Enhanced account number extraction with numeric pattern prioritization
+- ✅ Improved statement date handling with multi-layer fallback system
+- ✅ Optimized BAI2 generation for Workday compatibility
+- ✅ Bank info loading from Azure Blob Storage integration
+- ✅ Comprehensive error handling and logging</p>
+<p><strong>Deployment Verification:</strong>
+- Function App: <code>BankStatementAgent</code> (Running)
+- Resource Group: <code>azure_ai_rg</code>
+- Runtime: Python 3.10.4
+- Trigger: EventGrid (Active)
+- AI Services: Document Intelligence + OpenAI (Connected)</p>
+<p><strong>Git Integration:</strong>
+- Latest commit: <code>cd59e70</code> - Enhanced bank statement processing
+- Repository: Clean production code (no test files)
+- Tag: Latest production-ready version</p>
+<h1 id="configure-environment-variables"><a class="toclink" href="#configure-environment-variables">Configure environment variables</a><a class="anchor-link" href="#configure-environment-variables" title="Permanent link">&para;</a></h1>
+<p>az functionapp config appsettings set \
   --name BankStatementAgent \
   --resource-group azure_ai_rg \
   --settings \
-    STORAGE_ACCOUNT_NAME=&quot;waazuse1aistorage&quot; \
-    DOCUMENT_INTELLIGENCE_ENDPOINT=&quot;https://az-use1-docintelligence-01.cognitiveservices.azure.com/&quot; \
-    DOCUMENT_INTELLIGENCE_KEY=&quot;your-document-intelligence-key&quot; \
-    APPINSIGHTS_INSTRUMENTATIONKEY=&quot;your-app-insights-key&quot;
-</code></pre>
+    STORAGE_ACCOUNT_NAME="waazuse1aistorage" \
+    DOCUMENT_INTELLIGENCE_ENDPOINT="https://az-use1-docintelligence-01.cognitiveservices.azure.com/" \
+    DOCUMENT_INTELLIGENCE_KEY="your-document-intelligence-key" \
+    APPINSIGHTS_INSTRUMENTATIONKEY="your-app-insights-key"</p>
+<pre class="codehilite"><code>#### **6. Container Setup**
 
-<h4 id="6-container-setup"><a class="toclink" href="#6-container-setup"><strong>6. Container Setup</strong></a><a class="anchor-link" href="#6-container-setup" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-bash"># Create storage containers
+```bash
+# Create storage containers
 az storage container create \
   --name bank-reconciliation \
   --account-name waazuse1aistorage
@@ -941,6 +871,49 @@ az storage blob list \
 
 <hr />
 <h2 id="troubleshooting"><a class="toclink" href="#troubleshooting">Troubleshooting</a><a class="anchor-link" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="recently-resolved-issues-august-2025"><a class="toclink" href="#recently-resolved-issues-august-2025">Recently Resolved Issues (August 2025)</a><a class="anchor-link" href="#recently-resolved-issues-august-2025" title="Permanent link">&para;</a></h3>
+<h4 id="issue-incorrect-account-number-extraction"><a class="toclink" href="#issue-incorrect-account-number-extraction"><strong>Issue: Incorrect Account Number Extraction</strong></a><a class="anchor-link" href="#issue-incorrect-account-number-extraction" title="Permanent link">&para;</a></h4>
+<p><strong>Symptoms:</strong>
+- BAI2 files showing wrong account numbers (e.g., "name" instead of "2375133")
+- Account mismatches between statement and BAI2 output
+- Bank reconciliation failures</p>
+<p><strong>Root Cause:</strong>
+- Regex patterns were finding text strings before numeric account numbers
+- Pattern order favored generic matches over specific account formats</p>
+<p><strong>Resolution Applied (August 21, 2025):</strong>
+- ✅ Implemented prioritized pattern recognition system
+- ✅ Separated numeric patterns (highest priority) from text patterns (fallback)
+- ✅ Enhanced validation to prefer 6+ digit numeric account numbers
+- ✅ Added comprehensive logging for extraction debugging</p>
+<p><strong>Verification:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Test with problematic files
+python test_account_extraction.py WACBAI2_20250813.pdf
+# Should now correctly extract &quot;2375133&quot; instead of &quot;name&quot;
+</code></pre>
+
+<h4 id="issue-incorrect-statement-dates-in-bai2"><a class="toclink" href="#issue-incorrect-statement-dates-in-bai2"><strong>Issue: Incorrect Statement Dates in BAI2</strong></a><a class="anchor-link" href="#issue-incorrect-statement-dates-in-bai2" title="Permanent link">&para;</a></h4>
+<p><strong>Symptoms:</strong>
+- BAI2 files using current date instead of statement date
+- Date mismatches causing reconciliation errors
+- Financial system integration failures</p>
+<p><strong>Root Cause:</strong>
+- OpenAI wasn't consistently extracting statement_period data
+- Missing fallback mechanisms for date extraction
+- Insufficient prompt instructions for date parsing</p>
+<p><strong>Resolution Applied (August 21, 2025):</strong>
+- ✅ Enhanced OpenAI prompt with explicit statement period instructions
+- ✅ Implemented multi-layer date fallback system:
+  1. Primary: statement_period.end_date
+  2. Secondary: closing_balance.date<br />
+  3. Tertiary: filename date pattern extraction
+- ✅ Added comprehensive date format parsing and validation
+- ✅ Enhanced logging for date extraction debugging</p>
+<p><strong>Verification:</strong></p>
+<pre class="codehilite"><code class="language-bash"># Check statement date extraction
+python test_statement_date.py
+# Should extract correct dates from statements, not current date
+</code></pre>
+
 <h3 id="common-issues-and-solutions"><a class="toclink" href="#common-issues-and-solutions">Common Issues and Solutions</a><a class="anchor-link" href="#common-issues-and-solutions" title="Permanent link">&para;</a></h3>
 <h4 id="issue-1-function-not-triggering"><a class="toclink" href="#issue-1-function-not-triggering"><strong>Issue 1: Function Not Triggering</strong></a><a class="anchor-link" href="#issue-1-function-not-triggering" title="Permanent link">&para;</a></h4>
 <p><strong>Symptoms:</strong>
