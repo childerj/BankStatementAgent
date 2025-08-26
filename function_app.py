@@ -8,8 +8,13 @@ import sys
 import json
 import re
 import openai
+import traceback
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
+from azure.ai.documentintelligence import DocumentIntelligenceClient
+from azure.core.credentials import AzureKeyCredential
+from io import BytesIO
+from openai import AzureOpenAI
 
 # Configuration constants
 FUNCTION_APP_NAME = "BankStatementAgent"
@@ -364,7 +369,7 @@ def extract_bank_name_from_text(text):
     
     # Fallback: Try first few words approach
     print_and_log("🏦 FALLBACK: Using first meaningful words approach...")
-    if len(words) >= 1:
+    if words:
         # Look for natural stopping points in the first several words
         bank_name = extract_bank_name_from_words(words[:10])  # Check first 10 words
         if bank_name:
@@ -522,7 +527,6 @@ def lookup_routing_number_by_bank_name(bank_name):
             return None
         
         # Set up Azure OpenAI client
-        from openai import AzureOpenAI
         print_and_log(f"🔍 DEBUG: Creating Azure OpenAI client...")
         client = AzureOpenAI(
             azure_endpoint=endpoint,
@@ -591,7 +595,6 @@ def lookup_routing_number_by_bank_name(bank_name):
             
     except Exception as e:
         print_and_log(f"❌ Error looking up routing number with OpenAI: {str(e)}")
-        import traceback
         print_and_log(f"❌ Full error traceback: {traceback.format_exc()}")
         return None
 
@@ -600,7 +603,6 @@ def extract_digits_from_account(account_str):
     if not account_str:
         return account_str
     
-    import re
     # If account contains masking characters, extract only the digits
     if any(char in str(account_str) for char in ['*', 'x', 'X', '#']):
         digits_only = re.sub(r'[^0-9]', '', str(account_str))
@@ -725,7 +727,6 @@ def extract_account_number_from_text(text):
     
     print_and_log("❌ No account number found in statement text")
     return None
-    return None
 
 def is_valid_account_number(account_number):
     """Validate account number - extract digits from masked numbers and validate the result"""
@@ -735,7 +736,6 @@ def is_valid_account_number(account_number):
     account_str = str(account_number).strip()
     
     # Extract digits from masked account numbers (e.g., "XXXXXX2101" -> "2101")
-    import re
     digits_only = re.sub(r'[^0-9]', '', account_str)
     
     # If we have masking characters, extract and validate the digits
@@ -1669,10 +1669,6 @@ def extract_fields_with_sdk(file_bytes, filename, endpoint, key):
     try:
         print_and_log(f"🔄 Attempting to extract using bankStatement.us model (SDK) for {filename}...")
         
-        from azure.ai.documentintelligence import DocumentIntelligenceClient
-        from azure.core.credentials import AzureKeyCredential
-        from io import BytesIO
-        
         # Create client with correct SDK
         client = DocumentIntelligenceClient(
             endpoint=endpoint,
@@ -2090,8 +2086,6 @@ def process_new_file(event: func.EventGridEvent):
 
 def get_statement_date(data, filename=None):
     """Extract statement end date from parsed data for BAI2 headers with enhanced fallback logic"""
-    from datetime import datetime
-    import re
     
     try:
         # PRIORITY 1: Check Document Intelligence mapped fields first
