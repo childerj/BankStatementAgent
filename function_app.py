@@ -11,12 +11,23 @@ import openai
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
 
+# Configuration constants
+FUNCTION_APP_NAME = "BankStatementAgent"
+
 # Configure logging to suppress verbose Azure SDK HTTP traffic
 logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
 logging.getLogger('azure.storage.blob').setLevel(logging.WARNING)
 logging.getLogger('azure.identity').setLevel(logging.WARNING)
 logging.getLogger('azure.core').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
+
+# Import bai2_fixer for BAI2 validation and fixing
+try:
+    import bai2_fixer
+    print("✅ BAI2 fixer module loaded successfully")
+except ImportError as e:
+    print(f"⚠️ Could not load bai2_fixer module: {e}")
+    bai2_fixer = None
 
 # Import enhanced bank matching system
 try:
@@ -292,32 +303,14 @@ def print_and_log(message):
 load_local_settings()
 
 def extract_routing_number_from_text(text):
-    """Extract routing number from bank statement text using regex patterns"""
-    print_and_log("🔍 Searching for routing number in statement text...")
+    """DEPRECATED: Extract routing number from bank statement text using regex patterns
     
-    # Common routing number patterns
-    patterns = [
-        r'routing\s*#?\s*:?\s*(\d{9})',  # "Routing #: 123456789"
-        r'routing\s*number\s*:?\s*(\d{9})',  # "Routing number: 123456789"
-        r'rt\s*#?\s*:?\s*(\d{9})',  # "RT#: 123456789"
-        r'aba\s*#?\s*:?\s*(\d{9})',  # "ABA#: 123456789"
-        r'transit\s*#?\s*:?\s*(\d{9})',  # "Transit#: 123456789"
-        r'routing\s*(\d{9})',  # "Routing 123456789"
-        r'(\d{9})\s*routing',  # "123456789 routing"
-        r'\b(\d{9})\b',  # Any 9-digit number (last resort)
-    ]
-    
-    text_lower = text.lower()
-    
-    for pattern in patterns:
-        matches = re.findall(pattern, text_lower, re.IGNORECASE)
-        for match in matches:
-            # Validate routing number (basic checksum)
-            if is_valid_routing_number(match):
-                print_and_log(f"✅ Found valid routing number: {match}")
-                return match
-    
-    print_and_log("❌ No routing number found in statement text")
+    WARNING: This function is no longer used as per policy change.
+    Routing numbers are now ONLY obtained from the WAC Bank Information database.
+    Customer statements should not be processed for routing numbers.
+    """
+    print_and_log("⚠️ DEPRECATED: extract_routing_number_from_text called - this function is disabled")
+    print_and_log("⚠️ POLICY: Only using routing numbers from WAC Bank Information database")
     return None
 
 def is_valid_routing_number(routing_number):
@@ -876,140 +869,118 @@ def get_account_number(parsed_data):
     return None
 
 def get_routing_number(parsed_data, account_number=None):
-    """Get routing number from statement or lookup via OpenAI"""
+    """Get routing number ONLY from WAC Bank Information database - never from statement text"""
     print_and_log("🔍 Extracting routing number...")
-    print_and_log(f"🔍 DEBUG: parsed_data keys: {list(parsed_data.keys())}")
+    print_and_log("⚠️ POLICY: Only using routing numbers from WAC Bank Information database")
     
-    # Extract routing number directly from statement text
-    routing_number = None
+    # Get bank name from statement for database lookup
+    bank_name = None
     
-    # Check OCR text lines
-    if "ocr_text_lines" in parsed_data:
-        full_text = '\n'.join(parsed_data["ocr_text_lines"])
-        print_and_log(f"🔍 DEBUG: OCR text length: {len(full_text)} characters")
-        print_and_log(f"🔍 DEBUG: OCR text preview: {full_text[:200]}...")
-        routing_number = extract_routing_number_from_text(full_text)
-        if routing_number:
-            print_and_log(f"✅ DEBUG: Found routing number in OCR text: {routing_number}")
+    # Check if Document Intelligence extracted the bank name
+    if "raw_fields" in parsed_data and "BankName" in parsed_data["raw_fields"]:
+        bank_data = parsed_data["raw_fields"]["BankName"]
+        if isinstance(bank_data, dict) and "content" in bank_data:
+            bank_name = bank_data["content"].strip()
+            confidence = bank_data.get("confidence", 0.0)
+            print_and_log(f"✅ Found bank name from Document Intelligence: {bank_name} ({confidence:.2%} confidence)")
     
-    # Check raw fields from document intelligence
-    if not routing_number and "raw_fields" in parsed_data:
-        print_and_log(f"🔍 DEBUG: Checking {len(parsed_data['raw_fields'])} raw fields")
-        for field_name, field_data in parsed_data["raw_fields"].items():
-            print_and_log(f"🔍 DEBUG: Field '{field_name}': {field_data}")
-            if isinstance(field_data, dict) and "content" in field_data:
-                routing_number = extract_routing_number_from_text(field_data["content"])
-                if routing_number:
-                    print_and_log(f"✅ DEBUG: Found routing number in field '{field_name}': {routing_number}")
-                    break
+    # Fallback: Extract bank name from OCR text
+    if not bank_name and "ocr_text_lines" in parsed_data:
+        ocr_text = "\n".join(parsed_data["ocr_text_lines"])
+        bank_name = extract_bank_name_from_text(ocr_text)
+        if bank_name:
+            print_and_log(f"✅ Extracted bank name from OCR: {bank_name}")
     
-    # If no routing number found, attempt lookup by bank name
-    if not routing_number:
-        print_and_log("🏦 No routing number found, attempting bank name lookup...")
-        
-        bank_name = None
-        
-        print_and_log(f"🏦 DEBUG: BANK NAME DETECTION PROCESS")
-        print_and_log(f"=====================================")
-        
-        # Display parsed data structure for bank name extraction
-        print_and_log(f"🔍 DEBUG: parsed_data keys: {list(parsed_data.keys())}")
-        if "raw_fields" in parsed_data:
-            print_and_log(f"🔍 DEBUG: raw_fields keys: {list(parsed_data['raw_fields'].keys())}")
-            for field_name, field_data in parsed_data["raw_fields"].items():
-                print_and_log(f"🔍 DEBUG: Field '{field_name}': {field_data}")
-        
-        # Check if Document Intelligence extracted the bank name directly
-        if "raw_fields" in parsed_data and "BankName" in parsed_data["raw_fields"]:
-            bank_data = parsed_data["raw_fields"]["BankName"]
-            if isinstance(bank_data, dict) and "content" in bank_data:
-                bank_name = bank_data["content"].strip()
-                confidence = bank_data.get("confidence", 0.0)
-                print_and_log(f"✅ DEBUG: Found bank name from Document Intelligence: {bank_name} ({confidence:.2%} confidence)")
-            else:
-                print_and_log(f"❌ DEBUG: BankName field exists but wrong format: {bank_data}")
-        else:
-            print_and_log(f"❌ DEBUG: No BankName field found in raw_fields")
-        
-        # FALLBACK: Try to extract bank name from OCR text if Document Intelligence failed
-        if not bank_name:
-            print_and_log("🔍 FALLBACK: Attempting manual bank name extraction from OCR text...")
-            if "ocr_text_lines" in parsed_data and parsed_data["ocr_text_lines"]:
-                ocr_text = "\n".join(parsed_data["ocr_text_lines"])
-                bank_name = extract_bank_name_from_text(ocr_text)
-                if bank_name:
-                    print_and_log(f"✅ FALLBACK: Extracted bank name from OCR: {bank_name}")
-                else:
-                    print_and_log("❌ FALLBACK: No bank name found in OCR text")
-            
-            # Additional fallback: Check table data for bank names
-            if not bank_name and "raw_fields" in parsed_data and "tables" in parsed_data["raw_fields"]:
-                print_and_log("🔍 FALLBACK: Checking table data for bank name...")
-                tables = parsed_data["raw_fields"]["tables"]
-                for table in tables:
-                    if "cells" in table:
-                        for cell in table["cells"]:
-                            cell_content = cell.get("content", "").strip()
-                            if cell_content and any(keyword in cell_content.upper() for keyword in ['BANK', 'FCB', 'FEB']):
-                                print_and_log(f"🔍 FALLBACK: Found potential bank name in table: {cell_content}")
-                                bank_name = extract_bank_name_from_text(cell_content)
-                                if bank_name:
-                                    print_and_log(f"✅ FALLBACK: Extracted bank name from table: {bank_name}")
-                                    break
-                    if bank_name:
-                        break
-        
-        # Final check - if still no bank name found
-        if not bank_name:
-            print_and_log("❌ CRITICAL: Bank name not found in Document Intelligence or fallback methods")
-            return None
-        
-        # SUMMARY OF BANK NAME DETECTION
-        print_and_log(f"🏦 BANK NAME DETECTION RESULT:")
-        print_and_log(f"=====================================")
-        print_and_log(f"✅ BANK NAME FOUND: '{bank_name}'")
-        print_and_log(f"=====================================")
-        
-        # Try enhanced bank info matching first
-        if get_bank_info_for_processing and account_number:
-            print_and_log(f"🔍 DEBUG: Attempting enhanced bank info matching...")
-            print_and_log(f"   Bank Name: '{bank_name}'")
-            print_and_log(f"   Account Number: '{account_number}'")
-            
-            try:
-                result = get_bank_info_for_processing(bank_name, account_number)
-                if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
-                    matched_account, matched_routing, match_type = result
-                    routing_number = matched_routing
-                    print_and_log(f"✅ Enhanced matching found routing number: {routing_number}")
-                    print_and_log(f"   Match Type: {match_type}")
-                    print_and_log(f"   Matched Account: {matched_account}")
-                    # Return both routing number and matched account number
-                    return routing_number, matched_account
-                else:
-                    print_and_log(f"❌ Enhanced matching returned no routing number")
-            except Exception as e:
-                print_and_log(f"⚠️ Enhanced matching failed: {str(e)}")
-        else:
-            if not get_bank_info_for_processing:
-                print_and_log(f"⚠️ Enhanced bank matching not available")
-            if not account_number:
-                print_and_log(f"⚠️ No account number available for enhanced matching")
-        
-        # Fallback to OpenAI lookup if enhanced matching didn't work
-        print_and_log(f"🤖 DEBUG: Attempting OpenAI lookup for bank: {bank_name}")
-        routing_number = lookup_routing_number_by_bank_name(bank_name)
-        if routing_number:
-            print_and_log(f"✅ DEBUG: OpenAI returned routing number: {routing_number}")
-            # Return routing number with no matched account (use original account)
-            return routing_number, None
-        else:
-            print_and_log(f"❌ DEBUG: OpenAI lookup failed for bank: {bank_name}")
-    
-    # No fallback - return None if routing number cannot be determined
-    if not routing_number:
-        print_and_log("❌ CRITICAL: No routing number found and unable to lookup by bank name")
+    if not bank_name:
+        print_and_log("❌ CRITICAL: Bank name not found - cannot lookup routing number")
         return None, None
+    
+    # ONLY use WAC Bank Information database for routing number lookup
+    if account_number:
+        print_and_log(f"🔍 WAC Database lookup (ACCOUNT-FIRST approach)...")
+        print_and_log(f"   Account Number: '{account_number}'")
+        print_and_log(f"   Bank Name (for validation): '{bank_name}'")
+        
+        try:
+            # Load bank data directly for account-first matching
+            from bank_info_loader import load_bank_information_yaml
+            yaml_content, bank_data = load_bank_information_yaml()
+            
+            if not bank_data:
+                print_and_log(f"❌ WAC Bank Information database not available")
+                return None, None
+            
+            print_and_log(f"📄 WAC Database loaded ({len(bank_data['wac_banks'])} banks available)")
+            
+            # STEP 1: Try exact account number match first
+            exact_matches = []
+            for bank_info in bank_data.get('wac_banks', []):
+                if str(bank_info['account_number']).strip() == str(account_number).strip():
+                    exact_matches.append(bank_info)
+            
+            if exact_matches:
+                match = exact_matches[0]  # Should only be one exact match
+                print_and_log(f"✅ EXACT ACCOUNT MATCH found!")
+                print_and_log(f"   Account: {match['account_number']}")
+                print_and_log(f"   Bank: {match['bank_name']}")
+                print_and_log(f"   Routing: {match['routing_number']}")
+                
+                # Validate bank name if available (optional)
+                if bank_name:
+                    from bank_info_loader import calculate_similarity
+                    similarity = calculate_similarity(bank_name, match['bank_name'])
+                    print_and_log(f"   Bank name validation: {similarity:.1%} similarity")
+                    if similarity < 0.7:
+                        print_and_log(f"⚠️ Warning: Bank name mismatch but account match is definitive")
+                
+                return match['routing_number'], match['account_number']
+            
+            # STEP 2: Try masked/partial account matching
+            from bank_info_loader import extract_account_digits, validate_account_match
+            extracted_digits = extract_account_digits(account_number)
+            
+            if extracted_digits and len(extracted_digits) >= 4:
+                print_and_log(f"🔍 No exact match, trying partial/masked account matching...")
+                print_and_log(f"   Extracted digits: '{extracted_digits}'")
+                
+                partial_matches = []
+                for bank_info in bank_data.get('wac_banks', []):
+                    account_valid, match_ratio = validate_account_match(account_number, bank_info['account_number'])
+                    if account_valid:
+                        partial_matches.append((bank_info, match_ratio))
+                
+                if partial_matches:
+                    # Sort by match quality (highest first)
+                    partial_matches.sort(key=lambda x: x[1], reverse=True)
+                    best_match, best_ratio = partial_matches[0]
+                    
+                    print_and_log(f"✅ PARTIAL ACCOUNT MATCH found!")
+                    print_and_log(f"   Account: {best_match['account_number']}")
+                    print_and_log(f"   Bank: {best_match['bank_name']}")
+                    print_and_log(f"   Routing: {best_match['routing_number']}")
+                    print_and_log(f"   Match Quality: {best_ratio:.1%}")
+                    
+                    # Validate bank name if available (optional)
+                    if bank_name:
+                        from bank_info_loader import calculate_similarity
+                        similarity = calculate_similarity(bank_name, best_match['bank_name'])
+                        print_and_log(f"   Bank name validation: {similarity:.1%} similarity")
+                    
+                    return best_match['routing_number'], best_match['account_number']
+            
+            print_and_log(f"❌ No account match found in WAC Database")
+            print_and_log(f"   Account '{account_number}' not found (exact or partial)")
+            print_and_log(f"⚠️ This appears to be a customer account, not a WAC operational account")
+            
+        except Exception as e:
+            print_and_log(f"❌ WAC Database lookup failed: {str(e)}")
+    else:
+        print_and_log(f"❌ No account number available for database lookup")
+    
+    # NO FALLBACKS - Do not extract from statement text or use OpenAI
+    print_and_log("❌ ROUTING NUMBER POLICY ENFORCED: Only WAC operational accounts allowed")
+    print_and_log("❌ Statement does not match any WAC operational account in database")
+    return None, None
     
     print_and_log(f"✅ Using routing number: {routing_number}")
     return routing_number
@@ -2173,17 +2144,17 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
         else:
             # Try to extract routing number from data (now with account number for enhanced matching)
             result = get_routing_number(data, account_number)
-            if result and isinstance(result, tuple) and len(result) >= 2:
+            if result and isinstance(result, tuple) and len(result) >= 2 and result[0] is not None:
                 originator_id, matched_account = result
                 if matched_account and not matched_account_number:
                     # Update account number if we got a match during routing lookup
                     account_number = matched_account
                     print_and_log(f"✅ Updated account number from enhanced matching: {account_number}")
-            elif result:
+            elif result and not isinstance(result, tuple) and result is not None:
                 originator_id = result
             else:
-                print_and_log("❌ CRITICAL: No routing number found - creating ERROR file")
-                return create_error_bai2_file("No routing number found on statement", filename, file_date, file_time, "ERROR_NO_ROUTING")
+                print_and_log("❌ CRITICAL: No routing number found in WAC Bank Information database - creating ERROR file")
+                return create_error_bai2_file("No routing number found in WAC Bank Information database for this bank/account combination", filename, file_date, file_time, "ERROR_NO_ROUTING")
         
         print_and_log(f"🔧 DEBUG: Routing number resolved: {originator_id}")
         
@@ -2389,12 +2360,67 @@ No explanations, no comments, no code fences."""
             print_and_log("⚠️ Generated BAI2 doesn't start with file header, creating error file")
             return create_error_bai2_file("OpenAI BAI2 generation format error", filename, file_date, file_time, "ERROR_AI_FORMAT")
         
-        print_and_log("✅ OpenAI successfully generated BAI2 file")
+        print_and_log("✅ OpenAI successfully generated initial BAI2 file")
         print_and_log(f"📏 Generated BAI2 length: {len(bai2_content)} characters")
         print_and_log(f"📊 Generated BAI2 lines: {bai2_content.count(chr(10)) + 1}")
-        print_and_log("🎯 RETURNING OpenAI-generated BAI2 content")
         
-        return bai2_content
+        # SECOND PASS: Validate and fix the BAI2 file using bai2_fixer
+        if bai2_fixer:
+            try:
+                print_and_log("🔧 SECOND PASS: Validating and fixing BAI2 file with bai2_fixer")
+                
+                # Use bai2_fixer to parse, validate, and rebuild the BAI2 content
+                file01, groups, audit_dates = bai2_fixer.parse_bai2(bai2_content)
+                rebuilt_lines = bai2_fixer.rebuild_bai2(file01, groups)
+                
+                # Build audit log
+                audit_lines = []
+                if audit_dates["file_date_corrected"]:
+                    audit_lines.append(f"corrected 01 file date -> {file01.file_date}")
+                if audit_dates["group_dates_corrected"]:
+                    audit_lines.append(f"corrected {audit_dates['group_dates_corrected']} group date(s) in 02")
+                
+                # Account-level audits
+                total_ref_renum = 0
+                total_amt_norm = 0
+                total_desc_san = 0
+                ending_bal_fixed = 0
+                for g in groups:
+                    for a in g.accounts:
+                        if a.audit["ref_renumbered"]:
+                            total_ref_renum += 1
+                        total_amt_norm += a.audit["amounts_normalized"]
+                        total_desc_san += a.audit["descriptions_sanitized"]
+                        if a.audit["ending_balance_fixed"]:
+                            ending_bal_fixed += 1
+                
+                if total_ref_renum:
+                    audit_lines.append(f"renumbered REF_NUMs for {total_ref_renum} account(s)")
+                if total_amt_norm:
+                    audit_lines.append(f"normalized {total_amt_norm} amount(s) to integer cents")
+                if total_desc_san:
+                    audit_lines.append(f"sanitized {total_desc_san} description(s)")
+                if ending_bal_fixed:
+                    audit_lines.append(f"fixed non-integer ending balances in {ending_bal_fixed} account(s)")
+                
+                audit_log = "; ".join(audit_lines) if audit_lines else "No fixes needed"
+                final_bai2_content = "\n".join(rebuilt_lines)
+                
+                print_and_log("✅ BAI2 validation and fixing completed successfully")
+                print_and_log(f"📋 Audit log: {audit_log}")
+                print_and_log(f"📏 Final BAI2 length: {len(final_bai2_content)} characters")
+                print_and_log(f"📊 Final BAI2 lines: {final_bai2_content.count(chr(10)) + 1}")
+                
+            except Exception as e:
+                print_and_log(f"❌ BAI2 fixing failed: {e}")
+                print_and_log("⚠️ Using original OpenAI-generated content")
+                final_bai2_content = bai2_content
+        else:
+            print_and_log("⚠️ bai2_fixer not available, using original OpenAI-generated content")
+            final_bai2_content = bai2_content
+        
+        print_and_log("🎯 RETURNING validated BAI2 content")
+        return final_bai2_content
         
     except Exception as e:
         print_and_log(f"❌ CRITICAL ERROR in OpenAI BAI2 generation: {str(e)}")

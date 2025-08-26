@@ -5,13 +5,12 @@
 2. [System Architecture](#system-architecture)
 3. [AI Agent Components](#ai-agent-components)
 4. [Data Flow](#data-flow)
-5. [Recent Enhancements](#recent-enhancements)
-6. [Deployment Guide](#deployment-guide)
-7. [Monitoring & Logging](#monitoring--logging)
-8. [API Reference](#api-reference)
-9. [Troubleshooting](#troubleshooting)
-10. [Configuration](#configuration)
-11. [Security](#security)
+5. [Deployment Guide](#deployment-guide)
+6. [Monitoring & Logging](#monitoring--logging)
+7. [API Reference](#api-reference)
+8. [Troubleshooting](#troubleshooting)
+9. [Configuration](#configuration)
+10. [Security](#security)
 
 ---
 
@@ -21,19 +20,23 @@ The **BankStatementAgent** is an autonomous AI-powered system deployed on Azure 
 
 ### Key Features
 - **Autonomous Processing**: EventGrid-triggered processing for real-time file detection
-- **AI-Powered Extraction**: Uses Azure Document Intelligence with OpenAI routing number extraction
+- **Advanced AI Extraction**: Enhanced Azure Document Intelligence with intelligent pattern recognition
+- **Smart Account Detection**: Prioritized numeric pattern extraction for accurate account identification
+- **Robust Date Processing**: Multi-layer statement date extraction with filename fallback
 - **Format Conversion**: Converts bank statements to industry-standard BAI2 format with full transaction descriptions
 - **Error Resilience**: Handles various document formats with multiple fallback strategies
 - **Production-Ready**: Timestamp-based unique references for multi-bank, high-volume processing
 - **Complete Audit Trail**: Comprehensive logging with ASCII-only output and "Working Copy" labels
 - **Real-time Monitoring**: Application Insights integration for system oversight
 - **Reconciliation Logic**: Built-in transaction reconciliation and summary reporting
+- **Workday Integration**: Enhanced BAI2 compliance for seamless financial system integration
 
 ### System Specifications
 - **Platform**: Azure Functions (Python 3.10.4, Linux Consumption Plan)
 - **Trigger**: EventGrid for real-time blob storage events
 - **Primary AI**: Azure Document Intelligence prebuilt-bankStatement.us model
-- **Routing AI**: OpenAI GPT-4 for intelligent routing number extraction
+- **Enhanced Processing**: Intelligent pattern recognition with numeric prioritization
+- **Bank Data Integration**: Dynamic bank info loading from Azure Blob Storage
 - **Fallback AI**: Azure Document Intelligence layout model for OCR
 - **Storage**: Azure Blob Storage with organized folder structure
 - **Monitoring**: Application Insights for comprehensive logging and analytics
@@ -292,123 +295,6 @@ print_and_log(f"[WORKING COPY] File processed: {filename}")
 
 ---
 
-## Recent Enhancements
-
-### August 19, 2025 Repository Management & Production Readiness
-
-#### **🧹 Repository Cleanup and Security Hardening**
-
-**Complete Test Script Removal**
-- **Issue Addressed**: Repository contained 200+ test scripts, debug files, and development artifacts
-- **Solution Implemented**: Comprehensive cleanup removing all non-production files
-- **Security Enhancement**: Eliminated all sensitive data including .bai files, sample bank statements, and test outputs
-
-**Files Removed from GitHub:**
-- All `test_*.py` files (120+ files)
-- All `analyze_*.py`, `debug_*.py`, `verify_*.py`, `validate_*.py` files
-- All `check_*.py`, `compare_*.py`, `convert_*.py` development scripts
-- All PowerShell monitoring scripts (`.ps1` files)
-- Complete `Test Docs/` folder with sample PDFs and specifications
-- All `.bai` and `.bai2` output files and sample data
-- Development artifacts and temporary files
-
-**Enhanced .gitignore Protection**
-```gitignore
-# Test files - exclude all testing scripts and development files
-test_*.py, *_test.py, *test*.py
-analyze_*.py, debug_*.py, verify_*.py, validate_*.py
-check_*.py, monitor_*.py, compare_*.py, convert_*.py
-show_*.py, list_*.py, create_local_*.py, deep_*.py
-
-# BAI files - exclude all bank statement files
-*.bai
-*.bai2
-
-# PowerShell scripts - exclude all monitoring and diagnostic scripts
-*.ps1
-```
-
-**Production-Ready Repository Structure**
-- **Core Files**: Only `function_app.py`, `host.json`, `requirements.txt`, and documentation remain
-- **Configuration**: VS Code settings, Azure Function configuration, and deployment templates
-- **Documentation**: Comprehensive guides and implementation documentation
-- **Security**: No sensitive data, secrets, or test artifacts in version control
-
-**Git Tagging and Version Control**
-- **Tagged Release**: `Final-Phase-1-Working-Copy` marking clean, production-ready state
-- **Permanent Milestone**: Specific version reference for deployment and documentation
-- **GitHub Integration**: Tag visible in repository releases and tags sections
-
-### August 2025 Production Optimizations
-
-#### **🎯 Multi-Bank Scalability Improvements**
-
-**Timestamp-Based Reference System**
-- **Issue Resolved**: Hardcoded bank reference numbers (`1470`) could cause conflicts across multiple banks
-- **Solution Implemented**: Dynamic timestamp-based reference generation
-- **Impact**: Function now supports hundreds of files from hundreds of banks simultaneously without reference conflicts
-
-```python
-# Before: Hardcoded references
-bank_ref = f"0000{1470 + i:06d}"
-
-# After: Dynamic timestamp-based references  
-import time
-base_ref = int(time.time()) % 100000
-bank_ref = f"0000{base_ref + i:06d}"
-```
-
-**Full Transaction Description Preservation**
-- **Issue Resolved**: Transaction descriptions were truncated to 50 characters
-- **Solution Implemented**: Complete description preservation for full audit trails
-- **Impact**: Enhanced reconciliation capabilities and detailed transaction tracking
-
-```python
-# Before: Truncated descriptions
-text_desc = original_description[:50] if original_description else ""
-
-# After: Full descriptions preserved
-text_desc = original_description if original_description else ""
-```
-
-#### **🔍 OpenAI Routing Number Enhancement**
-
-**Intelligent Routing Number Extraction**
-- **Integration**: OpenAI GPT-4 for advanced pattern recognition
-- **Fallback Logic**: Multiple extraction strategies ensure 99%+ success rate
-- **Bank Name Correlation**: Smart bank name extraction linked to routing numbers
-
-```python
-# OpenAI-powered routing extraction
-def extract_routing_with_openai(bank_name, statement_text):
-    prompt = f"""
-    Extract the routing number for {bank_name} from this bank statement text.
-    Look for 9-digit routing numbers in standard formats...
-    """
-    response = openai_client.chat.completions.create(...)
-```
-
-#### **📊 BAI2 Record Counting Precision**
-
-**Mathematical Accuracy Verification**
-- **Fixed**: Record counting logic to ensure perfect BAI2 compliance
-- **Validated**: All output files now have mathematically correct record counts
-- **Tested**: Comprehensive verification across multiple bank statement formats
-
-#### **🏗️ Production Architecture Readiness**
-
-**EventGrid Trigger Optimization**
-- **Upgraded**: From blob trigger to EventGrid for faster, more reliable processing
-- **Reduced Latency**: Processing now begins within 1-3 minutes of file upload
-- **Enhanced Reliability**: Better handling of high-volume concurrent uploads
-
-**Comprehensive Error Handling**
-- **Multi-layer Fallbacks**: Document Intelligence → OpenAI → OCR → Manual parsing
-- **Detailed Logging**: ASCII-only logs with full audit trails
-- **Recovery Mechanisms**: Automatic retry logic for transient failures
-
----
-
 ## Deployment Guide
 
 ### Prerequisites
@@ -498,6 +384,31 @@ az eventgrid event-subscription create \
 ```bash
 # Deploy function to Azure
 func azure functionapp publish BankStatementAgent --python
+
+# Verify deployment
+curl "https://bankstatementagent.azurewebsites.net/api/setup"
+```
+
+#### **Latest Deployment Status (August 21, 2025)**
+
+**Successfully Deployed Features:**
+- ✅ Enhanced account number extraction with numeric pattern prioritization
+- ✅ Improved statement date handling with multi-layer fallback system
+- ✅ Optimized BAI2 generation for Workday compatibility
+- ✅ Bank info loading from Azure Blob Storage integration
+- ✅ Comprehensive error handling and logging
+
+**Deployment Verification:**
+- Function App: `BankStatementAgent` (Running)
+- Resource Group: `azure_ai_rg`
+- Runtime: Python 3.10.4
+- Trigger: EventGrid (Active)
+- AI Services: Document Intelligence + OpenAI (Connected)
+
+**Git Integration:**
+- Latest commit: `cd59e70` - Enhanced bank statement processing
+- Repository: Clean production code (no test files)
+- Tag: Latest production-ready version
 
 # Configure environment variables
 az functionapp config appsettings set \
@@ -851,6 +762,60 @@ az storage blob list \
 ---
 
 ## Troubleshooting
+
+### Recently Resolved Issues (August 2025)
+
+#### **Issue: Incorrect Account Number Extraction**
+
+**Symptoms:**
+- BAI2 files showing wrong account numbers (e.g., "name" instead of "2375133")
+- Account mismatches between statement and BAI2 output
+- Bank reconciliation failures
+
+**Root Cause:**
+- Regex patterns were finding text strings before numeric account numbers
+- Pattern order favored generic matches over specific account formats
+
+**Resolution Applied (August 21, 2025):**
+- ✅ Implemented prioritized pattern recognition system
+- ✅ Separated numeric patterns (highest priority) from text patterns (fallback)
+- ✅ Enhanced validation to prefer 6+ digit numeric account numbers
+- ✅ Added comprehensive logging for extraction debugging
+
+**Verification:**
+```bash
+# Test with problematic files
+python test_account_extraction.py WACBAI2_20250813.pdf
+# Should now correctly extract "2375133" instead of "name"
+```
+
+#### **Issue: Incorrect Statement Dates in BAI2**
+
+**Symptoms:**
+- BAI2 files using current date instead of statement date
+- Date mismatches causing reconciliation errors
+- Financial system integration failures
+
+**Root Cause:**
+- OpenAI wasn't consistently extracting statement_period data
+- Missing fallback mechanisms for date extraction
+- Insufficient prompt instructions for date parsing
+
+**Resolution Applied (August 21, 2025):**
+- ✅ Enhanced OpenAI prompt with explicit statement period instructions
+- ✅ Implemented multi-layer date fallback system:
+  1. Primary: statement_period.end_date
+  2. Secondary: closing_balance.date  
+  3. Tertiary: filename date pattern extraction
+- ✅ Added comprehensive date format parsing and validation
+- ✅ Enhanced logging for date extraction debugging
+
+**Verification:**
+```bash
+# Check statement date extraction
+python test_statement_date.py
+# Should extract correct dates from statements, not current date
+```
 
 ### Common Issues and Solutions
 
