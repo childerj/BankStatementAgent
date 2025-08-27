@@ -278,25 +278,71 @@ def find_matching_bank_with_account(detected_bank_name, detected_account=None, b
             # Multiple matches - try to disambiguate with bank name if provided
             if detected_bank_name:
                 print(f"🔄 Multiple matches found - using bank name '{detected_bank_name}' to disambiguate")
+                print(f"📊 Found {len(matching_accounts)} accounts ending in '{last_four_digits}':")
+                
                 best_match = None
                 best_similarity = 0.0
+                all_similarities = []
                 
                 for candidate in matching_accounts:
                     similarity = calculate_similarity(detected_bank_name, candidate['bank_name'])
-                    print(f"   {candidate['bank_name']}: {similarity:.1%} similarity")
+                    all_similarities.append((candidate, similarity))
+                    print(f"   {candidate['account_number']} ({candidate['bank_name']}): {similarity:.1%} similarity")
                     if similarity > best_similarity:
                         best_similarity = similarity
                         best_match = candidate
                 
-                if best_match and best_similarity >= 0.7:  # Require reasonable bank name match
+                # Check if best match meets the 50% threshold
+                if best_match and best_similarity >= 0.5:
                     print(f"✅ DISAMBIGUATED PARTIAL MATCH: {best_match['account_number']}")
                     print(f"   Bank: {best_match['bank_name']} ({best_similarity:.1%} similarity)")
                     print(f"   Routing: {best_match['routing_number']}")
                     return best_match, best_similarity, {'account_valid': True, 'match_type': 'partial_disambiguated'}
                 else:
-                    print(f"❌ Could not disambiguate - bank name similarity too low")
+                    # Bank name similarity below 50% - return specific error details
+                    print(f"❌ Could not disambiguate - bank name similarity too low (best: {best_similarity:.1%})")
+                    print(f"🚨 MULTIPLE ACCOUNT MATCHES with insufficient bank name similarity:")
+                    
+                    candidate_details = []
+                    for candidate, similarity in all_similarities:
+                        candidate_details.append({
+                            'account': candidate['account_number'],
+                            'bank': candidate['bank_name'],
+                            'routing': candidate['routing_number'],
+                            'similarity': similarity
+                        })
+                    
+                    return None, best_similarity, {
+                        'account_valid': False, 
+                        'match_type': 'multiple_accounts_low_similarity',
+                        'ending_digits': last_four_digits,
+                        'candidate_count': len(matching_accounts),
+                        'best_similarity': best_similarity,
+                        'candidates': candidate_details,
+                        'detected_bank': detected_bank_name
+                    }
             else:
                 print(f"❌ Multiple accounts end with '{last_four_digits}' - need bank name to disambiguate")
+                print(f"📊 Found {len(matching_accounts)} matching accounts:")
+                
+                candidate_details = []
+                for candidate in matching_accounts:
+                    print(f"   {candidate['account_number']} ({candidate['bank_name']})")
+                    candidate_details.append({
+                        'account': candidate['account_number'],
+                        'bank': candidate['bank_name'],
+                        'routing': candidate['routing_number'],
+                        'similarity': 0.0
+                    })
+                
+                return None, 0.0, {
+                    'account_valid': False, 
+                    'match_type': 'multiple_accounts_no_bank_name',
+                    'ending_digits': last_four_digits,
+                    'candidate_count': len(matching_accounts),
+                    'candidates': candidate_details,
+                    'detected_bank': detected_bank_name or 'Not provided'
+                }
             
             print(f"❌ AMBIGUOUS PARTIAL MATCH: {len(matching_accounts)} accounts end with '{last_four_digits}'")
             return None, 0.0, {'account_valid': False, 'match_type': 'ambiguous'}
@@ -365,10 +411,33 @@ def get_bank_info_for_processing(detected_bank_name, detected_account=None):
         print(f"   Bank: {match['bank_name']}")
         return match['account_number'], match['routing_number'], "wac_account"
     else:
-        print(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
-        print(f"   Account '{detected_account}' not found in WAC database")
-        print(f"   This appears to be a customer account, not operational")
-        return None, None, "error"
+        # Handle specific error cases for better error reporting
+        match_type = details.get('match_type', 'unknown')
+        
+        if match_type == 'multiple_accounts_low_similarity':
+            print(f"❌ MULTIPLE ACCOUNT MATCHES with low bank name similarity")
+            print(f"   Ending digits: {details['ending_digits']}")
+            print(f"   Candidates: {details['candidate_count']}")
+            print(f"   Best similarity: {details['best_similarity']:.1%} (below 70% threshold)")
+            return None, None, "multiple_accounts_low_similarity"
+            
+        elif match_type == 'multiple_accounts_no_bank_name':
+            print(f"❌ MULTIPLE ACCOUNT MATCHES without bank name for disambiguation")
+            print(f"   Ending digits: {details['ending_digits']}")
+            print(f"   Candidates: {details['candidate_count']}")
+            return None, None, "multiple_accounts_no_bank_name"
+            
+        elif match_type == 'none':
+            print(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+            print(f"   Account '{detected_account}' not found in WAC database")
+            print(f"   This appears to be a customer account, not operational")
+            return None, None, "no_account_match"
+            
+        else:
+            print(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+            print(f"   Account '{detected_account}' not found in WAC database")
+            print(f"   Match type: {match_type}")
+            return None, None, "error"
 
 def get_routing_for_extracted_account(detected_bank_name, extracted_account_number):
     """Get routing number for an extracted account number (for customer statements)

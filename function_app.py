@@ -506,129 +506,280 @@ def extract_bank_name_from_text(text):
     return None
 
 def extract_complete_bank_name_from_line(line):
-    """Extract complete bank name from a single line with advanced logic for complex names"""
-    # Common bank name endings that indicate where to stop
-    strong_endings = ['bank', 'union', 'financial', 'trust', 'services', 'corp', 'corporation', 'company', 'credit']
+    """Extract complete bank name from a single line with comprehensive boundary detection"""
+    # Common bank name endings that indicate natural completion
+    strong_endings = ['bank', 'union', 'financial', 'trust', 'services', 'corp', 'corporation', 
+                     'company', 'credit', 'savings', 'loan', 'association', 'federal', 'national']
+    
     # Common connecting words in bank names - these should NOT be endings
-    connecting_words = ['of', 'and', '&', 'the', 'for', 'in', 'at', 'to']
-    # Words that definitely indicate end of bank name
-    stop_words = ['report', 'statement', 'date', 'page', 'account', 'balance', 'type', 'bai', 'test', 'customer', 'member', 'branch', 'routing', 'number']
+    connecting_words = ['of', 'and', '&', 'the', 'for', 'in', 'at', 'to', 'on']
+    
+    # Comprehensive stop words covering multiple categories
+    stop_words = set([
+        # Document/Report terms
+        'report', 'statement', 'summary', 'document', 'page', 'dated', 'period', 'ending',
+        # Account/Financial terms  
+        'account', 'balance', 'routing', 'number', 'type', 'checking', 'savings', 'deposit',
+        'transaction', 'transactions', 'activity', 'beginning', 'ending', 'current', 'available',
+        # Address components (very common in headers)
+        'p.o.', 'po', 'box', 'street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr',
+        'blvd', 'boulevard', 'lane', 'ln', 'circle', 'cir', 'court', 'ct', 'suite', 'ste',
+        'floor', 'apt', 'apartment', 'unit', 'building', 'bldg', 'plaza', 'place', 'pl',
+        # Contact information
+        'phone', 'tel', 'telephone', 'fax', 'email', 'website', 'www', 'http', 'https',
+        'contact', 'call', 'customer', 'service', 'support', 'help', 'assistance',
+        # Marketing/Slogan terms
+        'spend', 'life', 'wisely', 'slogan', 'motto', 'tagline', 'welcome', 'thank', 'thanks',
+        'serving', 'proudly', 'committed', 'dedicated', 'excellence', 'quality', 'premier',
+        'leading', 'trusted', 'established', 'since', 'founded', 'years', 'experience',
+        # Regulatory/Legal terms
+        'member', 'fdic', 'equal', 'housing', 'lender', 'opportunity', 'insured', 'deposits',
+        'regulation', 'compliance', 'terms', 'conditions', 'privacy', 'policy', 'notice',
+        'disclosure', 'important', 'information', 'please', 'read', 'carefully',
+        # Time/Date terms
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+        'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+        'september', 'october', 'november', 'december', 'am', 'pm', 'hours', 'open',
+        'closed', 'holiday', 'business', 'banking',
+        # Geographic indicators that typically follow bank names
+        'located', 'headquarters', 'branch', 'branches', 'office', 'offices', 'location',
+        'locations', 'main', 'downtown', 'north', 'south', 'east', 'west', 'central',
+        # Common header/footer terms
+        'return', 'service', 'requested', 'postmaster', 'mail', 'postal', 'zip', 'code',
+        'delivery', 'address', 'correction', 'change', 'update', 'forward', 'forwarding'
+    ])
+    
+    # Convert to lowercase for checking
+    stop_words_lower = {word.lower() for word in stop_words}
     
     words = line.split()
     if not words:
         return None
     
-    # Quick reject: if line starts with obvious non-bank terms
-    first_word_lower = words[0].lower()
-    if first_word_lower in ['account', 'statement', 'routing', 'balance', 'transaction', 'date', 'page']:
+    # Clean words and handle common formatting
+    cleaned_words = []
+    for word in words:
+        # Remove common punctuation but preserve meaningful characters
+        word_clean = word.strip('.,()[]{}"\'-')
+        
+        # Skip pure numbers, common symbols, and very short words
+        if (word_clean and 
+            not word_clean.isdigit() and 
+            word_clean not in ['#', '$', '%', '*', '+', '=', '|'] and
+            len(word_clean) >= 1):
+            cleaned_words.append(word_clean)
+    
+    if not cleaned_words:
         return None
     
-    # Strategy: Scan through words and find the LONGEST reasonable bank name
-    # We'll look for natural completion points but prefer longer names
+    # Quick reject: if line starts with obvious non-bank terms
+    first_word_lower = cleaned_words[0].lower()
+    if first_word_lower in stop_words_lower:
+        return None
     
-    candidate_names = []
+    # Skip leading numeric prefixes like "1" in "1 First United"
+    start_index = 0
+    if len(cleaned_words) > 1 and cleaned_words[0].isdigit():
+        start_index = 1
     
-    # Scan through possible ending points
-    for i in range(1, min(len(words), 10)):  # Check up to 9 words
-        word_lower = words[i].lower().rstrip('.,')
+    # Improved strategy: Build bank name word by word, handling complex patterns
+    bank_words = []
+    i = start_index
+    
+    while i < len(cleaned_words) and len(bank_words) < 10:  # Increased limit for complex names
+        word = cleaned_words[i]
+        word_lower = word.lower()
         
-        # Immediate stop at obvious non-bank words
-        if word_lower in stop_words:
-            if i > 0:
-                candidate_names.append(' '.join(words[:i]))
+        # Stop at obvious non-bank words
+        if word_lower in stop_words_lower:
             break
         
-        # If we hit a strong ending word, this could be an ending point
+        # Add this word
+        bank_words.append(word)
+        
+        # Check if this looks like a potential end, but be more generous
+        # Only stop at strong endings if they are truly at the end of the bank name context
         if word_lower in strong_endings:
-            # Check if there are connecting words after this that might extend the name
-            has_extension = False
-            if i + 1 < len(words):
-                next_word = words[i + 1].lower().rstrip('.,')
-                # If next word is a connector, keep going
-                if next_word in connecting_words:
-                    has_extension = True
-                    # Look for the next logical ending after the connector
-                    for j in range(i + 2, min(len(words), i + 6)):  # Look ahead up to 4 more words
-                        future_word = words[j].lower().rstrip('.,')
-                        if future_word in stop_words:
-                            candidate_names.append(' '.join(words[:j]))
-                            break
-                        elif future_word in strong_endings:
-                            candidate_names.append(' '.join(words[:j+1]))
-                            break
-                    else:
-                        # No clear ending found, take a reasonable length
-                        candidate_names.append(' '.join(words[:min(i + 5, len(words))]))
+            # Look ahead to see if we should continue
+            lookahead_start = i + 1
+            should_continue = False
+            words_to_add = []
             
-            # Always add the current ending as a candidate
-            if not has_extension or not candidate_names:
-                candidate_names.append(' '.join(words[:i+1]))
-    
-    # If no candidates found, try some fallback logic
-    if not candidate_names:
-        # Special case: If line starts with "Bank of [Something]", be more generous
-        if len(words) >= 3 and words[0].lower() == 'bank' and words[1].lower() in connecting_words:
-            # Take up to 8 words for "Bank of X Y Z..." patterns
-            for i in range(3, min(len(words), 9)):
-                word_lower = words[i].lower().rstrip('.,')
-                if word_lower in stop_words:
-                    candidate_names.append(' '.join(words[:i]))
+            # Check for common patterns that should extend the bank name
+            remaining_words = cleaned_words[lookahead_start:]
+            
+            # Don't treat words like "National" or "Federal" as endings if they're followed by "Bank"
+            if (word_lower in ['national', 'federal', 'first', 'second', 'third'] and
+                len(remaining_words) >= 1 and
+                remaining_words[0].lower() in strong_endings):
+                # Continue without stopping - these are descriptors, not endings
+                pass
+            
+            # Pattern 1: "Bank of [Place]" 
+            elif (len(remaining_words) >= 2 and 
+                  remaining_words[0].lower() in connecting_words and
+                  remaining_words[1][0].isupper() and
+                  len(remaining_words[1]) >= 3 and
+                  remaining_words[1].lower() not in stop_words_lower):
+                
+                words_to_add = [remaining_words[0], remaining_words[1]]
+                should_continue = True
+                
+                # Also check for "Bank of the West" pattern
+                if (len(remaining_words) >= 3 and 
+                    remaining_words[0].lower() == 'of' and
+                    remaining_words[1].lower() == 'the' and
+                    remaining_words[2][0].isupper() and
+                    remaining_words[2].lower() not in stop_words_lower):
+                    words_to_add = [remaining_words[0], remaining_words[1], remaining_words[2]]
+            
+            # Pattern 2: "Credit Union" or "Federal Savings Association"
+            elif (len(remaining_words) >= 1 and 
+                  remaining_words[0].lower() in strong_endings):
+                
+                if word_lower in ['credit', 'savings', 'federal', 'national']:
+                    words_to_add = [remaining_words[0]]
+                    should_continue = True
+                    
+                    # Check for three-word endings like "Savings and Loan"
+                    if (len(remaining_words) >= 3 and
+                        remaining_words[1].lower() == 'and' and
+                        remaining_words[2].lower() in strong_endings):
+                        words_to_add = [remaining_words[0], remaining_words[1], remaining_words[2]]
+            
+            # Pattern 3: "and Trust Company" or "and Trust"
+            elif (len(remaining_words) >= 2 and 
+                  remaining_words[0].lower() == 'and' and
+                  remaining_words[1].lower() in strong_endings):
+                
+                words_to_add = [remaining_words[0], remaining_words[1]]
+                should_continue = True
+                
+                # Check for "and Trust Company"
+                if (len(remaining_words) >= 3 and
+                    remaining_words[2].lower() in strong_endings):
+                    words_to_add = [remaining_words[0], remaining_words[1], remaining_words[2]]
+            
+            # Only stop if we found a real ending pattern or have enough words
+            elif (word_lower in ['bank', 'union', 'company', 'corporation', 'association'] or 
+                  len(bank_words) >= 6):
+                # Add the additional words if we found a pattern
+                if should_continue and words_to_add:
+                    bank_words.extend(words_to_add)
+                    i += len(words_to_add)
+                # Stop after handling the pattern
+                break
+            
+            # Add the additional words if we found a pattern but continue processing
+            if should_continue and words_to_add:
+                bank_words.extend(words_to_add)
+                i += len(words_to_add)
+                
+                # If we just added "of Place" or similar, this is probably the end
+                if words_to_add[0].lower() == 'of':
                     break
-            else:
-                candidate_names.append(' '.join(words[:min(8, len(words))]))
         
-        # Fallback: if reasonable length, take the whole line
-        elif len(words) <= 8 and len(line) <= 80:
-            candidate_names.append(line.strip())
+        i += 1
     
-    # Select the best candidate (prefer longer names that look complete)
-    if candidate_names:
-        # Remove duplicates and sort by length (prefer longer)
-        unique_candidates = list(set(candidate_names))
-        unique_candidates.sort(key=len, reverse=True)
+    # Final validation and cleanup
+    if bank_words:
+        bank_name = ' '.join(bank_words)
         
-        # Return the longest candidate that looks reasonable
-        for candidate in unique_candidates:
-            # Basic validation
-            if (2 <= len(candidate) <= 80 and 
-                any(c.isalpha() for c in candidate) and
-                len(candidate.split()) >= 1):
-                return candidate.strip()
+        # Basic validation
+        if (3 <= len(bank_name) <= 100 and  # Increased max length for complex names
+            any(c.isalpha() for c in bank_name) and  # Contains letters
+            len(bank_words) <= 10 and  # Not too many words
+            not bank_name.lower().strip() in stop_words_lower):  # Not entirely a stop word
+            
+            return bank_name.strip()
     
     return None
 
 def extract_bank_name_from_words(words):
-    """Extract bank name from a list of words looking for natural boundaries"""
+    """Extract bank name from a list of words using comprehensive boundary detection"""
     if not words:
         return None
     
-    # Start with first word and keep adding until we hit a logical stop
-    bank_words = []
+    # Use the same comprehensive stop words as the line-based function
+    stop_words = set([
+        # Document/Report terms
+        'report', 'statement', 'summary', 'document', 'page', 'dated', 'period', 'ending',
+        # Account/Financial terms  
+        'account', 'balance', 'routing', 'number', 'type', 'checking', 'savings', 'deposit',
+        'transaction', 'transactions', 'activity', 'beginning', 'ending', 'current', 'available',
+        # Address components
+        'p.o.', 'po', 'box', 'street', 'st', 'avenue', 'ave', 'road', 'rd', 'drive', 'dr',
+        'blvd', 'boulevard', 'lane', 'ln', 'circle', 'cir', 'court', 'ct', 'suite', 'ste',
+        'floor', 'apt', 'apartment', 'unit', 'building', 'bldg', 'plaza', 'place', 'pl',
+        # Contact information
+        'phone', 'tel', 'telephone', 'fax', 'email', 'website', 'www', 'http', 'https',
+        'contact', 'call', 'customer', 'service', 'support', 'help', 'assistance',
+        # Marketing/Slogan terms
+        'spend', 'life', 'wisely', 'slogan', 'motto', 'tagline', 'welcome', 'thank', 'thanks',
+        'serving', 'proudly', 'committed', 'dedicated', 'excellence', 'quality', 'premier',
+        'leading', 'trusted', 'established', 'since', 'founded', 'years', 'experience',
+        # Regulatory/Legal terms
+        'member', 'fdic', 'equal', 'housing', 'lender', 'opportunity', 'insured', 'deposits',
+        'regulation', 'compliance', 'terms', 'conditions', 'privacy', 'policy', 'notice',
+        # Time/Date terms
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+        'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+        'september', 'october', 'november', 'december', 'am', 'pm', 'hours', 'open',
+        # Geographic/Location terms
+        'located', 'headquarters', 'branch', 'branches', 'office', 'offices', 'location',
+        'locations', 'main', 'downtown', 'north', 'south', 'east', 'west', 'central',
+        # Header/Footer terms
+        'return', 'service', 'requested', 'postmaster', 'mail', 'postal', 'zip', 'code'
+    ])
+    
+    stop_words_lower = {word.lower() for word in stop_words}
+    
+    # Clean words and skip leading numbers
+    cleaned_words = []
+    start_index = 0
     
     for i, word in enumerate(words):
-        word_clean = word.strip('.,')
+        word_clean = word.strip('.,()[]{}"\'-')
+        if word_clean and len(word_clean) >= 1:
+            cleaned_words.append(word_clean)
+        
+        # Skip leading numbers like "1" in "1 First United"
+        if i == 0 and word_clean.isdigit() and len(words) > 1:
+            start_index = 1
+    
+    if not cleaned_words or start_index >= len(cleaned_words):
+        return None
+    
+    # Build bank name until hitting a boundary
+    bank_words = []
+    
+    # Strong endings that indicate a complete bank name
+    strong_endings = ['bank', 'union', 'financial', 'trust', 'services', 'corp', 'corporation', 
+                     'company', 'credit', 'savings', 'loan', 'association', 'federal', 'national']
+    
+    for i in range(start_index, min(len(cleaned_words), start_index + 8)):  # Limit to 8 words max
+        word_clean = cleaned_words[i]
         word_lower = word_clean.lower()
         
-        # Stop words that indicate end of bank name
-        if word_lower in ['report', 'statement', 'date', 'page', 'account', 'balance', 'type', 'currency']:
+        # Stop at obvious non-bank words
+        if word_lower in stop_words_lower:
             break
             
         # Add this word to potential bank name
         bank_words.append(word_clean)
         
         # Check if this looks like a natural ending for a bank name
-        if word_lower in ['bank', 'union', 'financial', 'trust', 'services', 'corp', 'corporation', 'company', 'co']:
-            # This is likely the end of the bank name
-            break
-            
-        # Don't let bank names get too long
-        if len(bank_words) >= 6:
+        if word_lower in strong_endings:
+            # This is likely the end of the bank name - stop here
             break
     
     if bank_words:
         bank_name = ' '.join(bank_words)
         # Basic validation - should be reasonable length and contain letters
-        if 2 <= len(bank_name) <= 50 and any(c.isalpha() for c in bank_name):
+        if (2 <= len(bank_name) <= 80 and 
+            any(c.isalpha() for c in bank_name) and
+            len(bank_words) <= 8 and  # More generous length limit
+            not bank_name.lower().strip() in stop_words_lower):
             return bank_name
     
     return None
@@ -738,9 +889,117 @@ def extract_digits_from_account(account_str):
     # Otherwise return as-is
     return str(account_str)
 
+def extract_account_number_openai(text):
+    """
+    Use OpenAI to extract account number from bank statement text
+    More robust than regex for complex patterns and variations
+    """
+    print_and_log("🤖 Using OpenAI for account number extraction...")
+    
+    try:
+        # Get Azure OpenAI configuration from environment
+        endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+        api_key = os.getenv('AZURE_OPENAI_KEY')
+        deployment = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+        
+        if not endpoint or not api_key or not deployment:
+            print_and_log("❌ Azure OpenAI configuration missing for account extraction")
+            return None
+        
+        # Set up Azure OpenAI client
+        client = AzureOpenAI(
+            azure_endpoint=endpoint,
+            api_key=api_key,
+            api_version="2024-10-21"
+        )
+        
+        prompt = f"""You are an expert at extracting account numbers from bank statement text.
+
+Your task: Extract the PRIMARY account number from this bank statement text.
+
+Rules:
+1. Look for account numbers in these formats:
+   - Masked: XXXXXX2101, ***1234, ####5678, ••••5432
+   - Numeric: 123456789, 1234567890123
+   - Alphanumeric: ABC123456789, DEF789456
+   - Partial: "last 8876", "ending in 2101", "ends with 5678"
+
+2. Priority order (return the HIGHEST priority match found):
+   - Masked account numbers (XXXXXX2101) - HIGHEST PRIORITY
+   - Full numeric account numbers (123456789)
+   - Alphanumeric account numbers (ABC123456789)
+   - Partial account references (convert to masked format: "last 8876" → "XXXXXX8876")
+
+3. Ignore these (they are NOT account numbers):
+   - Phone numbers (800-333-6896, 1-800-BANK, etc.)
+   - Routing numbers (9-digit bank codes, often starting with 0,1,2,3)
+   - Check numbers, transaction amounts, dates, page numbers
+   - Social Security Numbers (XXX-XX-1234)
+   - ZIP codes, confirmation numbers, transaction IDs
+
+4. Return format:
+   - For masked accounts: Return exactly as shown (e.g., "XXXXXX2101")
+   - For full accounts: Return the clean number (e.g., "123456789")
+   - For partial accounts: Convert to masked format (e.g., "XXXXXX8876")
+   - If none found: Return "NONE"
+
+5. Context clues to help identify account numbers:
+   - Words like "Account Number:", "Account:", "Acct #:", "A/C #:"
+   - Usually appears near customer name, address, or statement header
+   - NOT near "Customer Service", "Call", "Phone", "Contact"
+
+Text to analyze:
+{text}
+
+Account Number:"""
+
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=[
+                {"role": "system", "content": "You are an expert at extracting account numbers from bank statements. Be precise and follow the rules exactly. Return only the account number, no explanation."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=100,
+            temperature=0.1
+        )
+        
+        result = response.choices[0].message.content.strip()
+        
+        if result.upper() == "NONE":
+            print_and_log("🤖 OpenAI: No account number found")
+            return None
+        
+        # Clean up the response - remove any explanatory text
+        lines = result.split('\n')
+        for line in lines:
+            line = line.strip()
+            if line and not line.lower().startswith(('the ', 'account ', 'extracted', 'found', 'result:', 'answer:')):
+                print_and_log(f"🤖 OpenAI extracted account number: {line}")
+                return line
+        
+        print_and_log(f"🤖 OpenAI extracted account number: {result}")
+        return result
+        
+    except Exception as e:
+        print_and_log(f"❌ OpenAI account extraction error: {e}")
+        return None
+
 def extract_account_number_from_text(text):
-    """Extract account number from bank statement text using regex patterns - prioritize masked accounts"""
+    """Extract account number from bank statement text using AI-enhanced approach"""
     print_and_log("🔍 Searching for account number in statement text...")
+    
+    # First try OpenAI extraction for better accuracy
+    openai_result = extract_account_number_openai(text)
+    if openai_result:
+        return openai_result
+    
+    # Fallback to regex extraction if OpenAI fails
+    print_and_log("🔄 Falling back to regex-based extraction...")
+    return extract_account_number_regex(text)
+
+def extract_account_number_regex(text):
+    """Extract account number from bank statement text using regex patterns - prioritize masked accounts"""
+    print_and_log("🔍 Using regex for account number extraction...")
     
     # PRIORITY 1: Masked account patterns (highest priority)
     masked_patterns = [
@@ -753,7 +1012,19 @@ def extract_account_number_from_text(text):
         r'ending\s*in\s+([X*#]*\d{4,})(?:\s|$)',  # "Ending in 2101" or "Ending in ***2101"
     ]
     
-    # PRIORITY 2: Numeric patterns (medium priority)
+    # PRIORITY 2: Last digits patterns (enhanced for "last 8876" etc.)
+    last_digits_patterns = [
+        r'last\s+(\d{4,})(?:\s|$)',  # "last 8876"
+        r'ending\s+in\s+(\d{4,})(?:\s|$)',  # "ending in 8876"
+        r'ends\s+with\s+(\d{4,})(?:\s|$)',  # "ends with 8876" 
+        r'last\s+four\s+digits?\s+(\d{4,})(?:\s|$)',  # "last four digits 8876"
+        r'final\s+(\d{4,})(?:\s|$)',  # "final 8876"
+        r'ending\s+(\d{4,})(?:\s|$)',  # "ending 8876"
+        r'(\d{4,})\s+digits?(?:\s|$)',  # "8876 digits"
+        r'digits?\s+(\d{4,})(?:\s|$)',  # "digits 8876"
+    ]
+    
+    # PRIORITY 3: Numeric patterns (medium priority)
     numeric_patterns = [
         r'account\s*#?\s*:?\s*(\d{6,})(?:\s|$)',  # "Account #: 123456789" (numeric only)
         r'account\s*number\s*:?\s*(\d{6,})(?:\s|$)',  # "Account number: 123456789" (numeric only)
@@ -763,7 +1034,7 @@ def extract_account_number_from_text(text):
         r'(?:^|\s)(\d{6,12})(?:\s|$)',  # Any 6-12 digit number (standalone)
     ]
     
-    # PRIORITY 3: General text patterns (lowest priority)
+    # PRIORITY 4: General text patterns (lowest priority)
     text_patterns = [
         r'account\s*#?\s*:?\s*([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Account #: ABC123456789" 
         r'account\s*number\s*:?\s*([A-Za-z0-9\-\*X#]+)(?:\s|$)',  # "Account number: ABC123456789"
@@ -799,7 +1070,18 @@ def extract_account_number_from_text(text):
             else:
                 print_and_log(f"❌ Not a valid masked account: {clean_match}")
     
-    # PRIORITY 2: Try numeric patterns (medium priority)
+    # PRIORITY 2: Try last digits patterns
+    print_and_log("🔢 Searching for LAST DIGITS patterns...")
+    for pattern in last_digits_patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        for match in matches:
+            # Validate it's 4+ digits and not a phone number
+            if len(match) >= 4 and not match.startswith(('800', '888', '877', '866')):
+                masked_account = f"XXXXXX{match}"
+                print_and_log(f"✅ Found LAST DIGITS pattern: '{match}' -> '{masked_account}'")
+                return masked_account
+    
+    # PRIORITY 3: Try numeric patterns (medium priority)
     print_and_log("🔢 Searching for NUMERIC account patterns...")
     for pattern in numeric_patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
@@ -810,7 +1092,7 @@ def extract_account_number_from_text(text):
             else:
                 print_and_log(f"❌ Found invalid numeric account number: {match} - rejected")
     
-    # PRIORITY 3: Try text patterns (lowest priority)
+    # PRIORITY 4: Try text patterns (lowest priority)
     print_and_log("📝 Searching for TEXT account patterns...")
     for pattern in text_patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
@@ -915,12 +1197,16 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
     """Create a minimal BAI2 file with detailed error message and diagnostics"""
     print_and_log(f"❌ Creating ERROR BAI2 file: {error_message}")
     
-    # Map error messages to specific error codes
+    # Map error messages to specific error codes with enhanced detection
     if error_code is None:
         error_lower = error_message.lower()
-        if "routing number" in error_lower:
+        if "multiple accounts" in error_lower and "low similarity" in error_lower:
+            error_code = "ERROR_MULTIPLE_ACCOUNTS_LOW_SIMILARITY"
+        elif "multiple accounts" in error_lower and "no bank" in error_lower:
+            error_code = "ERROR_MULTIPLE_ACCOUNTS_NO_BANK"
+        elif "routing number" in error_lower:
             error_code = "ERROR_NO_ROUTING"
-        elif "account number" in error_lower:
+        elif "account number" in error_lower or "account not found" in error_lower:
             error_code = "ERROR_NO_ACCOUNT"
         elif "bank name" in error_lower:
             error_code = "ERROR_NO_BANK_NAME"
@@ -932,6 +1218,14 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
             error_code = "ERROR_NETWORK_FAILED"
         elif "timeout" in error_lower:
             error_code = "ERROR_TIMEOUT"
+        elif "rate limit" in error_lower or "429" in error_lower:
+            error_code = "ERROR_RATE_LIMITED"
+        elif "memory" in error_lower:
+            error_code = "ERROR_MEMORY_EXCEEDED"
+        elif "authentication" in error_lower or "401" in error_lower or "403" in error_lower:
+            error_code = "ERROR_AUTH_FAILED"
+        elif "keyerror" in error_lower or "indexerror" in error_lower or "attributeerror" in error_lower:
+            error_code = "ERROR_DATA_FORMAT"
         elif "processing failed" in error_lower:
             error_code = "ERROR_PROCESSING_FAILED"
         else:
@@ -2260,22 +2554,54 @@ def process_new_file(event: func.EventGridEvent):
                         print_and_log(f"   Routing Number: {enhanced_routing_number}")
                         print_and_log(f"   Match Type: {match_type}")
                     else:
-                        print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
-                        print_and_log(f"❌ Account '{statement_account}' not found in WAC database")
-                        print_and_log(f"❌ POLICY VIOLATION: Only WAC operational accounts are allowed")
-                        print_and_log(f"❌ Creating ERROR file - customer accounts not permitted")
+                        # Handle specific error cases with appropriate error codes
+                        match_type = result[2] if result and len(result) >= 3 else "unknown"
                         
-                        # Create error BAI2 file immediately
+                        if match_type == "multiple_accounts_low_similarity":
+                            print_and_log(f"❌ MULTIPLE ACCOUNT MATCHES - INSUFFICIENT BANK NAME SIMILARITY")
+                            print_and_log(f"   Multiple accounts end with same digits as '{statement_account}'")
+                            print_and_log(f"   Bank name '{bank_name}' similarity below 50% threshold")
+                            print_and_log(f"   Cannot uniquely identify correct WAC operational account")
+                            error_code = "ERROR_MULTIPLE_ACCOUNTS_LOW_SIMILARITY"
+                            error_message = f"Multiple WAC accounts end with same digits. Bank name '{bank_name}' similarity below 50% threshold. Cannot uniquely identify account."
+                            
+                        elif match_type == "multiple_accounts_no_bank_name":
+                            print_and_log(f"❌ MULTIPLE ACCOUNT MATCHES - NO BANK NAME FOR DISAMBIGUATION")
+                            print_and_log(f"   Multiple accounts end with same digits as '{statement_account}'")
+                            print_and_log(f"   No bank name provided for disambiguation")
+                            print_and_log(f"   Cannot uniquely identify correct WAC operational account")
+                            error_code = "ERROR_MULTIPLE_ACCOUNTS_NO_BANK"
+                            error_message = f"Multiple WAC accounts end with same digits. No bank name available for disambiguation."
+                            
+                        elif match_type == "no_account_match":
+                            print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+                            print_and_log(f"   Account '{statement_account}' not found in WAC database")
+                            print_and_log(f"   POLICY VIOLATION: Only WAC operational accounts are allowed")
+                            error_code = "ERROR_NO_ACCOUNT"
+                            error_message = f"Account not found in WAC operational database. Only WAC operational accounts are permitted for processing."
+                            
+                        else:
+                            print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+                            print_and_log(f"   Account '{statement_account}' not found in WAC database")
+                            print_and_log(f"   POLICY VIOLATION: Only WAC operational accounts are allowed")
+                            print_and_log(f"   Match type: {match_type}")
+                            error_code = "ERROR_NO_ACCOUNT"
+                            error_message = f"Account not found in WAC operational database. Only WAC operational accounts are permitted for processing."
+                        
+                        print_and_log(f"❌ Creating ERROR file - {error_message}")
+                        
+                        # Create error BAI2 file immediately with specific error code
                         from datetime import datetime
                         now = datetime.now()
                         file_date = now.strftime("%y%m%d")
                         file_time = now.strftime("%H%M")
                         
                         error_bai2 = create_error_bai2_file(
-                            "Account not found in WAC operational database. Only WAC operational accounts are permitted for processing.",
+                            error_message,
                             name,
                             file_date,
-                            file_time
+                            file_time,
+                            error_code
                         )
                         
                         # Save error file and return early
@@ -2529,16 +2855,45 @@ def process_new_file(event: func.EventGridEvent):
             
             # Determine error code based on exception type or message
             error_message = str(e)
+            exception_type = type(e).__name__
+            
+            # Enhanced error classification with exception types
             if "Document Intelligence" in error_message or "docintelligence" in error_message.lower():
                 error_code = "ERROR_DOC_INTEL_FAILED"
             elif "OpenAI" in error_message or "openai" in error_message.lower():
                 error_code = "ERROR_PARSING_FAILED"
             elif "connection" in error_message.lower() or "network" in error_message.lower():
                 error_code = "ERROR_NETWORK_FAILED"
-            elif "timeout" in error_message.lower():
+            elif "timeout" in error_message.lower() or exception_type in ["TimeoutError", "TimeoutException"]:
                 error_code = "ERROR_TIMEOUT"
+            elif exception_type in ["KeyError", "IndexError", "AttributeError"]:
+                error_code = "ERROR_DATA_FORMAT"
+                print_and_log(f"🐛 DATA FORMAT ERROR: {exception_type} - {error_message}")
+            elif exception_type in ["MemoryError"]:
+                error_code = "ERROR_MEMORY_EXCEEDED"
+                print_and_log(f"🐛 MEMORY ERROR: PDF likely too large - {error_message}")
+            elif "rate limit" in error_message.lower() or "429" in error_message:
+                error_code = "ERROR_RATE_LIMITED"
+                print_and_log(f"🐛 RATE LIMIT ERROR: API throttled - {error_message}")
+            elif "401" in error_message or "403" in error_message or "authentication" in error_message.lower():
+                error_code = "ERROR_AUTH_FAILED"
+                print_and_log(f"🐛 AUTH ERROR: Check API keys - {error_message}")
             else:
-                error_code = "ERROR_PROCESSING_FAILED"
+                error_code = "ERROR_UNKNOWN"
+                print_and_log(f"🐛 UNKNOWN ERROR TYPE: {exception_type}")
+                print_and_log(f"🐛 FULL ERROR MESSAGE: {error_message}")
+                
+                # Add full traceback for unknown errors
+                import traceback
+                full_trace = traceback.format_exc()
+                print_and_log(f"🐛 FULL TRACEBACK:")
+                for line in full_trace.split('\n'):
+                    if line.strip():
+                        print_and_log(f"   {line}")
+                        
+            # Always log the exception type and details for debugging
+            print_and_log(f"🔍 EXCEPTION TYPE: {exception_type}")
+            print_and_log(f"🔍 ERROR CODE: {error_code}")
             
             error_bai2_content = create_error_bai2_file(
                 f"Processing failed: {error_message}",
