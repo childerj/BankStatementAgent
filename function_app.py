@@ -1158,6 +1158,18 @@ def is_valid_account_number(account_number):
             print_and_log(f"❌ Not enough digits in masked account: '{digits_only}' (need at least 3)")
             return False
     
+    # For hyphenated account numbers, validate the digits
+    if '-' in account_str:
+        print_and_log(f"🔍 Found hyphenated account number: '{account_str}' -> extracting digits: '{digits_only}'")
+        
+        # Validate we have enough digits
+        if len(digits_only) >= 4:  # At least 4 digits for hyphenated accounts
+            print_and_log(f"✅ Valid hyphenated account: '{account_str}' with {len(digits_only)} digits")
+            return True
+        else:
+            print_and_log(f"❌ Not enough digits in hyphenated account: '{digits_only}' (need at least 4)")
+            return False
+    
     # For non-masked numbers, use the original validation logic
     clean_account = account_str.replace("-", "").replace(" ", "").replace("_", "")
     if len(clean_account) < 4:
@@ -1193,7 +1205,7 @@ def is_valid_account_number(account_number):
     print_and_log(f"✅ Account number validation passed: '{account_str}' -> '{clean_account}'")
     return True
 
-def create_error_bai2_file(error_message, filename, file_date, file_time, error_code=None):
+def create_error_bai2_file(error_message, filename, file_date, file_time, error_code=None, diagnostic_info=None):
     """Create a minimal BAI2 file with detailed error message and diagnostics"""
     print_and_log(f"❌ Creating ERROR BAI2 file: {error_message}")
     
@@ -1235,6 +1247,172 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
     
     lines = []
     
+    # Add plain language comments explaining the error
+    lines.append("# ========================================")
+    lines.append("# ERROR BAI2 FILE - PROCESSING FAILED")
+    lines.append("# ========================================")
+    lines.append(f"# File: {filename}")
+    lines.append(f"# Date: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"# Error Code: {error_code}")
+    lines.append("#")
+    lines.append("# WHAT HAPPENED:")
+    lines.append(f"# {error_message}")
+    lines.append("#")
+    
+    # Add specific diagnostic information based on error type
+    if error_code == "ERROR_NO_ACCOUNT":
+        lines.append("# PROBLEM: Could not find a valid account number")
+        lines.append("# This means the system looked for account numbers in the document but:")
+        lines.append("# - No clearly labeled account numbers were found (like 'Account Number: 123456')")
+        lines.append("# - Document Intelligence didn't extract a valid account number")
+        lines.append("# - Any numbers found were too short, contained invalid characters, or failed validation")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Does the document clearly show an account number?")
+        lines.append("# 2. Is the account number at least 4 digits long?")
+        lines.append("# 3. Is the document text clear and readable?")
+        lines.append("# 4. Is this account number in the WAC Bank database?")
+        
+    elif error_code == "ERROR_NO_ROUTING":
+        lines.append("# PROBLEM: Could not find routing number for this bank/account combination")
+        lines.append("# The system found the account number but this specific bank and account")
+        lines.append("# combination is not in the WAC Bank Information database.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Is this a new bank that needs to be added to the WAC database?")
+        lines.append("# 2. Is this a new account for an existing bank?")
+        lines.append("# 3. Is the bank name being read correctly from the document?")
+        lines.append("# 4. Does the account number match exactly what's in the WAC database?")
+        
+    elif error_code == "ERROR_NO_BANK_NAME":
+        lines.append("# PROBLEM: Could not identify the bank name from the document")
+        lines.append("# The system needs to know which bank this statement is from")
+        lines.append("# to look up the correct routing number in the WAC database.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Is the bank name clearly visible at the top of the statement?")
+        lines.append("# 2. Is the document image clear and readable?")
+        lines.append("# 3. Is this bank in the WAC Bank Information database?")
+        
+    elif error_code == "ERROR_MULTIPLE_ACCOUNTS_LOW_SIMILARITY":
+        lines.append("# PROBLEM: Multiple WAC accounts found with same ending digits")
+        lines.append("# The system found several WAC operational accounts that end with")
+        lines.append("# the same digits as the account number on your statement.")
+        lines.append("# The bank name similarity is too low to determine which one is correct.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Verify the bank name is clearly readable on the statement")
+        lines.append("# 2. Check if this is the correct bank (ensure bank name matches WAC database)")
+        lines.append("# 3. Confirm the full account number is correct")
+        lines.append("# 4. If account is masked (XXXXXX1234), ensure last 4 digits are correct")
+        
+    elif error_code == "ERROR_MULTIPLE_ACCOUNTS_NO_BANK":
+        lines.append("# PROBLEM: Multiple WAC accounts found but no bank name for disambiguation")
+        lines.append("# The system found several WAC operational accounts that end with")
+        lines.append("# the same digits as the account number on your statement.")
+        lines.append("# No bank name was extracted to determine which account is correct.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Ensure the bank name is clearly visible on the statement")
+        lines.append("# 2. Check if the document quality is good enough to read bank name")
+        lines.append("# 3. Verify the statement follows standard bank statement format")
+        lines.append("# 4. If account is masked (XXXXXX1234), ensure last 4 digits are correct")
+        
+    elif error_code.startswith("ERROR_AI") or error_code.startswith("ERROR_OPENAI"):
+        lines.append("# PROBLEM: AI processing failed")
+        lines.append("# The OpenAI system that converts bank statements to BAI2 format")
+        lines.append("# encountered an error while processing this document.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Is the document text clear and readable?")
+        lines.append("# 2. Does the statement have a standard format?")
+        lines.append("# 3. Are there any unusual characters or formatting?")
+        
+    elif error_code == "ERROR_DOC_INTEL_FAILED":
+        lines.append("# PROBLEM: Document Intelligence failed to extract data")
+        lines.append("# Azure Document Intelligence could not read the document properly.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Is the document a clear, readable PDF?")
+        lines.append("# 2. Is the document in a standard bank statement format?")
+        lines.append("# 3. Is the file size reasonable (not too large)?")
+        
+    else:
+        lines.append("# PROBLEM: Unknown processing error")
+        lines.append("# An unexpected error occurred during processing.")
+        lines.append("#")
+        lines.append("# WHAT TO CHECK:")
+        lines.append("# 1. Try processing the document again")
+        lines.append("# 2. Check if the document format is supported")
+        lines.append("# 3. Contact support if the problem persists")
+    
+    lines.append("#")
+    lines.append("# TECHNICAL DETAILS:")
+    
+    # Add diagnostic information if provided
+    if diagnostic_info:
+        lines.append("# EXTRACTED DATA:")
+        for key, value in diagnostic_info.items():
+            # Format the diagnostic info nicely
+            if key == "extracted_accounts":
+                lines.append(f"# Account Numbers Found: {', '.join(value) if value else 'None'}")
+            elif key == "extracted_bank_names":
+                lines.append(f"# Bank Names Found: {', '.join(value) if value else 'None'}")
+            elif key == "document_intelligence_fields":
+                lines.append(f"# Document Intelligence Fields: {len(value)} fields extracted")
+                for field_name, field_content in value.items():
+                    lines.append(f"#   {field_name}: {field_content}")
+            elif key == "ocr_lines_count":
+                lines.append(f"# OCR Text Lines: {value} lines extracted")
+            elif key == "wac_database_matches":
+                if value:
+                    lines.append(f"# WAC Database Candidate Accounts:")
+                    for i, match in enumerate(value, 1):
+                        account = match.get('account', 'N/A')
+                        bank = match.get('bank', 'N/A')
+                        routing = match.get('routing', 'N/A')
+                        similarity = match.get('similarity', 0.0)
+                        lines.append(f"#   {i}. Account: {account}")
+                        lines.append(f"#      Bank: {bank}")
+                        lines.append(f"#      Routing: {routing}")
+                        if isinstance(similarity, (int, float)):
+                            lines.append(f"#      Similarity: {similarity*100:.1f}%")
+                        else:
+                            lines.append(f"#      Similarity: {similarity}")
+                        lines.append("#")
+                else:
+                    lines.append(f"# WAC Database Matches: None found")
+            elif key == "bank_name_confidence":
+                lines.append(f"# Bank Name Confidence: {value}%")
+            elif key == "account_extraction_method":
+                lines.append(f"# Account Extraction Method: {value}")
+            elif key == "error_details":
+                lines.append(f"# Detailed Error: {value}")
+            elif key == "extracted_account":
+                lines.append(f"# Extracted Account Number: {value}")
+            elif key == "extracted_bank":
+                lines.append(f"# Extracted Bank Name: {value}")
+            elif key == "match_type":
+                lines.append(f"# WAC Match Type: {value}")
+            elif key == "candidate_count":
+                lines.append(f"# Number of Candidate Accounts: {value}")
+            elif key == "best_similarity":
+                lines.append(f"# Best Bank Name Similarity: {value}")
+            elif key == "similarity_threshold":
+                lines.append(f"# Required Similarity Threshold: {value}")
+            elif key == "ending_digits":
+                lines.append(f"# Account Ending Digits: {value}")
+            else:
+                lines.append(f"# {key}: {value}")
+    else:
+        lines.append("# No diagnostic data available")
+    
+    lines.append("#")
+    lines.append("# This file can be sent to Workday but will show as an error.")
+    lines.append("# Please fix the issues above and reprocess the document.")
+    lines.append("# ========================================")
+    lines.append("")
+    
     # 01 - File Header (minimal structure)
     lines.append(f"01,ERROR,WORKDAY,{file_date},{file_time},1,,,2/")
     
@@ -1260,7 +1438,7 @@ def create_error_bai2_file(error_message, filename, file_date, file_time, error_
     lines.append(f"98,0,1,{group_record_count_inclusive}/")
     
     # 99 - File Trailer - include itself and number of groups (4 fields)
-    total_file_records = len(lines) + 1  # includes the 99 itself
+    total_file_records = len(lines) - len([l for l in lines if l.startswith('#') or l.strip() == '']) + 1  # Only count BAI2 lines + the 99 itself
     lines.append(f"99,0,1,{total_file_records}/")
     
     return "\n".join(lines) + "\n"
@@ -1269,17 +1447,19 @@ def extract_labeled_account_number(text):
     """Extract account number that is explicitly labeled (highest priority)"""
     print_and_log("🏷️ Looking for explicitly labeled account numbers...")
     
-    # High-priority patterns for explicitly labeled account numbers
+    lines = text.split('\n')
+    
+    # High-priority patterns for explicitly labeled account numbers on same line
     labeled_patterns = [
-        r'account\s*number\s*:?\s*(\d{4,})',   # "Account Number: 123456789" - Allow 4+ digits
-        r'account\s*#\s*:?\s*(\d{4,})',        # "Account #: 123456789" or "Account # 123456789"
-        r'acct\s*#?\s*:?\s*(\d{4,})',          # "Acct #: 123456789" or "Acct: 123456789"
-        r'a/c\s*#?\s*:?\s*(\d{4,})',           # "A/C #: 123456789" or "A/C: 123456789"
-        r'account\s*no\s*\.?\s*:?\s*(\d{4,})', # "Account No.: 123456789" or "Account No .: 123456789" - Allow spaces before period
-        r'account\s*id\s*:?\s*(\d{4,})',       # "Account ID: 123456789"
+        r'account\s*number\s*:?\s*([\d-]{4,})',   # "Account Number: 123456789" or "Account Number: 442-628-4" - Allow 4+ digits with hyphens
+        r'account\s*#\s*:?\s*([\d-]{4,})',        # "Account #: 123456789" or "Account #: 442-628-4"
+        r'acct\s*#?\s*:?\s*([\d-]{4,})',          # "Acct #: 123456789" or "Acct #: 442-628-4"
+        r'a/c\s*#?\s*:?\s*([\d-]{4,})',           # "A/C #: 123456789" or "A/C #: 442-628-4"
+        r'account\s*no\s*\.?\s*:?\s*([\d-]{4,})', # "Account No.: 123456789" or "Account No.: 442-628-4" - Allow spaces before period
+        r'account\s*id\s*:?\s*([\d-]{4,})',       # "Account ID: 123456789" or "Account ID: 442-628-4"
     ]
     
-    # Masked labeled patterns
+    # Masked labeled patterns on same line
     masked_labeled_patterns = [
         r'account\s*number\s*:?\s*([X*]+\d{4,})',   # "Account Number: XXXX1234"
         r'account\s*#\s*:?\s*([X*]+\d{4,})',        # "Account #: XXXX1234"
@@ -1292,14 +1472,18 @@ def extract_labeled_account_number(text):
     partial_patterns = [
         r'ending\s+in\s+(\d{4})',              # "ending in 0327"
         r'ending\s+(\d{4})',                   # "ending 0327"
+        r'ending\s+with\s*:?\s*(\d{4})',       # "ending with: 9918" or "ending with 9918"
+        r'ending\s+with\s*:?\s*\*+\s*(\d{4})', # "ending with: **** 9918"
         r'account\s+ending\s+in\s+(\d{4})',    # "account ending in 0327"
         r'account\s+ending\s+(\d{4})',         # "account ending 0327"
+        r'account\s+ending\s+with\s*:?\s*(\d{4})',     # "account ending with: 9918"
+        r'account\s+ending\s+with\s*:?\s*\*+\s*(\d{4})', # "account ending with: **** 9918"
         r'acct\s+ending\s+in\s+(\d{4})',       # "acct ending in 0327"
         r'acct\s+ending\s+(\d{4})',            # "acct ending 0327"
         r'a/c\s+ending\s+in\s+(\d{4})',        # "a/c ending in 0327"
         r'a/c\s+ending\s+(\d{4})',             # "a/c ending 0327"
         r'last\s+4\s+digits?\s*:?\s*(\d{4})',  # "last 4 digits: 0327"
-        r'(\*{4,}|\#{4,}|x{4,})(\d{4})',       # "****0327" or "XXXX0327"
+        r'(\*{4,}|\#{4,}|x{4,})\s*(\d{4})',    # "****0327" or "**** 9918" or "XXXX0327"
     ]
     
     text_lower = text.lower()
@@ -1315,15 +1499,73 @@ def extract_labeled_account_number(text):
                     print_and_log(f"✅ Found LABELED MASKED account: {clean_match}")
                     return clean_match
     
-    # Then try numeric labeled patterns
+    # Then try numeric labeled patterns on same line
     for pattern in labeled_patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         for match in matches:
-            if is_valid_account_number(match) and len(match) >= 6:
+            # Clean the match but preserve structure for validation
+            clean_match = match.strip()
+            
+            # For hyphenated accounts, keep the hyphens for now
+            if '-' in clean_match:
+                # Validate that it's a reasonable hyphenated account number
+                digits_only = re.sub(r'[^0-9]', '', clean_match)
+                if len(digits_only) >= 4:  # At least 4 digits total
+                    print_and_log(f"✅ Found LABELED HYPHENATED account: {clean_match}")
+                    return clean_match
+            elif is_valid_account_number(match) and len(match) >= 6:
                 print_and_log(f"✅ Found LABELED NUMERIC account: {match}")
                 return match
     
-    # NEW: Try partial account patterns (ending in last 4 digits)
+    # NEW: Multi-line label search - look for account labels and check nearby lines
+    print_and_log("🔍 Searching for account labels with numbers on adjacent lines...")
+    label_patterns = [
+        r'(business\s+checking\s+)?account\s*(number|#|no\.?)\s*',  # "Business Checking Account number" or "Account Number"
+        r'acct\s*(number|#|no\.?)\s*',                             # "Acct Number"
+        r'a/c\s*(number|#|no\.?)\s*',                              # "A/C Number"
+        r'checking\s*account\s*(number|#|no\.?)\s*',               # "Checking Account Number"
+        r'savings\s*account\s*(number|#|no\.?)\s*',                # "Savings Account Number"
+    ]
+    
+    for i, line in enumerate(lines):
+        line_lower = line.lower()
+        for pattern in label_patterns:
+            if re.search(pattern, line_lower, re.IGNORECASE):
+                print_and_log(f"  -> Found 'Account' label on line {i+1}: {line.strip()}")
+                
+                # Check current line for number after the label
+                remainder = re.sub(pattern, '', line_lower, flags=re.IGNORECASE).strip()
+                account_match = re.search(r'(\d{6,})', remainder)
+                if account_match:
+                    account_num = account_match.group(1)
+                    if is_valid_account_number(account_num):
+                        print_and_log(f"  [SUCCESS] Found account on same line: {account_num}")
+                        return account_num
+                
+                # Check next few lines for account numbers
+                for j in range(1, min(4, len(lines) - i)):  # Check next 3 lines
+                    next_line = lines[i + j].strip()
+                    if next_line:
+                        print_and_log(f"  -> Checking line {i+j+1}: {next_line}")
+                        # Look for account numbers at start of line or after common separators
+                        account_patterns = [
+                            r'^(\d{6,})\s',           # Number at start of line
+                            r'^(\d{6,})$',            # Number is entire line
+                            r'^(\d{6,})\s+\w+',       # Number followed by words
+                        ]
+                        
+                        for acc_pattern in account_patterns:
+                            acc_match = re.search(acc_pattern, next_line)
+                            if acc_match:
+                                account_num = acc_match.group(1)
+                                if is_valid_account_number(account_num) and len(account_num) >= 6:
+                                    print_and_log(f"  [SUCCESS] Extracted account number from line {i+j+1}: {account_num}")
+                                    return account_num
+                
+                # Stop after finding first label to avoid false positives
+                break
+    
+    # Try partial account patterns (ending in last 4 digits)
     for pattern in partial_patterns:
         matches = re.findall(pattern, text_lower, re.IGNORECASE)
         for match in matches:
@@ -1345,16 +1587,55 @@ def extract_labeled_account_number(text):
 
 def extract_account_from_ocr_enhanced(text):
     """
-    Enhanced account extraction from OCR text
+    Enhanced account extraction from OCR text - PRIORITIZE HEADER AREA
     - Look for masked account patterns (XXXXX + digits, ***** + digits)
     - Look for "Ending" followed by digits
     - Find any label containing "Account" and extract numbers to the right
+    - PRIORITY: Check first 30 lines (header area) before processing rest
     """
     
-    print_and_log("🔍 Enhanced OCR Account Extraction - looking for masked patterns and Account labels")
+    print_and_log("🔍 Enhanced OCR Account Extraction - PRIORITIZING HEADER AREA first")
     
     lines = text.split('\n')
     print_and_log(f"Processing {len(lines)} lines of OCR text...")
+    
+    # STEP 1: PRIORITY SEARCH - Check first 30 lines (header area) for proper account numbers
+    header_lines = lines[:30]  # Focus on header area first
+    print_and_log(f"🎯 PRIORITY: Checking first {len(header_lines)} lines (header area)...")
+    
+    for line_num, line in enumerate(header_lines, 1):
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+            
+        print_and_log(f"Line {line_num}: {line_stripped}")
+        
+        # Pattern for "ACCOUNT" on one line, followed by account number on next line
+        if re.search(r'^\s*ACCOUNT\s*$', line_stripped, re.IGNORECASE):
+            print_and_log(f"  ➤ Found standalone 'ACCOUNT' label in header")
+            
+            # Check next line for account number
+            if line_num < len(header_lines):
+                next_line = header_lines[line_num].strip()
+                if next_line:
+                    print_and_log(f"  ➤ Checking next line: {next_line}")
+                    
+                    # Pattern for hyphenated account numbers (like 50-550-1)
+                    hyphenated_match = re.match(r'^[^0-9]*([0-9]+-[0-9]+-[0-9]+|[0-9]+-[0-9]+)', next_line)
+                    if hyphenated_match:
+                        account_number = hyphenated_match.group(1)
+                        print_and_log(f"  ✅ SUCCESS: Extracted HYPHENATED account from header: {account_number}")
+                        return account_number
+                    
+                    # Pattern for regular account numbers
+                    number_match = re.match(r'^[^0-9]*([0-9]{4,})', next_line)
+                    if number_match:
+                        account_number = number_match.group(1)
+                        print_and_log(f"  ✅ SUCCESS: Extracted account from header: {account_number}")
+                        return account_number
+    
+    # STEP 2: REGULAR SEARCH - Process all lines for other patterns
+    print_and_log(f"🔍 FALLBACK: Searching all lines for other account patterns...")
     
     for line_num, line in enumerate(lines, 1):
         line_stripped = line.strip()
@@ -1364,27 +1645,27 @@ def extract_account_from_ocr_enhanced(text):
         print_and_log(f"Line {line_num}: {line_stripped}")
         
         # Pattern 1: Look for masked account numbers (X's or *'s followed by digits)
-        masked_pattern = re.search(r'[X*]{3,}(\d{3,})', line_stripped, re.IGNORECASE)
+        masked_pattern = re.search(r'[X*]{3,}(\d{2,})', line_stripped, re.IGNORECASE)
         if masked_pattern:
             account_digits = masked_pattern.group(1)
             print_and_log(f"  ➤ Found masked account pattern: {masked_pattern.group(0)}")
             print_and_log(f"  ✅ Extracted account ending: {account_digits}")
-            return account_digits
+            return f"***{account_digits}"  # Return in masked format
         
-        # Pattern 2: Look for "Ending" followed by digits
-        ending_pattern = re.search(r'\bending\s+(\d{3,})', line_stripped, re.IGNORECASE)
+        # Pattern 2: Look for "Ending" followed by digits (including "ending with")
+        ending_pattern = re.search(r'\bending\s+(?:with\s*:?\s*\*+)?(\d{2,})', line_stripped, re.IGNORECASE)
         if ending_pattern:
             account_digits = ending_pattern.group(1)
             print_and_log(f"  ➤ Found 'Ending' pattern: {ending_pattern.group(0)}")
             print_and_log(f"  ✅ Extracted account ending: {account_digits}")
-            return account_digits
+            return f"***{account_digits}"  # Return in masked format
         
-        # Pattern 3: Look for any variation of "Account" in the line
-        if re.search(r'\baccount\b', line_stripped, re.IGNORECASE):
+        # Pattern 3: Look for any variation of "Account" in the line (non-standalone)
+        if re.search(r'\baccount\b', line_stripped, re.IGNORECASE) and not re.search(r'^\s*ACCOUNT\s*$', line_stripped, re.IGNORECASE):
             print_and_log(f"  ➤ Found 'Account' label")
             
             # Extract everything after "Account" on this line
-            account_match = re.search(r'\baccount\s*[:\-\s]*([0-9X*]+)', line_stripped, re.IGNORECASE)
+            account_match = re.search(r'\baccount\s*[:\-\s#]*([0-9X*\-]+)', line_stripped, re.IGNORECASE)
             if account_match:
                 account_text = account_match.group(1)
                 
@@ -1396,7 +1677,14 @@ def extract_account_from_ocr_enhanced(text):
                         print_and_log(f"  ✅ Extracted account ending from masked pattern: {account_number}")
                         return account_number
                 else:
-                    # Regular account number
+                    # Check for hyphenated account number
+                    if '-' in account_text:
+                        # Validate hyphenated format
+                        if re.match(r'^[0-9]+-[0-9]+-[0-9]+$|^[0-9]+-[0-9]+$', account_text):
+                            print_and_log(f"  ✅ Extracted hyphenated account number: {account_text}")
+                            return account_text
+                    
+                    # Regular account number (digits only)
                     account_number = re.sub(r'[^\d]', '', account_text)
                     if account_number and len(account_number) >= 4:
                         print_and_log(f"  ✅ Extracted full account number: {account_number}")
@@ -1409,10 +1697,17 @@ def extract_account_from_ocr_enhanced(text):
                     print_and_log(f"  ➤ Checking next line: {next_line}")
                     
                     # Check for masked pattern in next line (X's or *'s)
-                    masked_next = re.search(r'[X*]{3,}(\d{3,})', next_line, re.IGNORECASE)
+                    masked_next = re.search(r'[X*]{3,}(\d{2,})', next_line, re.IGNORECASE)
                     if masked_next:
                         account_number = masked_next.group(1)
                         print_and_log(f"  ✅ Extracted account ending from next line masked pattern: {account_number}")
+                        return f"***{account_number}"  # Return in masked format
+                    
+                    # Check for hyphenated account number in next line
+                    hyphenated_next = re.match(r'^[^0-9]*([0-9]+-[0-9]+-[0-9]+|[0-9]+-[0-9]+)', next_line)
+                    if hyphenated_next:
+                        account_number = hyphenated_next.group(1)
+                        print_and_log(f"  ✅ Extracted hyphenated account from next line: {account_number}")
                         return account_number
                     
                     # Extract contiguous numbers from start of next line
@@ -1452,19 +1747,31 @@ def get_account_number(parsed_data):
         raw_account = str(parsed_data["account_number"])
         print_and_log(f"🎯 Document Intelligence account: '{raw_account}'")
         
-        # Clean but preserve asterisks and X's for validation
-        account_number = raw_account.replace("-", "").replace(" ", "")
-        print_and_log(f"🎯 After cleaning: '{account_number}'")
+        # For TRUE masked accounts (containing asterisks or X's), clean and validate
+        if any(char in raw_account for char in ['*', 'x', 'X']):
+            account_number = raw_account.replace("-", "").replace(" ", "")
+            print_and_log(f"🎯 After cleaning masked account: '{account_number}'")
+            if len(account_number) >= 4:
+                print_and_log(f"✅ Found TRUE MASKED account from Document Intelligence: {account_number}")
+                return account_number
         
-        # For TRUE masked accounts (containing asterisks or X's), use Document Intelligence result
-        if any(char in account_number for char in ['*', 'x', 'X']) and len(account_number) >= 4:
-            print_and_log(f"✅ Found TRUE MASKED account from Document Intelligence: {account_number}")
-            return account_number
-        elif is_valid_account_number(account_number) and account_number.isdigit() and len(account_number) >= 6:
-            print_and_log(f"✅ Found valid numeric account from Document Intelligence: {account_number}")
-            return account_number
+        # For hyphenated accounts, validate with hyphens intact first
+        elif '-' in raw_account:
+            if is_valid_account_number(raw_account):
+                print_and_log(f"✅ Found valid HYPHENATED account from Document Intelligence: {raw_account}")
+                return raw_account
+            else:
+                print_and_log(f"❌ Document Intelligence hyphenated account failed validation: '{raw_account}'")
+        
+        # For numeric accounts, clean and validate
         else:
-            print_and_log(f"❌ Document Intelligence account invalid or suspicious: '{account_number}'")
+            account_number = raw_account.replace("-", "").replace(" ", "")
+            print_and_log(f"🎯 After cleaning numeric account: '{account_number}'")
+            if is_valid_account_number(account_number) and account_number.isdigit() and len(account_number) >= 6:
+                print_and_log(f"✅ Found valid numeric account from Document Intelligence: {account_number}")
+                return account_number
+            else:
+                print_and_log(f"❌ Document Intelligence account invalid or suspicious: '{account_number}'")
     
     
     # STEP 3: Check raw fields from document intelligence for account numbers
@@ -1477,9 +1784,16 @@ def get_account_number(parsed_data):
                                 # Only check fields that are specifically account number fields, not address/name fields
                 if field_name.lower() in ['accounts', 'account', 'accountnumber', 'account_number']:
                     if content and len(content) > 4:
-                        # Clean but preserve asterisks for validation
+                        print_and_log(f"🔍 Account field '{field_name}': '{content}'")
+                        
+                        # Handle hyphenated accounts first
+                        if '-' in content:
+                            if is_valid_account_number(content):
+                                print_and_log(f"✅ Found HYPHENATED account in field '{field_name}': {content}")
+                                return content
+                        
+                        # Clean for other types but preserve asterisks for validation
                         clean_content = content.replace("-", "").replace(" ", "")
-                        print_and_log(f"🔍 Account field '{field_name}': '{clean_content}'")
                         
                         # Prioritize TRUE masked accounts (with * or X)
                         if any(char in clean_content for char in ['*', 'X']) and len(clean_content) >= 4:
@@ -1494,51 +1808,27 @@ def get_account_number(parsed_data):
                         print_and_log(f"📋 Skipping non-account field '{field_name}': '{content[:50] if len(content) > 50 else content}' (not an account number field)")
     
     
-    # STEP 4: Fallback to frequency analysis only if no labeled account found
+    # STEP 4: Fallback to OpenAI for account extraction (BEFORE frequency analysis)
     if "ocr_text_lines" in parsed_data:
         full_text = '\n'.join(parsed_data["ocr_text_lines"])
-        print_and_log(f"⚠️ No labeled account found - falling back to frequency analysis...")
+        print_and_log(f"🤖 No labeled account found - trying OpenAI extraction...")
         
-        # Extract all possible account numbers with their types
-        all_found_accounts = extract_all_account_numbers_with_frequency(full_text)
-        
-        # Analyze results
-        if all_found_accounts:
-            print_and_log(f"📊 Found {len(all_found_accounts)} total account number instances for frequency analysis")
-            
-            # Group by account number and count frequency
-            from collections import Counter
-            account_frequency = Counter()
-            account_types = {}  # Track what type each account is
-            
-            for acc_type, acc_value in all_found_accounts:
-                account_frequency[acc_value] += 1
-                if acc_value not in account_types:
-                    account_types[acc_value] = acc_type
-            
-            # Log frequency analysis
-            print_and_log("� FREQUENCY ANALYSIS (fallback only):")
-            for account, freq in account_frequency.most_common():
-                acc_type = account_types[account]
-                print_and_log(f"   {account} ({acc_type}): {freq} times")
-            
-            # Use most frequent NUMERIC account (ignore reference numbers like HUS#1279)
-            for account, freq in account_frequency.most_common():
-                acc_type = account_types[account]
-                if acc_type == "numeric" and account.isdigit() and len(account) >= 6 and freq >= 3:
-                    print_and_log(f"✅ Using most frequent numeric account: {account} ({freq} times)")
-                    return account
-            
-            # Look for TRUE masked accounts (with * or X) as last resort
-            for account, freq in account_frequency.most_common():
-                acc_type = account_types[account]
-                if acc_type == "masked" and any(char in account for char in ['*', 'X']) and len(account) >= 4:
-                    print_and_log(f"✅ Using masked account as fallback: {account} ({freq} times)")
-                    return account
+        try:
+            openai_account = extract_account_with_openai(full_text)
+            if openai_account and openai_account != "NOT_FOUND":
+                print_and_log(f"✅ OpenAI extracted account: {openai_account}")
+                # For masked accounts like "95", format as ***95
+                if openai_account.isdigit() and len(openai_account) <= 4:
+                    formatted_account = f"***{openai_account}"
+                    print_and_log(f"✅ Formatted masked account: {formatted_account}")
+                    return formatted_account
+                else:
+                    return openai_account
+        except Exception as e:
+            print_and_log(f"❌ OpenAI extraction failed: {e}")
     
-    print_and_log("❌ No account number found in statement")
+    print_and_log("❌ No account number found in statement after all methods")
     return None
-
 def extract_all_account_numbers_with_frequency(text):
     """Extract ALL account numbers from text for frequency analysis"""
     found_accounts = []
@@ -1614,7 +1904,17 @@ def get_routing_number(parsed_data, account_number=None):
             print_and_log(f"✅ Extracted bank name from OCR: {bank_name}")
     
     if not bank_name:
-        print_and_log("❌ CRITICAL: Bank name not found - cannot lookup routing number")
+        # Provide more detailed error information
+        ocr_preview = ""
+        if "ocr_text_lines" in parsed_data and parsed_data["ocr_text_lines"]:
+            # Get first few lines of OCR for debugging
+            ocr_preview = " | ".join(parsed_data["ocr_text_lines"][:3])
+            if len(ocr_preview) > 100:
+                ocr_preview = ocr_preview[:100] + "..."
+        
+        print_and_log(f"❌ CRITICAL: Bank name not found - cannot lookup routing number")
+        print_and_log(f"   Available text preview: {ocr_preview if ocr_preview else 'No OCR text available'}")
+        print_and_log(f"   Document Intelligence BankName field: {'Not found' if 'BankName' not in parsed_data.get('raw_fields', {}) else 'Empty/Invalid'}")
         return None, None
     
     # ONLY use WAC Bank Information database for routing number lookup
@@ -1638,7 +1938,42 @@ def get_routing_number(parsed_data, account_number=None):
             
             print_and_log(f"📄 WAC Database loaded ({len(bank_data['wac_banks'])} banks available)")
             
-            # STEP 1: Try exact account number match first (using extracted digits)
+            # STEP 1: For masked accounts, search for accounts ending with the extracted digits
+            if any(char in account_number for char in ['*', 'x', 'X']):
+                print_and_log(f"🔍 Masked account detected - searching for accounts ending with '{lookup_account}'")
+                ending_matches = []
+                for bank_info in bank_data.get('wac_banks', []):
+                    if str(bank_info['account_number']).endswith(str(lookup_account)):
+                        ending_matches.append(bank_info)
+                
+                if ending_matches:
+                    print_and_log(f"✅ Found {len(ending_matches)} accounts ending with '{lookup_account}':")
+                    for match in ending_matches:
+                        print_and_log(f"   Account: {match['account_number']} - Bank: {match['bank_name']}")
+                    
+                    # If we have a bank name, try to find the best match
+                    if bank_name and len(ending_matches) > 1:
+                        from bank_info_loader import calculate_similarity
+                        best_match = None
+                        best_similarity = 0.0
+                        
+                        for match in ending_matches:
+                            similarity = calculate_similarity(bank_name, match['bank_name'])
+                            print_and_log(f"   Bank name similarity with {match['bank_name']}: {similarity:.1%}")
+                            if similarity > best_similarity:
+                                best_similarity = similarity
+                                best_match = match
+                        
+                        if best_match and best_similarity > 0.4:  # Reasonable threshold
+                            print_and_log(f"✅ BEST MATCH by bank name: {best_match['bank_name']} ({best_similarity:.1%} similarity)")
+                            return best_match['routing_number'], best_match['account_number']
+                    
+                    # Otherwise, return the first match (most likely scenario)
+                    match = ending_matches[0]
+                    print_and_log(f"✅ Using first match: {match['bank_name']}")
+                    return match['routing_number'], match['account_number']
+            
+            # STEP 2: Try exact account number match (for non-masked accounts)
             exact_matches = []
             for bank_info in bank_data.get('wac_banks', []):
                 if str(bank_info['account_number']).strip() == str(lookup_account).strip():
@@ -2547,8 +2882,9 @@ def process_new_file(event: func.EventGridEvent):
                 
                 try:
                     result = get_bank_info_for_processing(bank_name, statement_account)
-                    if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type)
-                        enhanced_account_number, enhanced_routing_number, match_type = result
+                    if result and len(result) >= 2 and result[1]:  # result is (account, routing, match_type, details)
+                        enhanced_account_number, enhanced_routing_number, match_type = result[:3]
+                        match_details = result[3] if len(result) >= 4 else {}
                         print_and_log(f"✅ WAC OPERATIONAL ACCOUNT VERIFIED!")
                         print_and_log(f"   Matched Account: {enhanced_account_number}")
                         print_and_log(f"   Routing Number: {enhanced_routing_number}")
@@ -2556,105 +2892,205 @@ def process_new_file(event: func.EventGridEvent):
                     else:
                         # Handle specific error cases with appropriate error codes
                         match_type = result[2] if result and len(result) >= 3 else "unknown"
+                        match_details = result[3] if result and len(result) >= 4 else {}
                         
-                        if match_type == "multiple_accounts_low_similarity":
-                            print_and_log(f"❌ MULTIPLE ACCOUNT MATCHES - INSUFFICIENT BANK NAME SIMILARITY")
-                            print_and_log(f"   Multiple accounts end with same digits as '{statement_account}'")
-                            print_and_log(f"   Bank name '{bank_name}' similarity below 50% threshold")
-                            print_and_log(f"   Cannot uniquely identify correct WAC operational account")
-                            error_code = "ERROR_MULTIPLE_ACCOUNTS_LOW_SIMILARITY"
-                            error_message = f"Multiple WAC accounts end with same digits. Bank name '{bank_name}' similarity below 50% threshold. Cannot uniquely identify account."
+                        print_and_log(f"❌ Initial WAC lookup failed for account '{statement_account}' - trying OpenAI fallback...")
+                        
+                        # TRY OPENAI FALLBACK BEFORE CREATING ERROR FILE
+                        openai_fallback_success = False
+                        original_account = statement_account
+                        
+                        if "ocr_text_lines" in final_data:
+                            print_and_log(f"🔍 DEBUG: OCR text lines available, proceeding with OpenAI fallback...")
+                            ocr_text = '\n'.join(final_data["ocr_text_lines"])
+                            print_and_log(f"🤖 Attempting OpenAI account extraction as early fallback...")
                             
-                        elif match_type == "multiple_accounts_no_bank_name":
-                            print_and_log(f"❌ MULTIPLE ACCOUNT MATCHES - NO BANK NAME FOR DISAMBIGUATION")
-                            print_and_log(f"   Multiple accounts end with same digits as '{statement_account}'")
-                            print_and_log(f"   No bank name provided for disambiguation")
-                            print_and_log(f"   Cannot uniquely identify correct WAC operational account")
-                            error_code = "ERROR_MULTIPLE_ACCOUNTS_NO_BANK"
-                            error_message = f"Multiple WAC accounts end with same digits. No bank name available for disambiguation."
-                            
-                        elif match_type == "no_account_match":
-                            print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
-                            print_and_log(f"   Account '{statement_account}' not found in WAC database")
-                            print_and_log(f"   POLICY VIOLATION: Only WAC operational accounts are allowed")
-                            error_code = "ERROR_NO_ACCOUNT"
-                            error_message = f"Account not found in WAC operational database. Only WAC operational accounts are permitted for processing."
-                            
+                            try:
+                                print_and_log(f"🔍 DEBUG: About to call extract_account_with_openai...")
+                                openai_account = extract_account_with_openai(ocr_text)
+                                print_and_log(f"🔍 DEBUG: OpenAI returned: {openai_account}")
+                                
+                                if openai_account and openai_account != "NOT_FOUND":
+                                    print_and_log(f"🤖 OpenAI found alternative account: '{openai_account}'")
+                                    
+                                    # Format as masked account if it's short (likely masked digits)
+                                    if len(openai_account) <= 6 and openai_account.isdigit():
+                                        formatted_account = f"****{openai_account}"
+                                        print_and_log(f"🎯 Formatting as masked account: '{formatted_account}'")
+                                    else:
+                                        formatted_account = openai_account
+                                    
+                                    # Try WAC matching with OpenAI result
+                                    print_and_log(f"🔍 Trying WAC matching with OpenAI account: '{formatted_account}'")
+                                    fallback_result = get_bank_info_for_processing(bank_name, formatted_account)
+                                    
+                                    if fallback_result and len(fallback_result) >= 2 and fallback_result[1]:
+                                        enhanced_account_number, enhanced_routing_number, match_type = fallback_result[:3]
+                                        match_details = fallback_result[3] if len(fallback_result) >= 4 else {}
+                                        print_and_log(f"✅ OpenAI EARLY FALLBACK SUCCESS!")
+                                        print_and_log(f"   Original Account: {original_account}")
+                                        print_and_log(f"   OpenAI Account: {openai_account}")
+                                        print_and_log(f"   Matched Account: {enhanced_account_number}")
+                                        print_and_log(f"   Routing Number: {enhanced_routing_number}")
+                                        print_and_log(f"   Match Type: {match_type}")
+                                        openai_fallback_success = True
+                                        
+                                        # Update the statement account for further processing
+                                        statement_account = enhanced_account_number
+                                    else:
+                                        print_and_log(f"❌ OpenAI account '{formatted_account}' also not found in WAC database")
+                                else:
+                                    print_and_log(f"❌ OpenAI did not find alternative account number")
+                            except Exception as e:
+                                print_and_log(f"❌ OpenAI early fallback error: {str(e)}")
                         else:
-                            print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
-                            print_and_log(f"   Account '{statement_account}' not found in WAC database")
-                            print_and_log(f"   POLICY VIOLATION: Only WAC operational accounts are allowed")
-                            print_and_log(f"   Match type: {match_type}")
-                            error_code = "ERROR_NO_ACCOUNT"
-                            error_message = f"Account not found in WAC operational database. Only WAC operational accounts are permitted for processing."
+                            print_and_log(f"🔍 DEBUG: No OCR text lines available for OpenAI fallback")
                         
-                        print_and_log(f"❌ Creating ERROR file - {error_message}")
-                        
-                        # Create error BAI2 file immediately with specific error code
-                        from datetime import datetime
-                        now = datetime.now()
-                        file_date = now.strftime("%y%m%d")
-                        file_time = now.strftime("%H%M")
-                        
-                        error_bai2 = create_error_bai2_file(
-                            error_message,
-                            name,
-                            file_date,
-                            file_time,
-                            error_code
-                        )
-                        
-                        # Save error file and return early
-                        print_and_log("")
-                        print_and_log("💾 STEP 3: Saving ERROR BAI file")
-                        print_and_log("   ➤ Creating error notification file")
-                        
-                        output_container = blob_service.get_container_client("bank-reconciliation")
-                        base_filename = name.split('.')[0]
-                        output_filename = f"bai2-outputs/ERROR_{base_filename}.bai"
-                        
-                        output_container.upload_blob(
-                            name=output_filename, 
-                            data=error_bai2.encode('utf-8'), 
-                            overwrite=True
-                        )
-                        
-                        print_and_log("✅ ERROR BAI2 file uploaded successfully!")
-                        print_and_log(f"📁 Location: bank-reconciliation/{output_filename}")
-                        
-                        # Archive original file
-                        try:
-                            input_container = blob_service.get_container_client(container_name)
-                            source_blob = input_container.get_blob_client(blob_name)
+                        # Only create error file if OpenAI fallback also failed
+                        if not openai_fallback_success:
+                            # Build comprehensive diagnostic information
+                            diagnostic_info = {
+                                "extracted_account": statement_account,
+                                "extracted_bank": bank_name,
+                                "account_extraction_method": "WAC Account Verification with OpenAI fallback attempted",
+                                "match_type": match_type,
+                                "wac_database_matches": [],
+                                "similarity_threshold": "50%",
+                                "error_details": "",
+                                "openai_attempted": True,
+                                "openai_result": openai_account if 'openai_account' in locals() else "No result"
+                            }
                             
-                            if source_blob.exists():
-                                archive_container = blob_service.get_container_client(container_name)
-                                archive_blob = archive_container.get_blob_client(f"archive/{name}")
-                                archive_blob.start_copy_from_url(source_blob.url)
-                                source_blob.delete_blob()
-                                print_and_log("✅ Original file archived successfully!")
-                                print_and_log(f"📁 Archive location: archive/{name}")
+                            # Add OCR and Document Intelligence data if available
+                            if "ocr_text_lines" in final_data:
+                                diagnostic_info["ocr_lines_count"] = len(final_data["ocr_text_lines"])
+                            if "raw_fields" in final_data:
+                                doc_intel_fields = {}
+                                for field_name, field_data in final_data["raw_fields"].items():
+                                    if isinstance(field_data, dict) and "content" in field_data:
+                                        content = field_data["content"]
+                                        confidence = field_data.get("confidence", 0)
+                                        doc_intel_fields[field_name] = f"{content} ({confidence:.1f}% confidence)"
+                                    else:
+                                        doc_intel_fields[field_name] = str(field_data)
+                                diagnostic_info["document_intelligence_fields"] = doc_intel_fields
+                            
+                            if match_type == "multiple_accounts_low_similarity":
+                                print_and_log(f"❌ MULTIPLE ACCOUNT MATCHES - INSUFFICIENT BANK NAME SIMILARITY")
+                                print_and_log(f"   Multiple accounts end with same digits as '{statement_account}'")
+                                print_and_log(f"   Bank name '{bank_name}' similarity below 50% threshold")
+                                print_and_log(f"   Cannot uniquely identify correct WAC operational account")
+                                error_code = "ERROR_MULTIPLE_ACCOUNTS_LOW_SIMILARITY"
+                                error_message = f"Multiple WAC accounts end with same digits. Bank name '{bank_name}' similarity below 50% threshold. Cannot uniquely identify account."
+                                
+                                # Add detailed candidate information to diagnostic data
+                                if 'candidates' in match_details:
+                                    diagnostic_info["wac_database_matches"] = match_details['candidates']
+                                    diagnostic_info["candidate_count"] = match_details.get('candidate_count', len(match_details['candidates']))
+                                    diagnostic_info["best_similarity"] = f"{match_details.get('best_similarity', 0.0)*100:.1f}%"
+                                    diagnostic_info["ending_digits"] = match_details.get('ending_digits', 'Unknown')
+                                    diagnostic_info["error_details"] = f"Found {len(match_details['candidates'])} WAC accounts ending with same digits. Best bank name similarity: {match_details.get('best_similarity', 0.0)*100:.1f}% (below 50% threshold)."
+                                
+                            elif match_type == "multiple_accounts_no_bank_name":
+                                print_and_log(f"❌ MULTIPLE ACCOUNT MATCHES - NO BANK NAME FOR DISAMBIGUATION")
+                                print_and_log(f"   Multiple accounts end with same digits as '{statement_account}'")
+                                print_and_log(f"   No bank name provided for disambiguation")
+                                print_and_log(f"   Cannot uniquely identify correct WAC operational account")
+                                error_code = "ERROR_MULTIPLE_ACCOUNTS_NO_BANK"
+                                error_message = f"Multiple WAC accounts end with same digits. No bank name available for disambiguation."
+                                
+                                # Add detailed candidate information to diagnostic data
+                                if 'candidates' in match_details:
+                                    diagnostic_info["wac_database_matches"] = match_details['candidates']
+                                    diagnostic_info["candidate_count"] = match_details.get('candidate_count', len(match_details['candidates']))
+                                    diagnostic_info["ending_digits"] = match_details.get('ending_digits', 'Unknown')
+                                    diagnostic_info["error_details"] = f"Found {len(match_details['candidates'])} WAC accounts ending with same digits. No bank name available for disambiguation."
+                                
+                            elif match_type == "no_account_match":
+                                print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+                                print_and_log(f"   Account '{statement_account}' not found in WAC database")
+                                print_and_log(f"   POLICY VIOLATION: Only WAC operational accounts are allowed")
+                                error_code = "ERROR_NO_ACCOUNT"
+                                error_message = f"Account not found in WAC operational database. Only WAC operational accounts are permitted for processing."
+                                diagnostic_info["error_details"] = f"Account '{statement_account}' is not in the WAC operational database. Only pre-registered WAC accounts are allowed for processing."
+                                
                             else:
-                                print_and_log("⚠️ Source file not found (test mode)")
-                        except Exception as archive_error:
-                            print_and_log(f"⚠️ Archive error: {str(archive_error)}")
-                        
-                        # Final summary
-                        print_and_log("")
-                        print_and_log("📊 PROCESSING COMPLETE - FINAL SUMMARY")
-                        print_and_log("=" * 60)
-                        print_and_log(f"📄 Source File: {name}")
-                        print_and_log(f"❌ ERROR BAI Output: bank-reconciliation/{output_filename}")
-                        print_and_log(f"⚠️  BAI file created with error message due to non-WAC account")
-                        print_and_log(f"📁 Archive: bank-reconciliation/archive/{name}")
-                        print_and_log("⚠️ RECONCILIATION STATUS: NOT PERFORMED")
-                        print_and_log("✅ BANK STATEMENT PROCESSING SUCCESSFUL!")
-                        print_and_log("   ➤ Your PDF has been converted to BAI2 format")
-                        print_and_log("   ➤ The file is ready for import into banking systems")
-                        print_and_log("   ➤ Original file has been safely archived")
-                        print_and_log("=" * 60)
-                        
-                        return
+                                print_and_log(f"❌ NOT A WAC OPERATIONAL ACCOUNT")
+                                print_and_log(f"   Account '{statement_account}' not found in WAC database")
+                                print_and_log(f"   POLICY VIOLATION: Only WAC operational accounts are allowed")
+                                print_and_log(f"   Match type: {match_type}")
+                                error_code = "ERROR_NO_ACCOUNT"
+                                error_message = f"Account not found in WAC operational database. Only WAC operational accounts are permitted for processing."
+                                diagnostic_info["error_details"] = f"Account '{statement_account}' lookup failed with match type: {match_type}. Only pre-registered WAC accounts are allowed."
+                            
+                            print_and_log(f"❌ Creating ERROR file - {error_message}")
+                            
+                            # Create error BAI2 file immediately with specific error code and detailed diagnostics
+                            from datetime import datetime
+                            now = datetime.now()
+                            file_date = now.strftime("%y%m%d")
+                            file_time = now.strftime("%H%M")
+                            
+                            error_bai2 = create_error_bai2_file(
+                                error_message,
+                                name,
+                                file_date,
+                                file_time,
+                                error_code,
+                                diagnostic_info
+                            )
+                            
+                            # Save error file and return early
+                            print_and_log("")
+                            print_and_log("💾 STEP 3: Saving ERROR BAI file")
+                            print_and_log("   ➤ Creating error notification file")
+                            
+                            output_container = blob_service.get_container_client("bank-reconciliation")
+                            base_filename = name.split('.')[0]
+                            output_filename = f"bai2-outputs/ERROR_{base_filename}.bai"
+                            
+                            output_container.upload_blob(
+                                name=output_filename, 
+                                data=error_bai2.encode('utf-8'), 
+                                overwrite=True
+                            )
+                            
+                            print_and_log("✅ ERROR BAI2 file uploaded successfully!")
+                            print_and_log(f"📁 Location: bank-reconciliation/{output_filename}")
+                            
+                            # Archive original file
+                            try:
+                                input_container = blob_service.get_container_client(container_name)
+                                source_blob = input_container.get_blob_client(blob_name)
+                                
+                                if source_blob.exists():
+                                    archive_container = blob_service.get_container_client(container_name)
+                                    archive_blob = archive_container.get_blob_client(f"archive/{name}")
+                                    archive_blob.start_copy_from_url(source_blob.url)
+                                    source_blob.delete_blob()
+                                    print_and_log("✅ Original file archived successfully!")
+                                    print_and_log(f"📁 Archive location: archive/{name}")
+                                else:
+                                    print_and_log("⚠️ Source file not found (test mode)")
+                            except Exception as archive_error:
+                                print_and_log(f"⚠️ Archive error: {str(archive_error)}")
+                            
+                            # Final summary
+                            print_and_log("")
+                            print_and_log("📊 PROCESSING COMPLETE - FINAL SUMMARY")
+                            print_and_log("=" * 60)
+                            print_and_log(f"📄 Source File: {name}")
+                            print_and_log(f"❌ ERROR BAI Output: bank-reconciliation/{output_filename}")
+                            print_and_log(f"⚠️  BAI file created with error message due to non-WAC account")
+                            print_and_log(f"📁 Archive: bank-reconciliation/archive/{name}")
+                            print_and_log("⚠️ RECONCILIATION STATUS: NOT PERFORMED")
+                            print_and_log("✅ BANK STATEMENT PROCESSING SUCCESSFUL!")
+                            print_and_log("   ➤ Your PDF has been converted to BAI2 format")
+                            print_and_log("   ➤ The file is ready for import into banking systems")
+                            print_and_log("   ➤ Original file has been safely archived")
+                            print_and_log("=" * 60)
+                            
+                            return
                         
                 except Exception as e:
                     print_and_log(f"⚠️ WAC account verification error: {str(e)}")
@@ -3134,8 +3570,82 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
             # Extract account number from statement (needed for enhanced matching)
             account_number = get_account_number(data)
             if not account_number:
-                print_and_log("❌ CRITICAL: No account number found on statement - creating ERROR file")
-                return create_error_bai2_file("No account number found on statement", filename, file_date, file_time, "ERROR_NO_ACCOUNT")
+                print_and_log(f"❌ Primary account extraction failed - trying OpenAI fallback...")
+                
+                # FALLBACK: Try OpenAI extraction before giving up
+                if "ocr_text_lines" in data:
+                    ocr_text = '\n'.join(data["ocr_text_lines"])
+                    print_and_log(f"🤖 Attempting OpenAI account extraction as fallback...")
+                    
+                    try:
+                        openai_account = extract_account_with_openai(ocr_text)
+                        if openai_account and openai_account != "NOT_FOUND":
+                            # Validate the OpenAI result
+                            if is_valid_account_number(openai_account) and len(openai_account) >= 6:
+                                print_and_log(f"✅ OpenAI FALLBACK SUCCESS: Found account {openai_account}")
+                                account_number = openai_account
+                            else:
+                                print_and_log(f"❌ OpenAI result invalid: '{openai_account}'")
+                        else:
+                            print_and_log(f"❌ OpenAI did not find account number")
+                    except Exception as e:
+                        print_and_log(f"❌ OpenAI fallback error: {str(e)}")
+                
+                # If OpenAI fallback also failed, create error file
+                if not account_number:
+                    # Extract bank name and any potential account numbers found for better error reporting
+                    potential_accounts = []
+                    bank_name_for_error = "Unknown"
+                    
+                    if "ocr_text_lines" in data:
+                        ocr_text = '\n'.join(data["ocr_text_lines"])
+                        # Try to extract bank name
+                        extracted_bank = extract_bank_name_from_text(ocr_text)
+                        if extracted_bank:
+                            bank_name_for_error = extracted_bank
+                        
+                        # Look for any number sequences that might be account numbers
+                        import re
+                        number_patterns = re.findall(r'\b\d{4,}\b', ocr_text)
+                        potential_accounts = [num for num in number_patterns if len(num) >= 6]
+                    
+                    if "raw_fields" in data and "BankName" in data["raw_fields"]:
+                        bank_data = data["raw_fields"]["BankName"]
+                        if isinstance(bank_data, dict) and "content" in bank_data:
+                            bank_name_for_error = bank_data["content"].strip()
+                    
+                    error_details = f"No valid account number found on statement from {bank_name_for_error}. Primary extraction and OpenAI fallback both failed."
+                    
+                    diagnostic_info = {
+                        "extracted_bank_names": [bank_name_for_error],
+                        "extracted_accounts": potential_accounts[:10],  # Show up to 10 potential accounts
+                        "ocr_lines_count": len(data.get("ocr_text_lines", [])),
+                        "account_extraction_method": "Both primary extraction and OpenAI fallback failed",
+                        "error_details": "Account number extraction failed after trying all methods including OpenAI"
+                    }
+                    
+                    # Add Document Intelligence field information
+                    if "raw_fields" in data:
+                        doc_intel_fields = {}
+                        for field_name, field_data in data["raw_fields"].items():
+                            if isinstance(field_data, dict) and "content" in field_data:
+                                content = field_data["content"]
+                                confidence = field_data.get("confidence", 0)
+                                doc_intel_fields[field_name] = f"{content} ({confidence:.1f}% confidence)"
+                            else:
+                                doc_intel_fields[field_name] = str(field_data)
+                        diagnostic_info["document_intelligence_fields"] = doc_intel_fields
+                    
+                    # Add specific validation details
+                    if potential_accounts:
+                        error_details += f". Potential numbers found but invalid: {', '.join(potential_accounts[:3])}"
+                        diagnostic_info["error_details"] = "Numbers found but failed validation (too short, invalid characters, or not in valid account format)"
+                    else:
+                        error_details += ". No account number patterns detected in document"
+                        diagnostic_info["error_details"] = "No numeric patterns matching account number format detected in OCR text"
+                    
+                    print_and_log(f"❌ CRITICAL: {error_details} - creating ERROR file")
+                    return create_error_bai2_file(error_details, filename, file_date, file_time, "ERROR_NO_ACCOUNT", diagnostic_info)
             print_and_log(f"✅ Using account number from statement: {account_number}")
         
         print_and_log(f"🔧 DEBUG: Account number resolved: {account_number}")
@@ -3156,8 +3666,97 @@ def convert_to_bai2(data, filename, reconciliation_data=None, routing_number=Non
             elif result and not isinstance(result, tuple) and result is not None:
                 originator_id = result
             else:
-                print_and_log("❌ CRITICAL: No routing number found in WAC Bank Information database - creating ERROR file")
-                return create_error_bai2_file("No routing number found in WAC Bank Information database for this bank/account combination", filename, file_date, file_time, "ERROR_NO_ROUTING")
+                # WAC matching failed - try OpenAI fallback before creating error file
+                print_and_log(f"❌ WAC database matching failed for account '{account_number}' - trying OpenAI fallback...")
+                print_and_log(f"🔍 DEBUG: About to check OpenAI fallback conditions...")
+                
+                openai_fallback_success = False
+                original_account = account_number  # Keep track of the original account
+                
+                print_and_log(f"🔍 DEBUG: Checking if 'ocr_text_lines' is in data: {'ocr_text_lines' in data}")
+                if "ocr_text_lines" in data:
+                    print_and_log(f"🔍 DEBUG: OCR text lines available, proceeding with OpenAI fallback...")
+                    ocr_text = '\n'.join(data["ocr_text_lines"])
+                    print_and_log(f"🤖 Attempting OpenAI account extraction as WAC fallback...")
+                    
+                    try:
+                        print_and_log(f"🔍 DEBUG: About to call extract_account_with_openai...")
+                        openai_account = extract_account_with_openai(ocr_text)
+                        print_and_log(f"🔍 DEBUG: OpenAI returned: {openai_account}")
+                        if openai_account and openai_account != "NOT_FOUND":
+                            print_and_log(f"🤖 OpenAI found alternative account: '{openai_account}'")
+                            
+                            # Format as masked account if it's short (likely masked digits)
+                            if len(openai_account) <= 6 and openai_account.isdigit():
+                                formatted_account = f"****{openai_account}"
+                                print_and_log(f"🎯 Formatting as masked account: '{formatted_account}'")
+                            else:
+                                formatted_account = openai_account
+                            
+                            # Try WAC matching with OpenAI result
+                            print_and_log(f"🔍 Trying WAC matching with OpenAI account: '{formatted_account}'")
+                            fallback_result = get_routing_number(data, formatted_account)
+                            
+                            if fallback_result and isinstance(fallback_result, tuple) and len(fallback_result) >= 2 and fallback_result[0] is not None:
+                                originator_id, matched_account = fallback_result
+                                account_number = matched_account or formatted_account
+                                print_and_log(f"✅ OpenAI FALLBACK SUCCESS: Account '{account_number}', Routing '{originator_id}'")
+                                openai_fallback_success = True
+                            elif fallback_result and not isinstance(fallback_result, tuple) and fallback_result is not None:
+                                originator_id = fallback_result
+                                account_number = formatted_account
+                                print_and_log(f"✅ OpenAI FALLBACK SUCCESS: Account '{account_number}', Routing '{originator_id}'")
+                                openai_fallback_success = True
+                            else:
+                                print_and_log(f"❌ OpenAI account '{formatted_account}' also not found in WAC database")
+                        else:
+                            print_and_log(f"❌ OpenAI did not find alternative account number")
+                    except Exception as e:
+                        print_and_log(f"❌ OpenAI WAC fallback error: {str(e)}")
+                
+                # If OpenAI fallback also failed, create error file
+                print_and_log(f"🔍 DEBUG: OpenAI fallback success status: {openai_fallback_success}")
+                if not openai_fallback_success:
+                    print_and_log(f"🔍 DEBUG: Creating error file because OpenAI fallback failed...")
+                    # Extract bank name for better error reporting
+                    bank_name_for_error = "Unknown Bank"
+                    if "ocr_text_lines" in data:
+                        ocr_text = '\n'.join(data["ocr_text_lines"])
+                        extracted_bank = extract_bank_name_from_text(ocr_text)
+                        if extracted_bank:
+                            bank_name_for_error = extracted_bank
+                    
+                    if "raw_fields" in data and "BankName" in data["raw_fields"]:
+                        bank_data = data["raw_fields"]["BankName"]
+                        if isinstance(bank_data, dict) and "content" in bank_data:
+                            bank_name_for_error = bank_data["content"].strip()
+                    
+                    error_details = f"No routing number found in WAC Bank Information database. Bank: '{bank_name_for_error}', Account: '{original_account}'. Primary extraction and OpenAI fallback both failed to find a WAC operational account."
+                    
+                    diagnostic_info = {
+                        "extracted_bank_names": [bank_name_for_error],
+                        "extracted_accounts": [original_account],
+                        "wac_database_matches": [],  # No matches found
+                        "account_extraction_method": "Primary extraction succeeded, OpenAI fallback also tried",
+                        "error_details": f"Primary account '{original_account}' and OpenAI alternatives not found in WAC database",
+                        "openai_attempted": True,
+                        "openai_result": openai_account if 'openai_account' in locals() else "No result"
+                    }
+                    
+                    # Add Document Intelligence field information if available
+                    if "raw_fields" in data:
+                        doc_intel_fields = {}
+                        for field_name, field_data in data["raw_fields"].items():
+                            if isinstance(field_data, dict) and "content" in field_data:
+                                content = field_data["content"]
+                                confidence = field_data.get("confidence", 0)
+                                doc_intel_fields[field_name] = f"{content} ({confidence:.1f}% confidence)"
+                            else:
+                                doc_intel_fields[field_name] = str(field_data)
+                        diagnostic_info["document_intelligence_fields"] = doc_intel_fields
+                    
+                    print_and_log(f"❌ CRITICAL: {error_details} - creating ERROR file")
+                    return create_error_bai2_file(error_details, filename, file_date, file_time, "ERROR_NO_ROUTING", diagnostic_info)
         
         print_and_log(f"🔧 DEBUG: Routing number resolved: {originator_id}")
         
@@ -3365,8 +3964,16 @@ No explanations, no comments, no code fences."""
         
         # Validate the generated BAI2 content
         if not bai2_content.startswith("01,"):
-            print_and_log("⚠️ Generated BAI2 doesn't start with file header, creating error file")
-            return create_error_bai2_file("OpenAI BAI2 generation format error", filename, file_date, file_time, "ERROR_AI_FORMAT")
+            format_error = f"OpenAI BAI2 generation format error - Generated content doesn't start with '01,' header"
+            if bai2_content:
+                first_chars = bai2_content[:50].replace('\n', '\\n').replace('\r', '\\r')
+                format_error += f" | Started with: '{first_chars}'"
+                format_error += f" | Length: {len(bai2_content)} chars"
+            else:
+                format_error += " | Generated content was empty"
+            
+            print_and_log(f"⚠️ {format_error}")
+            return create_error_bai2_file(format_error, filename, file_date, file_time, "ERROR_AI_FORMAT")
         
         print_and_log("✅ OpenAI successfully generated initial BAI2 file")
         print_and_log(f"📏 Generated BAI2 length: {len(bai2_content)} characters")
@@ -3435,7 +4042,21 @@ No explanations, no comments, no code fences."""
         import traceback
         print_and_log(f"� Full traceback: {traceback.format_exc()}")
         print_and_log(f"🔄 Creating error file instead of falling back to manual approach")
-        return create_error_bai2_file(f"OpenAI BAI2 generation failed: {str(e)}", filename, file_date, file_time, "ERROR_AI_FAILED")
+        # Enhanced error details
+        error_details = f"OpenAI BAI2 generation failed: {str(e)}"
+        
+        # Add context about what data was being processed
+        try:
+            if 'bank_name' in locals() and bank_name:
+                error_details += f" | Bank: {bank_name}"
+            if 'account_number' in locals() and account_number:
+                error_details += f" | Account: {account_number}"
+            if 'originator_id' in locals() and originator_id:
+                error_details += f" | Routing: {originator_id}"
+        except:
+            pass  # Don't let error context gathering cause additional errors
+        
+        return create_error_bai2_file(error_details, filename, file_date, file_time, "ERROR_AI_FAILED")
 
 @app.function_name("setup_containers")
 @app.route(route="setup", methods=["GET"])
@@ -3560,3 +4181,64 @@ def throttling_status(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Error getting throttling status: {str(e)}")
         return func.HttpResponse(f"Error: {str(e)}", status_code=500)
+
+def extract_account_with_openai(text):
+    """Use OpenAI to extract account number from bank statement text"""
+    try:
+        # Get Azure OpenAI configuration from environment
+        endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+        api_key = os.getenv('AZURE_OPENAI_KEY')
+        deployment = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+        
+        if not all([endpoint, api_key, deployment]):
+            print_and_log("❌ Azure OpenAI configuration missing from environment variables")
+            return None
+        
+        # Initialize OpenAI client
+        from openai import AzureOpenAI
+        client = AzureOpenAI(
+            api_key=api_key,
+            api_version="2024-02-01",
+            azure_endpoint=endpoint
+        )
+        
+        prompt = f"""You are a bank statement analysis expert. Extract the account number from this bank statement text.
+
+Instructions:
+- Look for explicitly labeled account numbers (after "Account Number:", "Account:", "Primary Account:", etc.)
+- PRIORITY: Look for account numbers in statement header area (first few lines)
+- Account numbers can be hyphenated (like 50-550-1) or numeric (like 123456789)
+- If the account number is masked (like ***95, ****1234, XXXX5678), extract ONLY the visible digits
+- Ignore deposit slip numbers, MICR codes, check numbers, and account reference numbers (like #858)
+- Ignore long bank routing codes (like 00000856-0002649-0001-0003-FIMR8003920601259704)
+- Return ONLY the actual account number (preserve hyphens if present)
+- If no account number is found, return "NOT_FOUND"
+
+Examples:
+- If you see "ACCOUNT" followed by "50-550-1" on the next line, return "50-550-1"
+- If you see "Account Number: 123456789", return "123456789"
+- If you see "Account ending ***95", return "95"
+- Ignore "ACCOUNT #858" (this is a reference, not the account number)
+
+Bank statement text:
+{text}
+
+Account number:"""
+
+        response = client.chat.completions.create(
+            model=deployment,
+            messages=[
+                {"role": "system", "content": "You are a precise bank statement analyzer. Return only the requested information."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0,
+            max_tokens=50
+        )
+        
+        result = response.choices[0].message.content.strip()
+        print_and_log(f"🤖 OpenAI extracted: '{result}'")
+        return result
+        
+    except Exception as e:
+        print_and_log(f"❌ OpenAI extraction error: {e}")
+        return None

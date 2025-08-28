@@ -1,20 +1,29 @@
-.git*
-.vscode
-__azurite_db*__.json
-__blobstorage__
-__queuestorage__
-local.settings.json
-test
-.venv
+# Virtual environments and dependencies (CRITICAL - these are huge!)
+.venv/
+venv/
+env/
+.env/
+__pycache__/
 *.pyc
-__pycache__
-.pytest_cache
-.coverage
-*.log
-*.bak
-*.tmp
-backup_*
+*.pyo
+*.pyd
+
+# Build and deployment artifacts
+.git*
+.vscode/
+.azure/
+azure-devops-package/
+AzuriteConfig/
+.deployment
+
+# Large test and documentation directories
+New Test Docs/
 Test Docs/
+test/
+tests/
+docs/
+
+# All test and analysis files
 test_*.py
 analyze_*.py
 check_*.py
@@ -27,9 +36,47 @@ monitor_*.ps1
 show_*.py
 simple_*.ps1
 trigger_*.py
-mermaid_*.html
+
+# Large media and documentation files
+*.pdf
+*.bai2
+*.zip
 *.md
 *.docx
 *.html
-*.bai2
-*.pdf
+*.xlsx
+*.xls
+mermaid_*.html
+
+# Development settings
+local.settings.json
+__azurite_db*__.json
+__blobstorage__
+__queuestorage__
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.user
+*.swp
+*.swo
+*~
+.idea/
+.vs/
+
+# Build outputs and logs
+*.log
+*.bak
+*.tmp
+backup_*
+dist/
+build/
+target/
+bin/
+obj/
+node_modules/
+
+# Python cache and coverage
+.pytest_cache
+.coverage
+*.egg-info/
